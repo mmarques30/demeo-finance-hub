@@ -9,38 +9,173 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PortalRouteImport } from './routes/portal'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
+import { Route as AdminPipelineRouteImport } from './routes/admin.pipeline'
+import { Route as AdminPendentesRouteImport } from './routes/admin.pendentes'
+import { Route as AdminImportarRouteImport } from './routes/admin.importar'
+import { Route as AdminDfcRouteImport } from './routes/admin.dfc'
+import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 
+const PortalRoute = PortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRelatoriosRoute = AdminRelatoriosRouteImport.update({
+  id: '/admin/relatorios',
+  path: '/admin/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPipelineRoute = AdminPipelineRouteImport.update({
+  id: '/admin/pipeline',
+  path: '/admin/pipeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPendentesRoute = AdminPendentesRouteImport.update({
+  id: '/admin/pendentes',
+  path: '/admin/pendentes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminImportarRoute = AdminImportarRouteImport.update({
+  id: '/admin/importar',
+  path: '/admin/importar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDfcRoute = AdminDfcRouteImport.update({
+  id: '/admin/dfc',
+  path: '/admin/dfc',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminClientesRoute = AdminClientesRouteImport.update({
+  id: '/admin/clientes',
+  path: '/admin/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/portal': typeof PortalRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/dfc': typeof AdminDfcRoute
+  '/admin/importar': typeof AdminImportarRoute
+  '/admin/pendentes': typeof AdminPendentesRoute
+  '/admin/pipeline': typeof AdminPipelineRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/portal': typeof PortalRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/dfc': typeof AdminDfcRoute
+  '/admin/importar': typeof AdminImportarRoute
+  '/admin/pendentes': typeof AdminPendentesRoute
+  '/admin/pipeline': typeof AdminPipelineRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/portal': typeof PortalRoute
+  '/admin/clientes': typeof AdminClientesRoute
+  '/admin/dfc': typeof AdminDfcRoute
+  '/admin/importar': typeof AdminImportarRoute
+  '/admin/pendentes': typeof AdminPendentesRoute
+  '/admin/pipeline': typeof AdminPipelineRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/portal'
+    | '/admin/clientes'
+    | '/admin/dfc'
+    | '/admin/importar'
+    | '/admin/pendentes'
+    | '/admin/pipeline'
+    | '/admin/relatorios'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/portal'
+    | '/admin/clientes'
+    | '/admin/dfc'
+    | '/admin/importar'
+    | '/admin/pendentes'
+    | '/admin/pipeline'
+    | '/admin/relatorios'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/portal'
+    | '/admin/clientes'
+    | '/admin/dfc'
+    | '/admin/importar'
+    | '/admin/pendentes'
+    | '/admin/pipeline'
+    | '/admin/relatorios'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  PortalRoute: typeof PortalRoute
+  AdminClientesRoute: typeof AdminClientesRoute
+  AdminDfcRoute: typeof AdminDfcRoute
+  AdminImportarRoute: typeof AdminImportarRoute
+  AdminPendentesRoute: typeof AdminPendentesRoute
+  AdminPipelineRoute: typeof AdminPipelineRoute
+  AdminRelatoriosRoute: typeof AdminRelatoriosRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/portal': {
+      id: '/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +183,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/relatorios': {
+      id: '/admin/relatorios'
+      path: '/admin/relatorios'
+      fullPath: '/admin/relatorios'
+      preLoaderRoute: typeof AdminRelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/pipeline': {
+      id: '/admin/pipeline'
+      path: '/admin/pipeline'
+      fullPath: '/admin/pipeline'
+      preLoaderRoute: typeof AdminPipelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/pendentes': {
+      id: '/admin/pendentes'
+      path: '/admin/pendentes'
+      fullPath: '/admin/pendentes'
+      preLoaderRoute: typeof AdminPendentesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/importar': {
+      id: '/admin/importar'
+      path: '/admin/importar'
+      fullPath: '/admin/importar'
+      preLoaderRoute: typeof AdminImportarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/dfc': {
+      id: '/admin/dfc'
+      path: '/admin/dfc'
+      fullPath: '/admin/dfc'
+      preLoaderRoute: typeof AdminDfcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/clientes': {
+      id: '/admin/clientes'
+      path: '/admin/clientes'
+      fullPath: '/admin/clientes'
+      preLoaderRoute: typeof AdminClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
+  PortalRoute: PortalRoute,
+  AdminClientesRoute: AdminClientesRoute,
+  AdminDfcRoute: AdminDfcRoute,
+  AdminImportarRoute: AdminImportarRoute,
+  AdminPendentesRoute: AdminPendentesRoute,
+  AdminPipelineRoute: AdminPipelineRoute,
+  AdminRelatoriosRoute: AdminRelatoriosRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
