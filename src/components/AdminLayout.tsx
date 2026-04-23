@@ -3,7 +3,9 @@ import type { ReactNode } from "react";
 import { Logo, LogoMark } from "./Logo";
 import { currentAdmin, pendingTransactions } from "@/lib/mockData";
 
-const sidebarItems = [
+type SidebarItem = { to: string; label: string; badge?: () => number };
+
+const sidebarItems: SidebarItem[] = [
   { to: "/admin", label: "Dashboard" },
   { to: "/admin/clientes", label: "Meus Clientes" },
   { to: "/admin/importar", label: "Importar Extratos" },
@@ -11,15 +13,15 @@ const sidebarItems = [
   { to: "/admin/dfc", label: "DFC / DRE" },
   { to: "/admin/relatorios", label: "Relatórios" },
   { to: "/admin/pipeline", label: "Pipeline" },
-] as const;
+];
 
-const topLinks = [
+const topLinks: { to: string; label: string }[] = [
   { to: "/admin", label: "Dashboard" },
   { to: "/admin/clientes", label: "Clientes" },
   { to: "/admin/importar", label: "Extratos" },
   { to: "/admin/dfc", label: "Relatórios" },
   { to: "/admin/pipeline", label: "Pipeline" },
-] as const;
+];
 
 function isActive(pathname: string, to: string) {
   if (to === "/admin") return pathname === "/admin";
@@ -38,7 +40,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         style={{ background: "var(--navy)", color: "#fff" }}
       >
         <div className="px-6 pt-7 pb-8">
-          <Link to="/admin" className="inline-flex items-center gap-2.5 text-white">
+          <Link to={"/admin" as string} className="inline-flex items-center gap-2.5 text-white">
             <LogoMark size={20} />
             <span className="dm-serif text-[18px]" style={{ fontWeight: 500 }}>De Meo</span>
           </Link>
@@ -57,7 +59,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             return (
               <Link
                 key={item.to}
-                to={item.to}
+                to={item.to as string}
                 className="group flex items-center gap-3 px-3 py-2.5 text-[11px] uppercase transition-colors"
                 style={{
                   letterSpacing: "1.5px",
@@ -116,7 +118,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             {topLinks.map((link) => (
               <Link
                 key={link.to}
-                to={link.to}
+                to={link.to as string}
                 className="dm-link"
                 data-status={isActive(path, link.to) ? "active" : undefined}
               >
