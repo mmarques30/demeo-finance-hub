@@ -5,13 +5,13 @@ import { useState } from "react";
 export const Route = createFileRoute("/login")({
   component: LoginPage,
   head: () => ({
-    meta: [{ title: "Entrar · De Meo" }],
+    meta: [{ title: "Entrar · Aura" }],
   }),
 });
 
 function LoginPage() {
   const [role, setRole] = useState<"admin" | "client">("admin");
-  const [email, setEmail] = useState("claudia@demeo.com.br");
+  const [email, setEmail] = useState("claudia@aura.com.br");
   const [password, setPassword] = useState("••••••••");
 
   return (
@@ -35,7 +35,7 @@ function LoginPage() {
           lineHeight: 1,
         }}
       >
-        De Meo
+        Aura
       </div>
 
       <div className="w-full max-w-[440px] relative z-10">
@@ -44,18 +44,18 @@ function LoginPage() {
           <span style={{ color: "var(--green)" }}>
             <LogoMark size={32} />
           </span>
-          <div className="dm-serif text-[28px] mt-3" style={{ color: "var(--foreground)", fontWeight: 500 }}>
-            De Meo
+          <div className="aura-serif text-[28px] mt-3" style={{ color: "var(--foreground)", fontWeight: 500 }}>
+            Aura
           </div>
-          <div className="dm-cap mt-1">Gestora Financeira</div>
+          <div className="aura-cap mt-1">Gestora Financeira</div>
         </div>
 
         <div
           className="bg-white px-9 py-10"
           style={{ border: "1px solid var(--line)" }}
         >
-          <div className="dm-cap mb-2">Acesso à plataforma</div>
-          <h1 className="dm-serif text-[28px] mb-1">
+          <div className="aura-cap mb-2">Acesso à plataforma</div>
+          <h1 className="aura-serif text-[28px] mb-1">
             Entrar na <em className="italic" style={{ color: "var(--green)" }}>conta</em>
           </h1>
           <p className="text-[12px] mb-7" style={{ color: "var(--muted-foreground)" }}>
@@ -89,7 +89,7 @@ function LoginPage() {
             className="flex flex-col gap-4"
           >
             <label className="block">
-              <div className="dm-cap mb-2">E-mail</div>
+              <div className="aura-cap mb-2">E-mail</div>
               <input
                 type="email"
                 value={email}
@@ -103,7 +103,7 @@ function LoginPage() {
 
             <label className="block">
               <div className="flex items-center justify-between mb-2">
-                <div className="dm-cap">Senha</div>
+                <div className="aura-cap">Senha</div>
                 <a href="#" className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>
                   Esqueci a senha
                 </a>
@@ -144,7 +144,7 @@ function LoginPage() {
         </div>
 
         <div className="mt-6 text-center text-[9px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>
-          De Meo · Gestora Financeira · 2026
+          Aura · Gestora Financeira · 2026
         </div>
       </div>
     </div>

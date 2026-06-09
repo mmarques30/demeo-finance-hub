@@ -4,7 +4,7 @@ import { clients, currentMonthLabel, brl, pendingTransactions } from "@/lib/mock
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
-  head: () => ({ meta: [{ title: "Dashboard · De Meo" }] }),
+  head: () => ({ meta: [{ title: "Dashboard · Aura" }] }),
 });
 
 function AdminDashboard() {
@@ -48,11 +48,11 @@ function AdminDashboard() {
         </div>
 
         {/* Chart */}
-        <div className="dm-card">
+        <div className="aura-card">
           <div className="flex items-end justify-between mb-7">
             <div>
-              <div className="dm-cap mb-1.5">Gráfico</div>
-              <div className="dm-serif text-[26px]">
+              <div className="aura-cap mb-1.5">Gráfico</div>
+              <div className="aura-serif text-[26px]">
                 Receita por cliente <em className="italic" style={{ color: "var(--green)" }}>· {currentMonthLabel}</em>
               </div>
             </div>
@@ -81,7 +81,7 @@ function AdminDashboard() {
                   <div className="text-[10px] uppercase text-center" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>
                     {c.name.split(" ").slice(0, 2).join(" ")}
                   </div>
-                  <div className="dm-serif text-[16px]" style={{ color: "var(--navy)" }}>
+                  <div className="aura-serif text-[16px]" style={{ color: "var(--navy)" }}>
                     {brl(c.revenue).replace(",00", "")}
                   </div>
                 </div>
@@ -91,15 +91,15 @@ function AdminDashboard() {
         </div>
 
         {/* Table */}
-        <div className="dm-card p-0 overflow-hidden">
+        <div className="aura-card p-0 overflow-hidden">
           <div className="px-7 py-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
             <div>
-              <div className="dm-cap mb-1">Tabela</div>
-              <div className="dm-serif text-[22px]">
+              <div className="aura-cap mb-1">Tabela</div>
+              <div className="aura-serif text-[22px]">
                 Status dos <em className="italic" style={{ color: "var(--green)" }}>fechamentos</em>
               </div>
             </div>
-            <Link to={"/admin/clientes" as never} className="dm-link">
+            <Link to={"/admin/clientes" as never} className="aura-link">
               Ver todos →
             </Link>
           </div>
@@ -107,7 +107,7 @@ function AdminDashboard() {
             <thead>
               <tr style={{ background: "var(--linen)" }}>
                 {["Cliente", "Banco", "Saldo", "Status"].map((h) => (
-                  <th key={h} className="text-left px-7 py-3 dm-cap" style={{ fontWeight: 500 }}>
+                  <th key={h} className="text-left px-7 py-3 aura-cap" style={{ fontWeight: 500 }}>
                     {h}
                   </th>
                 ))}
@@ -132,7 +132,7 @@ function AdminDashboard() {
                   <td className="px-7 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     {c.banks.join(" · ")}
                   </td>
-                  <td className="px-7 py-4 dm-serif text-[18px]" style={{ color: "var(--navy)" }}>
+                  <td className="px-7 py-4 aura-serif text-[18px]" style={{ color: "var(--navy)" }}>
                     {brl(c.balance)}
                   </td>
                   <td className="px-7 py-4">
@@ -161,9 +161,9 @@ function StatusCard({
 }) {
   const color = tone === "green" ? "var(--green)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
   return (
-    <div className="dm-card">
-      <div className="dm-cap mb-3">{label}</div>
-      <div className="dm-serif" style={{ fontSize: 44, color, lineHeight: 1, letterSpacing: "-1.5px" }}>
+    <div className="aura-card">
+      <div className="aura-cap mb-3">{label}</div>
+      <div className="aura-serif" style={{ fontSize: 44, color, lineHeight: 1, letterSpacing: "-1.5px" }}>
         {value}
       </div>
       <div className="text-[11px] mt-2" style={{ color: "var(--muted-foreground)" }}>{sub}</div>
@@ -174,9 +174,9 @@ function StatusCard({
 export function StatusBadge({ status }: { status: string }) {
   const cls =
     status === "Fechado"
-      ? "dm-badge dm-badge--ok"
+      ? "aura-badge aura-badge--ok"
       : status === "Pendente"
-      ? "dm-badge dm-badge--pnd"
-      : "dm-badge dm-badge--prog";
+      ? "aura-badge aura-badge--pnd"
+      : "aura-badge aura-badge--prog";
   return <span className={cls}>● {status}</span>;
 }

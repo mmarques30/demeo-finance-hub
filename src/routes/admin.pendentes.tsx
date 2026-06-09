@@ -5,7 +5,7 @@ import { pendingTransactions, clientById, brl } from "@/lib/mockData";
 
 export const Route = createFileRoute("/admin/pendentes")({
   component: PendentesPage,
-  head: () => ({ meta: [{ title: "Pendentes · De Meo" }] }),
+  head: () => ({ meta: [{ title: "Pendentes · Aura" }] }),
 });
 
 const categoriasMock = [
@@ -43,11 +43,11 @@ function PendentesPage() {
           const c = clientById(cid);
           if (!c) return null;
           return (
-            <div key={cid} className="dm-card p-0 overflow-hidden">
+            <div key={cid} className="aura-card p-0 overflow-hidden">
               <div className="px-6 py-4 flex items-center justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
                 <div>
-                  <div className="dm-cap mb-1">Cliente</div>
-                  <div className="dm-serif text-[20px]">
+                  <div className="aura-cap mb-1">Cliente</div>
+                  <div className="aura-serif text-[20px]">
                     {c.name} <em className="italic" style={{ color: "var(--green)" }}>· {items.length} pendentes</em>
                   </div>
                 </div>
@@ -59,7 +59,7 @@ function PendentesPage() {
                 <thead>
                   <tr>
                     {["Data", "Descrição", "Valor", "Categoria", "Recorrente"].map((h) => (
-                      <th key={h} className="text-left px-6 py-3 dm-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>{h}</th>
+                      <th key={h} className="text-left px-6 py-3 aura-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -68,7 +68,7 @@ function PendentesPage() {
                     <tr key={t.id} style={{ background: idx % 2 === 0 ? "#fff" : "var(--linen2)" }}>
                       <td className="px-6 py-3 text-[12px]">{t.date}</td>
                       <td className="px-6 py-3 text-[12px]" title={t.rawDescription}>{t.description}</td>
-                      <td className="px-6 py-3 dm-serif text-[14px]" style={{ color: t.amount >= 0 ? "var(--green)" : "var(--navy)" }}>
+                      <td className="px-6 py-3 aura-serif text-[14px]" style={{ color: t.amount >= 0 ? "var(--green)" : "var(--navy)" }}>
                         {t.amount >= 0 ? "+" : ""}{brl(t.amount)}
                       </td>
                       <td className="px-6 py-3">

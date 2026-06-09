@@ -5,9 +5,9 @@ export const Route = createFileRoute("/")({
   component: Landing,
   head: () => ({
     meta: [
-      { title: "De Meo · Gestora Financeira para PMEs" },
-      { name: "description", content: "Clareza financeira. Crescimento real. Plataforma multi-cliente da De Meo para gestão financeira inteligente de pequenas e médias empresas." },
-      { property: "og:title", content: "De Meo · Clareza financeira. Crescimento real." },
+      { title: "Aura · Gestora Financeira para PMEs" },
+      { name: "description", content: "Clareza financeira. Crescimento real. Plataforma multi-cliente da Aura para gestão financeira inteligente de pequenas e médias empresas." },
+      { property: "og:title", content: "Aura · Clareza financeira. Crescimento real." },
       { property: "og:description", content: "Importação inteligente de extratos, classificação automática, DFC e portal do cliente." },
     ],
   }),
@@ -27,15 +27,15 @@ function Landing() {
       >
         <Link to="/" className="inline-flex items-center gap-2.5" style={{ color: "var(--green)" }}>
           <LogoMark size={22} />
-          <span className="dm-serif text-[17px]" style={{ color: "var(--foreground)", fontWeight: 500 }}>
-            De Meo
+          <span className="aura-serif text-[17px]" style={{ color: "var(--foreground)", fontWeight: 500 }}>
+            Aura
           </span>
         </Link>
         <div className="hidden md:flex items-center gap-7">
-          <a href="#solucao" className="dm-link">Solução</a>
-          <a href="#modulos" className="dm-link">Módulos</a>
-          <a href="#sobre" className="dm-link">Sobre</a>
-          <Link to="/login" className="dm-link">Entrar</Link>
+          <a href="#solucao" className="aura-link">Solução</a>
+          <a href="#modulos" className="aura-link">Módulos</a>
+          <a href="#sobre" className="aura-link">Sobre</a>
+          <Link to="/login" className="aura-link">Entrar</Link>
         </div>
         <Link
           to="/login"
@@ -66,29 +66,29 @@ function Landing() {
             lineHeight: 0.9,
           }}
         >
-          De Meo
+          Aura
         </div>
 
         <div className="grid lg:grid-cols-2 gap-16 items-end relative z-10 max-w-[1280px] mx-auto">
           <div>
-            <div className="dm-cap mb-6 flex items-center gap-3">
+            <div className="aura-cap mb-6 flex items-center gap-3">
               <span className="block w-8 h-px" style={{ background: "var(--sage)" }} />
               Manual da gestora · 2026
             </div>
-            <h1 className="dm-serif" style={{ fontSize: "clamp(56px, 8vw, 112px)", lineHeight: 0.95, letterSpacing: "-3px" }}>
+            <h1 className="aura-serif" style={{ fontSize: "clamp(56px, 8vw, 112px)", lineHeight: 0.95, letterSpacing: "-3px" }}>
               Clareza<br />
               <em className="italic" style={{ color: "var(--green)" }}>financeira.</em>
             </h1>
           </div>
           <div className="pb-2">
             <p
-              className="dm-serif italic mb-7 pl-5"
+              className="aura-serif italic mb-7 pl-5"
               style={{ fontSize: "22px", color: "var(--muted-foreground)", borderLeft: "2px solid var(--tan2)", lineHeight: 1.5 }}
             >
               "A consultoria financeira que organiza, projeta e te devolve o controle do caixa."
             </p>
             <p className="text-[14px] mb-8" style={{ color: "var(--muted-foreground)", lineHeight: 1.85 }}>
-              A De Meo é uma gestora financeira boutique para PMEs. Cuidamos de tudo — da importação dos seus extratos à entrega de DFC, projeções e fechamento mensal — com tecnologia própria e atendimento humano.
+              A Aura é uma gestora financeira boutique para PMEs. Cuidamos de tudo — da importação dos seus extratos à entrega de DFC, projeções e fechamento mensal — com tecnologia própria e atendimento humano.
             </p>
             <div className="flex flex-wrap gap-2">
               {["Confiança", "Elegância", "Diferente", "Clean", "Humano"].map((tag, i) => (
@@ -113,10 +113,10 @@ function Landing() {
 
       {/* Marquee */}
       <div className="overflow-hidden py-4" style={{ background: "var(--green)" }}>
-        <div className="flex gap-12 whitespace-nowrap" style={{ animation: "dm-mq 32s linear infinite" }}>
+        <div className="flex gap-12 whitespace-nowrap" style={{ animation: "aura-mq 32s linear infinite" }}>
           {Array.from({ length: 2 }).map((_, idx) => (
             <div key={idx} className="flex gap-12">
-              {["Gestão financeira", "Clareza", "DFC", "Crescimento", "PMEs", "Resultados", "De Meo"].map((t, i) => (
+              {["Gestão financeira", "Clareza", "DFC", "Crescimento", "PMEs", "Resultados", "Aura"].map((t, i) => (
                 <span key={i} className="flex items-center gap-12">
                   <span className="text-[10px] uppercase" style={{ letterSpacing: "3px", color: "rgba(255,255,255,0.65)", fontWeight: 500 }}>
                     {t}
@@ -127,15 +127,15 @@ function Landing() {
             </div>
           ))}
         </div>
-        <style>{`@keyframes dm-mq { from{transform:translateX(0)} to{transform:translateX(-50%)} }`}</style>
+        <style>{`@keyframes aura-mq { from{transform:translateX(0)} to{transform:translateX(-50%)} }`}</style>
       </div>
 
       {/* Solução */}
       <section id="solucao" className="px-8 lg:px-14 py-24 max-w-[1280px] mx-auto">
         <div className="flex items-end justify-between mb-14 flex-wrap gap-6">
           <div>
-            <div className="dm-cap mb-2.5" style={{ color: "var(--sage)" }}>[ 01 ] — Solução</div>
-            <h2 className="dm-serif" style={{ fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-2px" }}>
+            <div className="aura-cap mb-2.5" style={{ color: "var(--sage)" }}>[ 01 ] — Solução</div>
+            <h2 className="aura-serif" style={{ fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1, letterSpacing: "-2px" }}>
               Uma única plataforma<br />
               <em className="italic" style={{ color: "var(--green)" }}>para o financeiro inteiro.</em>
             </h2>
@@ -151,8 +151,8 @@ function Landing() {
             { n: "02", t: "DFC & projeção 90 dias", d: "Demonstrativo de fluxo de caixa pronto, com projeção dos próximos 3 meses por categoria." },
             { n: "03", t: "Portal do cliente", d: "Cada empresário acessa o próprio painel — saldo, despesas, contas previstas, em tempo real." },
           ].map((b) => (
-            <div key={b.n} className="dm-card flex flex-col gap-3">
-              <div className="dm-serif" style={{ fontSize: 44, color: "var(--line)", letterSpacing: "-2px" }}>{b.n}</div>
+            <div key={b.n} className="aura-card flex flex-col gap-3">
+              <div className="aura-serif" style={{ fontSize: 44, color: "var(--line)", letterSpacing: "-2px" }}>{b.n}</div>
               <div className="text-[15px]" style={{ fontWeight: 500 }}>{b.t}</div>
               <div className="text-[12px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.7 }}>{b.d}</div>
             </div>
@@ -164,11 +164,11 @@ function Landing() {
       <section className="px-8 lg:px-14 py-20" style={{ background: "var(--linen)" }}>
         <div className="max-w-[1280px] mx-auto grid md:grid-cols-2 gap-10 items-center">
           <div>
-            <h3 className="dm-serif text-[44px]" style={{ lineHeight: 1.05, letterSpacing: "-1.5px" }}>
+            <h3 className="aura-serif text-[44px]" style={{ lineHeight: 1.05, letterSpacing: "-1.5px" }}>
               Pronto para ver seus<br /><em className="italic" style={{ color: "var(--green)" }}>números com clareza?</em>
             </h3>
             <p className="mt-4 text-[13px] max-w-md" style={{ color: "var(--muted-foreground)", lineHeight: 1.8 }}>
-              Já é cliente da De Meo? Entre na plataforma e acompanhe o fechamento do mês em tempo real.
+              Já é cliente da Aura? Entre na plataforma e acompanhe o fechamento do mês em tempo real.
             </p>
           </div>
           <div className="md:text-right">
@@ -187,8 +187,8 @@ function Landing() {
       </section>
 
       <footer className="px-8 lg:px-14 py-8 flex items-center justify-between" style={{ borderTop: "1px solid var(--line)" }}>
-        <div className="dm-serif text-[15px]" style={{ color: "var(--muted-foreground)" }}>
-          De Meo · Gestora Financeira
+        <div className="aura-serif text-[15px]" style={{ color: "var(--muted-foreground)" }}>
+          Aura · Gestora Financeira
         </div>
         <div className="text-[9px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>
           © 2026 · Todos os direitos reservados

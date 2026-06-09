@@ -190,7 +190,7 @@ export function brlCompact(value: number) {
 export const currentAdmin = {
   name: "Claudia Lima",
   initials: "CL",
-  role: "Gestora · De Meo",
+  role: "Gestora · Aura",
 };
 
 export const currentClient = {
