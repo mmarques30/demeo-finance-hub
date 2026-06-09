@@ -4,7 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* De Meo · Gestora Financeira — Design System
+/* Aura · Gestora Financeira — Design System
  * Paleta linho/verde/sage/navy/tan, tipografia Cormorant Garamond + Jost.
  * Estética clean inspirada em Ascone Finance. Sem dark mode.
  */
@@ -55,7 +55,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* De Meo brand tokens */
+  /* Aura brand tokens */
   --color-linen: var(--linen);
   --color-linen2: var(--linen2);
   --color-green: var(--green);
@@ -144,7 +144,7 @@
 
 @layer components {
   /* Eyebrow / caption used everywhere */
-  .dm-cap {
+  .aura-cap {
     font-size: 9px;
     font-weight: 500;
     letter-spacing: 3px;
@@ -152,19 +152,19 @@
     color: var(--muted-foreground);
   }
 
-  .dm-serif {
+  .aura-serif {
     font-family: 'Cormorant Garamond', ui-serif, Georgia, serif;
     font-weight: 300;
     letter-spacing: -0.02em;
   }
 
-  .dm-card {
+  .aura-card {
     background: #fff;
     border: 1px solid var(--line);
     padding: 24px;
   }
 
-  .dm-badge {
+  .aura-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -175,12 +175,12 @@
     padding: 4px 10px;
     border-radius: 999px;
   }
-  .dm-badge--ok   { background: rgba(74,103,65,0.12); color: var(--green); }
-  .dm-badge--pnd  { background: rgba(184,149,106,0.15); color: var(--tan); }
-  .dm-badge--prog { background: rgba(27,57,77,0.10); color: var(--navy); }
-  .dm-badge--mute { background: rgba(122,114,96,0.10); color: var(--muted-foreground); }
+  .aura-badge--ok   { background: rgba(74,103,65,0.12); color: var(--green); }
+  .aura-badge--pnd  { background: rgba(184,149,106,0.15); color: var(--tan); }
+  .aura-badge--prog { background: rgba(27,57,77,0.10); color: var(--navy); }
+  .aura-badge--mute { background: rgba(122,114,96,0.10); color: var(--muted-foreground); }
 
-  .dm-link {
+  .aura-link {
     font-size: 11px;
     font-weight: 400;
     letter-spacing: 1.8px;
@@ -188,6 +188,6 @@
     color: var(--muted-foreground);
     transition: color 0.2s;
   }
-  .dm-link:hover { color: var(--green); }
-  .dm-link[data-status="active"] { color: var(--green); }
+  .aura-link:hover { color: var(--green); }
+  .aura-link[data-status="active"] { color: var(--green); }
 }

@@ -4,7 +4,7 @@ import { brl } from "@/lib/mockData";
 
 export const Route = createFileRoute("/admin/pipeline")({
   component: PipelinePage,
-  head: () => ({ meta: [{ title: "Pipeline · De Meo" }] }),
+  head: () => ({ meta: [{ title: "Pipeline · Aura" }] }),
 });
 
 const colunas: { key: string; label: string; cards: { name: string; source: string; date: string; value: number }[] }[] = [
@@ -40,7 +40,7 @@ function PipelinePage() {
         cap="CRM comercial"
         title="Pipeline"
         emphasis="de captação"
-        description="Visualização kanban dos leads ativos da De Meo."
+        description="Visualização kanban dos leads ativos da Aura."
       />
 
       <div className="px-8 lg:px-12 pb-12 flex flex-col gap-8">
@@ -57,7 +57,7 @@ function PipelinePage() {
           {colunas.map((col) => (
             <div key={col.key} className="flex flex-col gap-3">
               <div className="flex items-center justify-between px-2">
-                <div className="dm-cap">{col.label}</div>
+                <div className="aura-cap">{col.label}</div>
                 <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{col.cards.length}</div>
               </div>
               <div className="flex flex-col gap-2 min-h-[200px]">
@@ -65,7 +65,7 @@ function PipelinePage() {
                   <div key={card.name} className="bg-white p-4 transition-shadow hover:shadow-sm" style={{ border: "1px solid var(--line)" }}>
                     <div className="text-[12px]" style={{ fontWeight: 500 }}>{card.name}</div>
                     <div className="text-[10px] mt-1" style={{ color: "var(--muted-foreground)" }}>{card.source} · {card.date}</div>
-                    <div className="dm-serif text-[18px] mt-3" style={{ color: "var(--green)" }}>{brl(card.value)}</div>
+                    <div className="aura-serif text-[18px] mt-3" style={{ color: "var(--green)" }}>{brl(card.value)}</div>
                   </div>
                 ))}
               </div>
@@ -80,9 +80,9 @@ function PipelinePage() {
 function Metric({ label, value, tone }: { label: string; value: string; tone: "green" | "tan" | "navy" }) {
   const color = tone === "green" ? "var(--green)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
   return (
-    <div className="dm-card">
-      <div className="dm-cap mb-3">{label}</div>
-      <div className="dm-serif" style={{ fontSize: 30, color, lineHeight: 1, letterSpacing: "-1px" }}>{value}</div>
+    <div className="aura-card">
+      <div className="aura-cap mb-3">{label}</div>
+      <div className="aura-serif" style={{ fontSize: 30, color, lineHeight: 1, letterSpacing: "-1px" }}>{value}</div>
     </div>
   );
 }
