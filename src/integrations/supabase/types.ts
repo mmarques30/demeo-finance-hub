@@ -14,13 +14,705 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      contracts: {
+        Row: {
+          client_document: string | null
+          client_email: string | null
+          client_name: string
+          created_at: string
+          deal_id: string | null
+          id: string
+          number: string | null
+          pdf_url: string | null
+          proposal_id: string | null
+          signature_provider: string
+          signed_at: string | null
+          start_date: string
+          status: string
+          termination_notice_days: number
+          total_monthly: number
+        }
+        Insert: {
+          client_document?: string | null
+          client_email?: string | null
+          client_name: string
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          number?: string | null
+          pdf_url?: string | null
+          proposal_id?: string | null
+          signature_provider?: string
+          signed_at?: string | null
+          start_date: string
+          status?: string
+          termination_notice_days?: number
+          total_monthly: number
+        }
+        Update: {
+          client_document?: string | null
+          client_email?: string | null
+          client_name?: string
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          number?: string | null
+          pdf_url?: string | null
+          proposal_id?: string | null
+          signature_provider?: string
+          signed_at?: string | null
+          start_date?: string
+          status?: string
+          termination_notice_days?: number
+          total_monthly?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_activities: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string
+          done: boolean
+          due_date: string | null
+          id: string
+          kind: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id: string
+          done?: boolean
+          due_date?: string | null
+          id?: string
+          kind: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string
+          done?: boolean
+          due_date?: string | null
+          id?: string
+          kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_stage_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          deal_id: string
+          from_stage_id: string | null
+          id: string
+          note: string | null
+          to_stage_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          deal_id: string
+          from_stage_id?: string | null
+          id?: string
+          note?: string | null
+          to_stage_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          deal_id?: string
+          from_stage_id?: string | null
+          id?: string
+          note?: string | null
+          to_stage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_stage_history_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_stage_history_from_stage_id_fkey"
+            columns: ["from_stage_id"]
+            isOneToOne: false
+            referencedRelation: "deal_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_stage_history_to_stage_id_fkey"
+            columns: ["to_stage_id"]
+            isOneToOne: false
+            referencedRelation: "deal_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_lost: boolean
+          is_won: boolean
+          label: string
+          position: number
+          slug: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          id?: string
+          is_lost?: boolean
+          is_won?: boolean
+          label: string
+          position: number
+          slug: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_lost?: boolean
+          is_won?: boolean
+          label?: string
+          position?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      deals: {
+        Row: {
+          closed_at: string | null
+          company: string | null
+          contact_email: string | null
+          contact_name: string
+          contact_phone: string | null
+          created_at: string
+          expected_close_date: string | null
+          expected_value: number | null
+          id: string
+          lead_id: string | null
+          lost_reason: string | null
+          notes: string | null
+          owner_id: string | null
+          service_type: string | null
+          stage_changed_at: string
+          stage_id: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          company?: string | null
+          contact_email?: string | null
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string
+          expected_close_date?: string | null
+          expected_value?: number | null
+          id?: string
+          lead_id?: string | null
+          lost_reason?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          service_type?: string | null
+          stage_changed_at?: string
+          stage_id: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          company?: string | null
+          contact_email?: string | null
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          expected_close_date?: string | null
+          expected_value?: number | null
+          id?: string
+          lead_id?: string | null
+          lost_reason?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          service_type?: string | null
+          stage_changed_at?: string
+          stage_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "deal_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_counters: {
+        Row: {
+          kind: string
+          next_value: number
+          year: number
+        }
+        Insert: {
+          kind: string
+          next_value?: number
+          year: number
+        }
+        Update: {
+          kind?: string
+          next_value?: number
+          year?: number
+        }
+        Relationships: []
+      }
+      lead_sources: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          position: number
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          position?: number
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          position?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          company: string | null
+          consent_lgpd: boolean
+          created_at: string
+          email: string | null
+          id: string
+          ip_address: unknown
+          monthly_revenue_range: string | null
+          name: string
+          pain_point: string | null
+          phone: string | null
+          promoted_to_deal_id: string | null
+          raw_payload: Json | null
+          segment: string | null
+          source_id: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          company?: string | null
+          consent_lgpd?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          ip_address?: unknown
+          monthly_revenue_range?: string | null
+          name: string
+          pain_point?: string | null
+          phone?: string | null
+          promoted_to_deal_id?: string | null
+          raw_payload?: Json | null
+          segment?: string | null
+          source_id?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          company?: string | null
+          consent_lgpd?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          ip_address?: unknown
+          monthly_revenue_range?: string | null
+          name?: string
+          pain_point?: string | null
+          phone?: string | null
+          promoted_to_deal_id?: string | null
+          raw_payload?: Json | null
+          segment?: string | null
+          source_id?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_promoted_to_deal_fk"
+            columns: ["promoted_to_deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "lead_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      proposal_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          position: number
+          proposal_id: string
+          quantity: number
+          service_id: string | null
+          total: number | null
+          unit: string
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          position?: number
+          proposal_id: string
+          quantity?: number
+          service_id?: string | null
+          total?: number | null
+          unit: string
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          position?: number
+          proposal_id?: string
+          quantity?: number
+          service_id?: string | null
+          total?: number | null
+          unit?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "v_service_pricing_monthly"
+            referencedColumns: ["service_id"]
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          client_document: string | null
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          deal_id: string
+          decided_at: string | null
+          diagnosis_text: string | null
+          id: string
+          intro_text: string | null
+          number: string | null
+          payment_terms: string | null
+          pdf_url: string | null
+          public_token: string | null
+          sent_at: string | null
+          status: string
+          total_monthly: number
+          total_one_off: number
+          updated_at: string
+          validity_days: number
+          version: number
+          viewed_at: string | null
+        }
+        Insert: {
+          client_document?: string | null
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          deal_id: string
+          decided_at?: string | null
+          diagnosis_text?: string | null
+          id?: string
+          intro_text?: string | null
+          number?: string | null
+          payment_terms?: string | null
+          pdf_url?: string | null
+          public_token?: string | null
+          sent_at?: string | null
+          status?: string
+          total_monthly?: number
+          total_one_off?: number
+          updated_at?: string
+          validity_days?: number
+          version?: number
+          viewed_at?: string | null
+        }
+        Update: {
+          client_document?: string | null
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          deal_id?: string
+          decided_at?: string | null
+          diagnosis_text?: string | null
+          id?: string
+          intro_text?: string | null
+          number?: string | null
+          payment_terms?: string | null
+          pdf_url?: string | null
+          public_token?: string | null
+          sent_at?: string | null
+          status?: string
+          total_monthly?: number
+          total_one_off?: number
+          updated_at?: string
+          validity_days?: number
+          version?: number
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rate_limit_hits: {
+        Row: {
+          bucket: string
+          hit_at: string
+          id: number
+          ip: string
+        }
+        Insert: {
+          bucket: string
+          hit_at?: string
+          id?: number
+          ip: string
+        }
+        Update: {
+          bucket?: string
+          hit_at?: string
+          id?: number
+          ip?: string
+        }
+        Relationships: []
+      }
+      service_price_history: {
+        Row: {
+          created_at: string
+          effective_from: string
+          id: string
+          notes: string | null
+          price: number
+          reference_id: string | null
+          service_id: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          effective_from?: string
+          id?: string
+          notes?: string | null
+          price: number
+          reference_id?: string | null
+          service_id: string
+          source: string
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          id?: string
+          notes?: string | null
+          price?: number
+          reference_id?: string | null
+          service_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_price_history_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_price_history_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "v_service_pricing_monthly"
+            referencedColumns: ["service_id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          base_price: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          unit: string
+        }
+        Insert: {
+          base_price: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          unit: string
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          unit?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      v_pipeline_kpis: {
+        Row: {
+          active_deals: number | null
+          avg_ticket: number | null
+          conversion_rate_pct: number | null
+          in_negotiation: number | null
+          lost_deals: number | null
+          won_deals: number | null
+        }
+        Relationships: []
+      }
+      v_service_pricing_monthly: {
+        Row: {
+          avg_price: number | null
+          max_price: number | null
+          min_price: number | null
+          month: string | null
+          sample_size: number | null
+          service_id: string | null
+          service_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: never; Returns: boolean }
+      next_contract_number: { Args: never; Returns: string }
+      next_proposal_number: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
