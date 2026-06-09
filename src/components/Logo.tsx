@@ -4,40 +4,23 @@ interface LogoProps {
 }
 
 export function LogoMark({ size = 22, className }: LogoProps) {
-  const height = Math.round((size * 72) / 80);
+  const height = Math.round((size * 48) / 52);
   return (
     <svg
       width={size}
       height={height}
-      viewBox="0 0 80 72"
+      viewBox="0 0 52 48"
       fill="none"
       className={className}
-      aria-hidden="true"
+      aria-label="Aurora"
     >
-      <path
-        d="M4 68 A36 36 0 0 1 76 68"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d="M14 68 A26 26 0 0 1 66 68"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        fill="none"
-        opacity={0.58}
-      />
-      <path
-        d="M24 68 A16 16 0 0 1 56 68"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        fill="none"
-        opacity={0.28}
-      />
-      <circle cx="40" cy="68" r="3" fill="currentColor" />
+      <line x1="26" y1="44" x2="26" y2="8" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+      <line x1="26" y1="44" x2="42" y2="16" stroke="currentColor" strokeWidth={2} strokeLinecap="round" opacity={0.7} />
+      <line x1="26" y1="44" x2="10" y2="16" stroke="currentColor" strokeWidth={2} strokeLinecap="round" opacity={0.7} />
+      <line x1="26" y1="44" x2="51" y2="28" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" opacity={0.35} />
+      <line x1="26" y1="44" x2="1" y2="28" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" opacity={0.35} />
+      <path d="M4 44 A22 22 0 0 1 48 44" stroke="currentColor" strokeWidth={2} fill="none" strokeLinecap="round" />
+      <circle cx="26" cy="44" r="2.5" fill="currentColor" />
     </svg>
   );
 }
@@ -55,10 +38,10 @@ export function Logo({
     <span className="inline-flex items-center gap-2.5" style={{ color }}>
       <LogoMark size={size} />
       <span
-        className={textClassName ?? "aura-serif text-[17px]"}
+        className={textClassName ?? "aurora-serif text-[17px]"}
         style={{ fontWeight: 500, letterSpacing: "0.3px" }}
       >
-        Aura
+        Aurora
       </span>
     </span>
   );

@@ -29,22 +29,23 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Aura · Gestora Financeira" },
-      { name: "description", content: "Plataforma multi-cliente da Aura: importação inteligente de extratos, classificação automática, DFC e portal do cliente." },
-      { property: "og:title", content: "Aura · Gestora Financeira" },
-      { property: "og:description", content: "Plataforma multi-cliente da Aura: importação inteligente de extratos, classificação automática, DFC e portal do cliente." },
+      { title: "Aurora · Gestão Financeira para Empresas" },
+      { name: "description", content: "Plataforma multi-cliente da Aurora: importação inteligente de extratos, classificação automática, DFC e portal do cliente." },
+      { property: "og:title", content: "Aurora · Gestão Financeira para Empresas" },
+      { property: "og:description", content: "Plataforma multi-cliente da Aurora: importação inteligente de extratos, classificação automática, DFC e portal do cliente." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "Aura · Gestora Financeira" },
-      { name: "twitter:description", content: "Plataforma multi-cliente da Aura: importação inteligente de extratos, classificação automática, DFC e portal do cliente." },
+      { name: "twitter:title", content: "Aurora · Gestão Financeira para Empresas" },
+      { name: "twitter:description", content: "Plataforma multi-cliente da Aurora: importação inteligente de extratos, classificação automática, DFC e portal do cliente." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/svg+xml", href: "/brand/aurora-favicon.svg" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&display=swap",
       },
     ],
   }),
@@ -55,7 +56,7 @@ export const Route = createRootRoute({
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>

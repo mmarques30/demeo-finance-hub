@@ -5,7 +5,7 @@ import { clients, brl } from "@/lib/mockData";
 
 export const Route = createFileRoute("/admin/importar")({
   component: ImportarPage,
-  head: () => ({ meta: [{ title: "Importar Extratos · Aura" }] }),
+  head: () => ({ meta: [{ title: "Importar Extratos · Aurora" }] }),
 });
 
 type Stage = "idle" | "reading" | "identifying" | "classifying" | "done";
@@ -83,8 +83,8 @@ function ImportarPage() {
               if (names.length) startProcess(names);
             }}
           />
-          <div className="aura-serif text-[32px]" style={{ color: "var(--green)", letterSpacing: "-1px" }}>↓</div>
-          <div className="aura-serif text-[24px] mt-2">Arraste o extrato aqui</div>
+          <div className="aurora-serif text-[32px]" style={{ color: "var(--green)", letterSpacing: "-1px" }}>↓</div>
+          <div className="aurora-serif text-[24px] mt-2">Arraste o extrato aqui</div>
           <div className="text-[12px] mt-2" style={{ color: "var(--muted-foreground)" }}>
             ou clique para selecionar · PDF, CSV, XLSX, PNG, JPG · múltiplos arquivos suportados
           </div>
@@ -93,8 +93,8 @@ function ImportarPage() {
         {/* File preview + form */}
         {files.length > 0 && (
           <div className="grid lg:grid-cols-3 gap-5">
-            <div className="aura-card">
-              <div className="aura-cap mb-3">Arquivos enviados</div>
+            <div className="aurora-card">
+              <div className="aurora-cap mb-3">Arquivos enviados</div>
               <ul className="flex flex-col gap-2">
                 {files.map((n) => (
                   <li key={n} className="text-[12px] flex items-center gap-2">
@@ -104,8 +104,8 @@ function ImportarPage() {
                 ))}
               </ul>
             </div>
-            <div className="aura-card">
-              <div className="aura-cap mb-3">Cliente vinculado</div>
+            <div className="aurora-card">
+              <div className="aurora-cap mb-3">Cliente vinculado</div>
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
@@ -115,8 +115,8 @@ function ImportarPage() {
                 {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            <div className="aura-card">
-              <div className="aura-cap mb-3">Banco</div>
+            <div className="aurora-card">
+              <div className="aurora-cap mb-3">Banco</div>
               <select
                 value={bank}
                 onChange={(e) => setBank(e.target.value)}
@@ -131,7 +131,7 @@ function ImportarPage() {
 
         {/* Status */}
         {stage !== "idle" && stage !== "done" && (
-          <div className="aura-card flex items-center gap-4">
+          <div className="aurora-card flex items-center gap-4">
             <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
             <div>
               <div className="text-[13px]" style={{ fontWeight: 500 }}>
@@ -146,11 +146,11 @@ function ImportarPage() {
 
         {/* Result table */}
         {stage === "done" && (
-          <div className="aura-card p-0 overflow-hidden">
+          <div className="aurora-card p-0 overflow-hidden">
             <div className="px-6 py-5 flex items-center justify-between flex-wrap gap-3" style={{ borderBottom: "1px solid var(--line)" }}>
               <div>
-                <div className="aura-cap mb-1">Resultado</div>
-                <div className="aura-serif text-[20px]">
+                <div className="aurora-cap mb-1">Resultado</div>
+                <div className="aurora-serif text-[20px]">
                   {mockResultados.length} lançamentos · <em className="italic" style={{ color: "var(--green)" }}>{mockResultados.filter(r => r.auto).length} classificados</em>
                 </div>
               </div>
@@ -168,7 +168,7 @@ function ImportarPage() {
                 <tr style={{ background: "var(--linen)" }}>
                   <th className="px-4 py-3"><input type="checkbox" checked={selected.size === mockResultados.length} onChange={toggleAll} /></th>
                   {["Data", "Descrição", "Valor", "Categoria sugerida", "Ação"].map((h) => (
-                    <th key={h} className="text-left px-5 py-3 aura-cap" style={{ fontWeight: 500 }}>{h}</th>
+                    <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -197,15 +197,15 @@ function ImportarPage() {
                       {r.desc}
                       {r.recurring && <span title="Recorrente" className="ml-2" style={{ color: "var(--sage)" }}>↻</span>}
                     </td>
-                    <td className="px-5 py-3 text-[12px] aura-serif" style={{ color: r.value >= 0 ? "var(--green)" : "var(--navy)", fontSize: 14 }}>
+                    <td className="px-5 py-3 text-[12px] aurora-serif" style={{ color: r.value >= 0 ? "var(--green)" : "var(--navy)", fontSize: 14 }}>
                       {r.value >= 0 ? "+" : ""}{brl(r.value)}
                     </td>
                     <td className="px-5 py-3 text-[12px]" style={{ color: r.auto ? "var(--foreground)" : "var(--tan)" }}>
                       {r.auto ? r.cat : "Pendente de classificação"}
                     </td>
                     <td className="px-5 py-3 text-[11px]">
-                      <span className="aura-link mr-3">Aprovar</span>
-                      <span className="aura-link">Editar</span>
+                      <span className="aurora-link mr-3">Aprovar</span>
+                      <span className="aurora-link">Editar</span>
                     </td>
                   </tr>
                 ))}

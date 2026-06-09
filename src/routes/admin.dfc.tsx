@@ -5,7 +5,7 @@ import { clients, transactionsByClient, brl } from "@/lib/mockData";
 
 export const Route = createFileRoute("/admin/dfc")({
   component: DFCPage,
-  head: () => ({ meta: [{ title: "DFC · Aura" }] }),
+  head: () => ({ meta: [{ title: "DFC · Aurora" }] }),
 });
 
 function DFCPage() {
@@ -88,9 +88,9 @@ function DFCPage() {
         </div>
 
         {/* Fluxo semanal */}
-        <div className="aura-card">
-          <div className="aura-cap mb-1">Gráfico</div>
-          <div className="aura-serif text-[22px] mb-7">
+        <div className="aurora-card">
+          <div className="aurora-cap mb-1">Gráfico</div>
+          <div className="aurora-serif text-[22px] mb-7">
             Fluxo semanal <em className="italic" style={{ color: "var(--green)" }}>· {period}</em>
           </div>
           <div className="grid grid-cols-4 gap-8 items-end h-[200px]">
@@ -111,16 +111,16 @@ function DFCPage() {
         </div>
 
         {/* Por categoria */}
-        <div className="aura-card p-0 overflow-hidden">
+        <div className="aurora-card p-0 overflow-hidden">
           <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)" }}>
-            <div className="aura-cap mb-1">Detalhamento</div>
-            <div className="aura-serif text-[22px]">Por <em className="italic" style={{ color: "var(--green)" }}>categoria</em></div>
+            <div className="aurora-cap mb-1">Detalhamento</div>
+            <div className="aurora-serif text-[22px]">Por <em className="italic" style={{ color: "var(--green)" }}>categoria</em></div>
           </div>
           <table className="w-full">
             <thead>
               <tr style={{ background: "var(--linen)" }}>
                 {["Categoria", "Total", "% do total", "vs mês anterior"].map((h) => (
-                  <th key={h} className="text-left px-6 py-3 aura-cap" style={{ fontWeight: 500 }}>{h}</th>
+                  <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -131,7 +131,7 @@ function DFCPage() {
                 return (
                   <tr key={row.cat} style={{ background: i % 2 === 0 ? "#fff" : "var(--linen2)", borderTop: "1px solid var(--line)" }}>
                     <td className="px-6 py-3 text-[12px]">{row.cat}</td>
-                    <td className="px-6 py-3 text-[12px] aura-serif" style={{ fontSize: 14, color: "var(--navy)" }}>{brl(row.val)}</td>
+                    <td className="px-6 py-3 text-[12px] aurora-serif" style={{ fontSize: 14, color: "var(--navy)" }}>{brl(row.val)}</td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
                         <div className="text-[12px] w-12">{row.pct.toFixed(1)}%</div>
@@ -151,11 +151,11 @@ function DFCPage() {
         </div>
 
         {/* Projeção */}
-        <div className="aura-card p-0 overflow-hidden">
+        <div className="aurora-card p-0 overflow-hidden">
           <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
             <div>
-              <div className="aura-cap mb-1">Próximos 90 dias</div>
-              <div className="aura-serif text-[22px]">Projeção <em className="italic" style={{ color: "var(--green)" }}>baseada em recorrências</em></div>
+              <div className="aurora-cap mb-1">Próximos 90 dias</div>
+              <div className="aurora-serif text-[22px]">Projeção <em className="italic" style={{ color: "var(--green)" }}>baseada em recorrências</em></div>
             </div>
             <div className="flex gap-2">
               <button className="text-[10px] uppercase px-4 py-2" style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px" }}>Exportar PDF</button>
@@ -166,7 +166,7 @@ function DFCPage() {
             <thead>
               <tr style={{ background: "var(--linen)" }}>
                 {["Mês", "Receitas previstas", "Despesas previstas", "Resultado previsto"].map((h) => (
-                  <th key={h} className="text-left px-6 py-3 aura-cap" style={{ fontWeight: 500 }}>{h}</th>
+                  <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -176,9 +176,9 @@ function DFCPage() {
                 return (
                   <tr key={p.mes} style={{ background: i % 2 === 0 ? "#fff" : "var(--linen2)", borderTop: "1px solid var(--line)" }}>
                     <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 500 }}>{p.mes} · 2026</td>
-                    <td className="px-6 py-3 text-[12px] aura-serif" style={{ fontSize: 14, color: "var(--green)" }}>{brl(p.rec)}</td>
-                    <td className="px-6 py-3 text-[12px] aura-serif" style={{ fontSize: 14, color: "var(--tan)" }}>{brl(p.des)}</td>
-                    <td className="px-6 py-3 text-[12px] aura-serif" style={{ fontSize: 16, color: r >= 0 ? "var(--green)" : "var(--tan)" }}>{brl(r)}</td>
+                    <td className="px-6 py-3 text-[12px] aurora-serif" style={{ fontSize: 14, color: "var(--green)" }}>{brl(p.rec)}</td>
+                    <td className="px-6 py-3 text-[12px] aurora-serif" style={{ fontSize: 14, color: "var(--tan)" }}>{brl(p.des)}</td>
+                    <td className="px-6 py-3 text-[12px] aurora-serif" style={{ fontSize: 16, color: r >= 0 ? "var(--green)" : "var(--tan)" }}>{brl(r)}</td>
                   </tr>
                 );
               })}
@@ -193,9 +193,9 @@ function DFCPage() {
 function Resumo({ label, value, tone }: { label: string; value: string; tone: "green" | "tan" | "navy" }) {
   const color = tone === "green" ? "var(--green)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
   return (
-    <div className="aura-card">
-      <div className="aura-cap mb-3">{label}</div>
-      <div className="aura-serif" style={{ fontSize: 30, color, lineHeight: 1, letterSpacing: "-1px" }}>{value}</div>
+    <div className="aurora-card">
+      <div className="aurora-cap mb-3">{label}</div>
+      <div className="aurora-serif" style={{ fontSize: 30, color, lineHeight: 1, letterSpacing: "-1px" }}>{value}</div>
     </div>
   );
 }
