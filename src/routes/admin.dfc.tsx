@@ -129,7 +129,7 @@ function DFCPage() {
                 const variation = (Math.random() - 0.4) * 30;
                 const up = variation >= 0;
                 return (
-                  <tr key={row.cat} style={{ background: i % 2 === 0 ? "#fff" : "var(--linen2)", borderTop: "1px solid var(--line)" }}>
+                  <tr key={row.cat} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
                     <td className="px-6 py-3 text-[12px]">{row.cat}</td>
                     <td className="px-6 py-3 text-[12px] aurora-serif" style={{ fontSize: 14, color: "var(--navy)" }}>{brl(row.val)}</td>
                     <td className="px-6 py-3">
@@ -174,7 +174,7 @@ function DFCPage() {
               {projecao.map((p, i) => {
                 const r = p.rec - p.des;
                 return (
-                  <tr key={p.mes} style={{ background: i % 2 === 0 ? "#fff" : "var(--linen2)", borderTop: "1px solid var(--line)" }}>
+                  <tr key={p.mes} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
                     <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 500 }}>{p.mes} · 2026</td>
                     <td className="px-6 py-3 text-[12px] aurora-serif" style={{ fontSize: 14, color: "var(--green)" }}>{brl(p.rec)}</td>
                     <td className="px-6 py-3 text-[12px] aurora-serif" style={{ fontSize: 14, color: "var(--tan)" }}>{brl(p.des)}</td>

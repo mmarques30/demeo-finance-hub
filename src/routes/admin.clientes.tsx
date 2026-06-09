@@ -73,7 +73,7 @@ function ClientesPage() {
                 <tr
                   key={c.id}
                   style={{
-                    background: idx % 2 === 0 ? "#fff" : "var(--linen2)",
+                    background: idx % 2 === 0 ? "#fff" : "#FAFAF8",
                     borderTop: "1px solid var(--line)",
                   }}
                 >

@@ -28,7 +28,7 @@ function RelatoriosPage() {
             </thead>
             <tbody>
               {clients.map((c, i) => (
-                <tr key={c.id} style={{ background: i % 2 === 0 ? "#fff" : "var(--linen2)", borderTop: "1px solid var(--line)" }}>
+                <tr key={c.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
                   <td className="px-6 py-4 text-[13px]" style={{ fontWeight: 500 }}>{c.name}</td>
                   <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{currentMonthLabel}</td>
                   <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{c.lastUpload}/04 · 09:14</td>

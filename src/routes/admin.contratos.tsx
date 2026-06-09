@@ -74,7 +74,7 @@ function ContratosListing() {
             </thead>
             <tbody>
               {contracts.map((c, i) => (
-                <tr key={c.id} style={{ background: i % 2 === 0 ? "#fff" : "var(--linen2)", borderTop: "1px solid var(--line)" }}>
+                <tr key={c.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
                   <td className="px-5 py-3 text-[11px]" style={{ fontFamily: "monospace" }}>
                     {c.number}
                   </td>

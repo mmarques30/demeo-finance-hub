@@ -177,7 +177,7 @@ function ImportarPage() {
                   <tr
                     key={i}
                     style={{
-                      background: !r.auto ? "rgba(184,149,106,0.07)" : i % 2 === 0 ? "#fff" : "var(--linen2)",
+                      background: !r.auto ? "rgba(184,149,106,0.07)" : i % 2 === 0 ? "#fff" : "#FAFAF8",
                       borderTop: "1px solid var(--line)",
                     }}
                   >

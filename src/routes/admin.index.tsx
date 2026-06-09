@@ -119,11 +119,11 @@ function AdminDashboard() {
                   key={c.id}
                   className="transition-colors"
                   style={{
-                    background: idx % 2 === 0 ? "#fff" : "var(--linen2)",
+                    background: idx % 2 === 0 ? "#fff" : "#FAFAF8",
                     borderTop: "1px solid var(--line)",
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(74,103,65,0.03)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = idx % 2 === 0 ? "#fff" : "var(--linen2)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = idx % 2 === 0 ? "#fff" : "#FAFAF8")}
                 >
                   <td className="px-7 py-4">
                     <div className="text-[13px]" style={{ fontWeight: 500 }}>{c.name}</div>
