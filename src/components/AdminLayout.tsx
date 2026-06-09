@@ -42,7 +42,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         <div className="px-6 pt-7 pb-8">
           <Link to={"/admin" as string} className="inline-flex items-center gap-2.5 text-white">
             <LogoMark size={20} />
-            <span className="aura-serif text-[18px]" style={{ fontWeight: 500 }}>Aura</span>
+            <span className="aurora-serif text-[18px]" style={{ fontWeight: 500 }}>Aurora</span>
           </Link>
           <div
             className="mt-1.5 text-[9px] uppercase"
@@ -119,7 +119,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               <Link
                 key={link.to}
                 to={link.to as string}
-                className="aura-link"
+                className="aurora-link"
                 data-status={isActive(path, link.to) ? "active" : undefined}
               >
                 {link.label}
@@ -131,7 +131,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>
                 {currentAdmin.role}
               </div>
-              <div className="aura-serif text-[15px]">{currentAdmin.name}</div>
+              <div className="aurora-serif text-[15px]">{currentAdmin.name}</div>
             </div>
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium"
@@ -141,7 +141,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </div>
             <Link
               to="/login"
-              className="text-[10px] uppercase aura-link"
+              className="text-[10px] uppercase aurora-link"
               title="Sair"
             >
               Sair
@@ -155,11 +155,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           className="px-8 py-6 flex items-center justify-between"
           style={{ borderTop: "1px solid var(--line)" }}
         >
-          <div className="aura-serif text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-            Aura · Clareza financeira. Crescimento real.
+          <div className="aurora-serif text-[14px]" style={{ color: "var(--muted-foreground)" }}>
+            Clareza que envolve. Resultado que permanece.
           </div>
           <div className="text-[9px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>
-            © 2026
+            © Aurora Gestão Financeira 2026
           </div>
         </footer>
       </div>
@@ -183,8 +183,8 @@ export function PageHeader({
   return (
     <div className="px-8 lg:px-12 pt-10 pb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
       <div>
-        <div className="aura-cap mb-3">{cap}</div>
-        <h1 className="aura-serif text-[44px] md:text-[56px] leading-[0.95]">
+        <div className="aurora-cap mb-3">{cap}</div>
+        <h1 className="aurora-serif text-[44px] md:text-[56px] leading-[0.95]">
           {title}
           {emphasis && (
             <>

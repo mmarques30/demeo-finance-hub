@@ -4,7 +4,7 @@ import { currentClient, transactionsByClient, brl } from "@/lib/mockData";
 
 export const Route = createFileRoute("/portal")({
   component: PortalPage,
-  head: () => ({ meta: [{ title: "Portal · Aura" }] }),
+  head: () => ({ meta: [{ title: "Portal · Aurora" }] }),
 });
 
 function PortalPage() {
@@ -34,31 +34,31 @@ function PortalPage() {
       >
         <span className="inline-flex items-center gap-2.5" style={{ color: "var(--green)" }}>
           <LogoMark size={22} />
-          <span className="aura-serif text-[18px]" style={{ color: "var(--foreground)", fontWeight: 500 }}>Aura</span>
+          <span className="aurora-serif text-[18px]" style={{ color: "var(--foreground)", fontWeight: 500 }}>Aurora</span>
         </span>
         <div className="hidden md:flex items-center gap-5">
           <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
             Olá, <span style={{ color: "var(--foreground)", fontWeight: 500 }}>{currentClient.ownerName}</span>
           </span>
-          <Link to="/login" className="aura-link">Sair</Link>
+          <Link to="/login" className="aurora-link">Sair</Link>
         </div>
       </header>
 
       <main className="max-w-[1100px] mx-auto px-6 lg:px-12 py-12 flex flex-col gap-8">
         <div>
-          <div className="aura-cap mb-3">Portal · {currentClient.companyName}</div>
-          <h1 className="aura-serif" style={{ fontSize: "clamp(40px, 6vw, 64px)", lineHeight: 0.95, letterSpacing: "-2px" }}>
+          <div className="aurora-cap mb-3">Portal · {currentClient.companyName}</div>
+          <h1 className="aurora-serif" style={{ fontSize: "clamp(40px, 6vw, 64px)", lineHeight: 0.95, letterSpacing: "-2px" }}>
             Bem-vindo,<br /><em className="italic" style={{ color: "var(--green)" }}>{currentClient.ownerName.split(" ")[0]}.</em>
           </h1>
           <p className="mt-4 text-[13px] max-w-xl" style={{ color: "var(--muted-foreground)", lineHeight: 1.85 }}>
-            Aqui estão os números da sua empresa atualizados pela equipe da Aura.
+            Aqui estão os números da sua empresa atualizados pela equipe da Aurora.
           </p>
         </div>
 
         {/* Saldo grande */}
-        <div className="aura-card p-10">
-          <div className="aura-cap mb-3">Saldo atual consolidado</div>
-          <div className="aura-serif" style={{ fontSize: "clamp(48px, 7vw, 88px)", color: "var(--navy)", lineHeight: 1, letterSpacing: "-2px" }}>
+        <div className="aurora-card p-10">
+          <div className="aurora-cap mb-3">Saldo atual consolidado</div>
+          <div className="aurora-serif" style={{ fontSize: "clamp(48px, 7vw, 88px)", color: "var(--navy)", lineHeight: 1, letterSpacing: "-2px" }}>
             {brl(saldo)}
           </div>
           <div className="text-[12px] mt-3" style={{ color: "var(--muted-foreground)" }}>
@@ -68,20 +68,20 @@ function PortalPage() {
 
         {/* Mes atual */}
         <div className="grid md:grid-cols-2 gap-5">
-          <div className="aura-card">
-            <div className="aura-cap mb-3">Receitas · Abril</div>
-            <div className="aura-serif" style={{ fontSize: 44, color: "var(--green)", lineHeight: 1, letterSpacing: "-1.5px" }}>{brl(receitas)}</div>
+          <div className="aurora-card">
+            <div className="aurora-cap mb-3">Receitas · Abril</div>
+            <div className="aurora-serif" style={{ fontSize: 44, color: "var(--green)", lineHeight: 1, letterSpacing: "-1.5px" }}>{brl(receitas)}</div>
           </div>
-          <div className="aura-card">
-            <div className="aura-cap mb-3">Despesas · Abril</div>
-            <div className="aura-serif" style={{ fontSize: 44, color: "var(--tan)", lineHeight: 1, letterSpacing: "-1.5px" }}>{brl(despesas)}</div>
+          <div className="aurora-card">
+            <div className="aurora-cap mb-3">Despesas · Abril</div>
+            <div className="aurora-serif" style={{ fontSize: 44, color: "var(--tan)", lineHeight: 1, letterSpacing: "-1.5px" }}>{brl(despesas)}</div>
           </div>
         </div>
 
         {/* Evolução 6 meses */}
-        <div className="aura-card">
-          <div className="aura-cap mb-1">Evolução das receitas</div>
-          <div className="aura-serif text-[22px] mb-6">Últimos <em className="italic" style={{ color: "var(--green)" }}>6 meses</em></div>
+        <div className="aurora-card">
+          <div className="aurora-cap mb-1">Evolução das receitas</div>
+          <div className="aurora-serif text-[22px] mb-6">Últimos <em className="italic" style={{ color: "var(--green)" }}>6 meses</em></div>
           <div className="grid grid-cols-6 gap-4 items-end h-[180px]">
             {meses.map((m, i) => (
               <div key={m} className="h-full flex flex-col justify-end items-center gap-2">
@@ -101,23 +101,23 @@ function PortalPage() {
         </div>
 
         {/* Despesas categoria */}
-        <div className="aura-card">
-          <div className="aura-cap mb-1">Onde foi seu dinheiro</div>
-          <div className="aura-serif text-[22px] mb-5">Despesas por <em className="italic" style={{ color: "var(--green)" }}>categoria</em></div>
+        <div className="aurora-card">
+          <div className="aurora-cap mb-1">Onde foi seu dinheiro</div>
+          <div className="aurora-serif text-[22px] mb-5">Despesas por <em className="italic" style={{ color: "var(--green)" }}>categoria</em></div>
           <div className="flex flex-col gap-3">
             {despList.map(([cat, val]) => (
               <div key={cat} className="flex items-center justify-between gap-4 pb-3" style={{ borderBottom: "1px solid var(--line)" }}>
                 <div className="text-[13px]">{cat}</div>
-                <div className="aura-serif text-[18px]" style={{ color: "var(--navy)" }}>{brl(val)}</div>
+                <div className="aurora-serif text-[18px]" style={{ color: "var(--navy)" }}>{brl(val)}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Próximas contas */}
-        <div className="aura-card">
-          <div className="aura-cap mb-1">Próximos 30 dias</div>
-          <div className="aura-serif text-[22px] mb-5">Contas <em className="italic" style={{ color: "var(--green)" }}>previstas</em></div>
+        <div className="aurora-card">
+          <div className="aurora-cap mb-1">Próximos 30 dias</div>
+          <div className="aurora-serif text-[22px] mb-5">Contas <em className="italic" style={{ color: "var(--green)" }}>previstas</em></div>
           <div className="flex flex-col gap-3">
             {[
               { d: "25/04", n: "Aluguel ponto", v: -6800 },
@@ -130,7 +130,7 @@ function PortalPage() {
                   <div className="text-[13px]">{p.n}</div>
                   <div className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Vencimento {p.d}</div>
                 </div>
-                <div className="aura-serif text-[18px]" style={{ color: "var(--tan)" }}>{brl(p.v)}</div>
+                <div className="aurora-serif text-[18px]" style={{ color: "var(--tan)" }}>{brl(p.v)}</div>
               </div>
             ))}
           </div>
@@ -147,8 +147,8 @@ function PortalPage() {
       </main>
 
       <footer className="px-8 lg:px-14 py-8 flex items-center justify-between" style={{ borderTop: "1px solid var(--line)" }}>
-        <div className="aura-serif text-[14px]" style={{ color: "var(--muted-foreground)" }}>Aura · Gestora Financeira</div>
-        <div className="text-[9px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>Portal seguro · 2026</div>
+        <div className="aurora-serif text-[14px]" style={{ color: "var(--muted-foreground)" }}>Clareza que envolve. Resultado que permanece.</div>
+        <div className="text-[9px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>© Aurora Gestão Financeira 2026</div>
       </footer>
     </div>
   );

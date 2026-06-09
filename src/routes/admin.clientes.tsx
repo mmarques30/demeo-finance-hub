@@ -6,7 +6,7 @@ import { StatusBadge } from "./admin.index";
 
 export const Route = createFileRoute("/admin/clientes")({
   component: ClientesPage,
-  head: () => ({ meta: [{ title: "Clientes · Aura" }] }),
+  head: () => ({ meta: [{ title: "Clientes · Aurora" }] }),
 });
 
 const filtros = ["Todos", "Pendentes", "Fechados", "Com pendência"] as const;
@@ -59,12 +59,12 @@ function ClientesPage() {
           ))}
         </div>
 
-        <div className="aura-card p-0 overflow-hidden">
+        <div className="aurora-card p-0 overflow-hidden">
           <table className="w-full">
             <thead>
               <tr style={{ background: "var(--linen)" }}>
                 {["Empresa", "Responsável", "Bancos", "Status", "Último extrato", ""].map((h) => (
-                  <th key={h} className="text-left px-6 py-3 aura-cap" style={{ fontWeight: 500 }}>{h}</th>
+                  <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -85,7 +85,7 @@ function ClientesPage() {
                   <td className="px-6 py-4"><StatusBadge status={c.status} /></td>
                   <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{c.lastUpload}/04</td>
                   <td className="px-6 py-4 text-right">
-                    <Link to={"/admin/dfc" as never} className="aura-link">Ver painel →</Link>
+                    <Link to={"/admin/dfc" as never} className="aurora-link">Ver painel →</Link>
                   </td>
                 </tr>
               ))}
