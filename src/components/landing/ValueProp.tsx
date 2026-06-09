@@ -1,106 +1,66 @@
-// Aurora v3 — value prop / posicionamento. Padrão clínico-minimalista.
+// Aurora — Trust band logo após hero. Logos placeholder e claim sutil.
+const INK = "#1C2D45";
+const SAGE = "#99A989";
+
 export function ValueProp() {
   return (
     <section
-      id="metodo"
-      className="px-6 lg:px-16 py-24 lg:py-32"
-      style={{ background: "#FFFFFF" }}
+      className="px-6 lg:px-14 py-12 lg:py-16"
+      style={{
+        background: "#FFFFFF",
+        borderTop: "1px solid rgba(28,45,69,0.06)",
+        borderBottom: "1px solid rgba(28,45,69,0.06)",
+      }}
     >
-      <div className="max-w-[1100px] mx-auto">
-        <div className="reveal grid lg:grid-cols-[1fr_1.4fr] gap-12 lg:gap-20 items-start">
-          <div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 500,
-                color: "#99A989",
-                marginBottom: 8,
-              }}
-            >
-              [ 01 ] Posicionamento
-            </div>
-            <h2
-              className="aurora-serif"
-              style={{
-                fontSize: "clamp(40px, 5vw, 64px)",
-                fontWeight: 200,
-                letterSpacing: "-2.5px",
-                lineHeight: 0.95,
-                color: "#1C2D45",
-              }}
-            >
-              Para quem leva o
-              <br />
-              próprio negócio a{" "}
-              <em className="italic" style={{ color: "#284C2B" }}>
-                sério
-              </em>
-              .
-            </h2>
-          </div>
+      <div className="max-w-[1280px] mx-auto">
+        <div
+          className="text-center mb-8"
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "2.5px",
+            color: SAGE,
+            textTransform: "uppercase",
+          }}
+        >
+          Atendendo empresas em
+        </div>
 
-          <div
+        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 lg:gap-x-16">
+          {[
+            "Padaria São Jorge",
+            "Pernambuco Cozinha",
+            "Dra. Ana Ribeiro",
+            "Lima & Silva Adv.",
+            "Studio Pilates Vita",
+            "Auto Center Ponto Forte",
+          ].map((name) => (
+            <span
+              key={name}
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 22,
+                fontWeight: 300,
+                color: "rgba(28,45,69,0.4)",
+                letterSpacing: "-0.5px",
+                fontStyle: "italic",
+              }}
+            >
+              {name}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-10 text-center">
+          <span
             style={{
-              fontSize: 17,
-              fontWeight: 300,
-              lineHeight: 1.7,
-              color: "rgba(28,45,69,0.75)",
+              fontSize: 13,
+              color: "rgba(28,45,69,0.55)",
+              fontWeight: 400,
             }}
           >
-            <p>
-              A Aurora não é software de prateleira. É{" "}
-              <strong style={{ color: "#1C2D45", fontWeight: 500 }}>
-                gestora financeira
-              </strong>{" "}
-              do empresário que sabe vender mas perde dinheiro no caminho — porque não tem
-              tempo (nem fôlego) para olhar planilha de noite.
-            </p>
-            <p className="mt-6">
-              A gente entra na conta corrente, organiza tudo, fecha o mês e te entrega a
-              leitura.{" "}
-              <em className="italic" style={{ color: "#1C2D45" }}>
-                Você decide com a foto inteira na frente
-              </em>
-              . Sem termo técnico. Sem reunião longa.
-            </p>
-
-            <div
-              className="mt-10 pt-8 grid sm:grid-cols-3 gap-6"
-              style={{ borderTop: "1px solid rgba(28,45,69,0.1)" }}
-            >
-              {[
-                { n: "5 dias", l: "para o primeiro DFC" },
-                { n: "94%", l: "ficam ano após ano" },
-                { n: "1 dia útil", l: "tempo de resposta" },
-              ].map((s) => (
-                <div key={s.l}>
-                  <div
-                    className="aurora-serif"
-                    style={{
-                      fontSize: 40,
-                      fontWeight: 300,
-                      color: "#284C2B",
-                      letterSpacing: "-1px",
-                      lineHeight: 1,
-                    }}
-                  >
-                    {s.n}
-                  </div>
-                  <div
-                    className="mt-2"
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 500,
-                      color: "rgba(28,45,69,0.55)",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {s.l}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+            E mais <strong style={{ color: INK, fontWeight: 600 }}>114 empresas</strong> que decidem com clareza todo mês.
+          </span>
         </div>
       </div>
     </section>
