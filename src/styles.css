@@ -485,11 +485,200 @@
     outline-offset: 3px;
   }
 
-  /* prefers-reduced-motion — desabilita reveal e marquee */
+  /* ============== NOVOS UTILITÁRIOS DE MOTION ============== */
+
+  /* Reveal com variants — sobe, esquerda, direita, escala */
+  .reveal-left {
+    opacity: 0;
+    transform: translateX(-32px);
+    transition: opacity 0.7s cubic-bezier(.22,.61,.36,1), transform 0.7s cubic-bezier(.22,.61,.36,1);
+  }
+  .reveal-left.in { opacity: 1; transform: translateX(0); }
+
+  .reveal-right {
+    opacity: 0;
+    transform: translateX(32px);
+    transition: opacity 0.7s cubic-bezier(.22,.61,.36,1), transform 0.7s cubic-bezier(.22,.61,.36,1);
+  }
+  .reveal-right.in { opacity: 1; transform: translateX(0); }
+
+  .reveal-scale {
+    opacity: 0;
+    transform: scale(0.96);
+    transition: opacity 0.7s cubic-bezier(.22,.61,.36,1), transform 0.7s cubic-bezier(.22,.61,.36,1);
+  }
+  .reveal-scale.in { opacity: 1; transform: scale(1); }
+
+  /* Letras revelando uma a uma (split-text light) */
+  .reveal-text > span {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s cubic-bezier(.22,.61,.36,1), transform 0.6s cubic-bezier(.22,.61,.36,1);
+  }
+  .reveal-text.in > span { opacity: 1; transform: translateY(0); }
+
+  /* Card hover com lift e brilho de borda */
+  .motion-card {
+    position: relative;
+    transition: transform 0.4s cubic-bezier(.22,.61,.36,1), box-shadow 0.4s cubic-bezier(.22,.61,.36,1);
+  }
+  .motion-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    box-shadow: 0 0 0 1px transparent;
+    transition: box-shadow 0.4s cubic-bezier(.22,.61,.36,1);
+  }
+  .motion-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 28px 56px -32px rgba(27,57,77,0.28);
+  }
+  .motion-card:hover::after {
+    box-shadow: 0 0 0 1px var(--green);
+  }
+
+  /* Image zoom inside fixed frame */
+  .motion-img-frame {
+    overflow: hidden;
+  }
+  .motion-img-frame img,
+  .motion-img-frame svg,
+  .motion-img-frame .motion-img-inner {
+    transition: transform 1.2s cubic-bezier(.22,.61,.36,1);
+    will-change: transform;
+  }
+  .motion-card:hover .motion-img-frame img,
+  .motion-card:hover .motion-img-frame svg,
+  .motion-card:hover .motion-img-frame .motion-img-inner {
+    transform: scale(1.06);
+  }
+
+  /* Magnetic CTA — leve seguimento de cursor via translate em hover */
+  .magnetic {
+    transition: transform 0.35s cubic-bezier(.22,.61,.36,1), background 0.3s, color 0.3s;
+    will-change: transform;
+  }
+  .magnetic:hover {
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  /* Underline animation pra links */
+  .anim-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .anim-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -3px;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 0.45s cubic-bezier(.65,0,.35,1);
+  }
+  .anim-underline:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+
+  /* Floating orb — animação contínua orgânica */
+  .float-orb {
+    animation: float-orb 14s ease-in-out infinite;
+    will-change: transform;
+  }
+  .float-orb-slow {
+    animation: float-orb 22s ease-in-out infinite reverse;
+    will-change: transform;
+  }
+  @keyframes float-orb {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    33%      { transform: translate(20px, -28px) rotate(8deg); }
+    66%      { transform: translate(-18px, 18px) rotate(-6deg); }
+  }
+
+  /* Aurora cursor follower (subtle, só dentro de elementos com .cursor-aurora) */
+  .cursor-aurora {
+    position: relative;
+    cursor: none;
+  }
+
+  /* SVG path drawing on scroll */
+  .draw-path {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    transition: stroke-dashoffset 1.6s cubic-bezier(.22,.61,.36,1);
+  }
+  .draw-path.in { stroke-dashoffset: 0; }
+
+  /* Scroll progress bar (top fixed) */
+  .scroll-progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--sage), var(--green), var(--navy));
+    transform-origin: left center;
+    z-index: 100;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* Gradient animated background pra Final CTA */
+  .gradient-shift {
+    background-size: 200% 200%;
+    animation: gradient-shift 18s ease infinite;
+  }
+  @keyframes gradient-shift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Wave divider svg viewBox (helper) */
+  .wave-divider {
+    display: block;
+    width: 100%;
+    height: 80px;
+  }
+
+  /* Letter rotate-in for big headlines */
+  @keyframes letter-up {
+    from { opacity: 0; transform: translateY(28px) rotate(2deg); }
+    to   { opacity: 1; transform: translateY(0) rotate(0); }
+  }
+
+  /* Slow pan no GreenRefraction */
+  .refraction-pan {
+    animation: refraction-pan 24s ease-in-out infinite;
+    will-change: transform;
+  }
+  @keyframes refraction-pan {
+    0%, 100% { transform: scale(1.08) translate(0, 0); }
+    50%      { transform: scale(1.12) translate(-8px, 6px); }
+  }
+
+  /* prefers-reduced-motion — desabilita tudo de motion novo também */
   @media (prefers-reduced-motion: reduce) {
-    .reveal { opacity: 1; transform: none; transition: none; }
+    .reveal, .reveal-left, .reveal-right, .reveal-scale, .reveal-text > span {
+      opacity: 1; transform: none; transition: none;
+    }
     .marquee-track { animation: none; }
     .hero-bar { animation: none; clip-path: none; }
-    .aurora-float, .aurora-pulse, .aurora-shimmer::before { animation: none !important; }
+    .aurora-float, .aurora-pulse, .aurora-shimmer::before,
+    .float-orb, .float-orb-slow, .gradient-shift, .refraction-pan {
+      animation: none !important;
+    }
+    .motion-card:hover { transform: none; box-shadow: none; }
+    .motion-card:hover .motion-img-frame img,
+    .motion-card:hover .motion-img-frame svg,
+    .motion-card:hover .motion-img-frame .motion-img-inner {
+      transform: none;
+    }
+    .magnetic:hover { transform: none; }
+    .anim-underline::after { transition: none; }
   }
 }

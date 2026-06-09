@@ -596,109 +596,47 @@ function resolveModule(pathname: string): ModuleIdentity {
   return MODULE_MAP["/admin"];
 }
 
+/**
+ * PageHeader simples — só título + ação opcional à direita.
+ * Sistema funcional, sem decoração (sem ícone, sem cap/eyebrow, sem
+ * descrição, sem emphasis italic).
+ *
+ * Mantém os params `cap`, `emphasis` e `description` na API por
+ * compatibilidade com as chamadas existentes nas rotas admin, mas eles
+ * não são renderizados. O breadcrumb do topo já comunica em qual módulo
+ * o usuário está.
+ */
 export function PageHeader({
-  cap,
   title,
-  emphasis,
-  description,
   right,
 }: {
-  cap: string;
+  cap?: string;
   title: string;
   emphasis?: string;
   description?: string;
   right?: ReactNode;
 }) {
-  const location = useLocation();
-  const mod = resolveModule(location.pathname);
-
   return (
     <div
-      className="relative px-6 lg:px-10 pt-10 lg:pt-14 pb-10"
+      className="px-6 lg:px-10 py-6 flex items-center justify-between gap-4 flex-wrap"
       style={{
         background: "#FFFFFF",
         borderBottom: "1px solid #EFEFEF",
       }}
     >
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-7">
-        <div className="flex items-start gap-5 max-w-3xl">
-          {/* Badge ícone do módulo */}
-          <div
-            aria-hidden
-            className="shrink-0 hidden md:inline-flex items-center justify-center"
-            style={{
-              width: 64,
-              height: 64,
-              background: mod.accentSoft,
-              color: mod.accent,
-              fontSize: 26,
-              border: `1px solid ${mod.accent}`,
-              borderColor: "transparent",
-            }}
-          >
-            {mod.icon}
-          </div>
-
-          <div className="min-w-0">
-            {/* Cap com cor do módulo */}
-            <div
-              className="flex items-center gap-3 mb-4 flex-wrap"
-              style={{ color: mod.accent }}
-            >
-              <span
-                className="text-[11px] uppercase"
-                style={{ letterSpacing: "3px", fontWeight: 600 }}
-              >
-                {mod.group}
-              </span>
-              <span aria-hidden style={{ opacity: 0.4 }}>·</span>
-              <span
-                className="text-[11px] uppercase"
-                style={{ letterSpacing: "2.5px", fontWeight: 500 }}
-              >
-                {cap}
-              </span>
-            </div>
-
-            <h1
-              className="aurora-serif"
-              style={{
-                fontSize: "clamp(34px, 4.5vw, 56px)",
-                fontWeight: 300,
-                lineHeight: 1.05,
-                letterSpacing: "-1.8px",
-                color: "var(--foreground)",
-              }}
-            >
-              {title}
-              {emphasis && (
-                <>
-                  {" "}
-                  <em className="italic" style={{ color: mod.accent, fontWeight: 300 }}>
-                    {emphasis}
-                  </em>
-                </>
-              )}
-            </h1>
-
-            {description && (
-              <p
-                className="mt-5 max-w-2xl"
-                style={{
-                  fontSize: 15,
-                  fontWeight: 300,
-                  color: "var(--muted-foreground)",
-                  lineHeight: 1.7,
-                }}
-              >
-                {description}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {right && <div className="shrink-0">{right}</div>}
-      </div>
+      <h1
+        className="aurora-serif"
+        style={{
+          fontSize: 28,
+          fontWeight: 300,
+          lineHeight: 1.15,
+          letterSpacing: "-0.6px",
+          color: "var(--foreground)",
+        }}
+      >
+        {title}
+      </h1>
+      {right && <div className="shrink-0">{right}</div>}
     </div>
   );
 }
