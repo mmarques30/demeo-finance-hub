@@ -24,10 +24,12 @@ export async function userFromAuthHeader(req: Request) {
 
 export async function isAdmin(userId: string): Promise<boolean> {
   const sb = serviceClient();
+  // Lê de user_roles (padrão Supabase). Mantém assinatura síncrona da função.
   const { data } = await sb
-    .from("profiles")
+    .from("user_roles")
     .select("role")
     .eq("user_id", userId)
+    .eq("role", "admin")
     .maybeSingle();
-  return data?.role === "admin";
+  return !!data;
 }
