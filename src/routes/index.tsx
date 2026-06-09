@@ -2,13 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/Logo";
 import { HeroPC } from "@/components/landing/HeroPC";
-import { ValueProp } from "@/components/landing/ValueProp";
 import { Features } from "@/components/landing/Features";
 import { Numbers } from "@/components/landing/Numbers";
 import { ClaudiaSection } from "@/components/landing/ClaudiaSection";
-import { Testimonials } from "@/components/landing/Testimonials";
 import { FAQ } from "@/components/landing/FAQ";
-import { FinalCTA } from "@/components/landing/FinalCTA";
 import { AmbientBackground } from "@/components/landing/motion/AmbientBackground";
 import { ScrollProgress } from "@/components/landing/motion/ScrollProgress";
 import { WaveDivider } from "@/components/landing/motion/WaveDivider";
@@ -38,7 +35,6 @@ export const Route = createFileRoute("/")({
 const NAV = [
   { href: "#metodo", label: "Como funciona" },
   { href: "#quem", label: "Quem somos" },
-  { href: "#resultados", label: "Casos" },
   { href: "#faq", label: "Dúvidas" },
 ];
 
@@ -91,7 +87,7 @@ function Landing() {
         Pular para o conteúdo
       </a>
 
-      {/* NAV pill flutuante moderna */}
+      {/* NAV pill flutuante */}
       <nav
         aria-label="Navegação principal"
         className="fixed z-50 transition-all"
@@ -144,7 +140,7 @@ function Landing() {
               <li key={n.href}>
                 <a
                   href={n.href}
-                  className="focus-ring relative"
+                  className="focus-ring"
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
@@ -184,8 +180,10 @@ function Landing() {
               Entrar
             </Link>
             <a
-              href="#contato"
-              className="focus-ring inline-flex items-center gap-2 relative overflow-hidden"
+              href={AURORA_WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="focus-ring inline-flex items-center gap-2"
               style={{
                 background: `linear-gradient(135deg, ${FOREST} 0%, #1f3a22 100%)`,
                 color: "#fff",
@@ -203,7 +201,7 @@ function Landing() {
                 e.currentTarget.style.transform = "";
               }}
             >
-              Agendar conversa →
+              WhatsApp →
             </a>
           </div>
         </div>
@@ -212,53 +210,34 @@ function Landing() {
       <main id="main-content">
         <HeroPC />
 
-        {/* Curva de hero → ValueProp (mist) */}
-        <WaveDivider topColor="transparent" bottomColor="#FFFFFF" variant="curve" height={80} />
-
-        <div style={{ background: "#FFFFFF" }}>
-          <ValueProp />
-        </div>
-
-        {/* Curva mist → Features (off-white) */}
-        <WaveDivider topColor="#FFFFFF" bottomColor="#FAFAF8" variant="wave" height={96} />
+        {/* Curva → Features */}
+        <WaveDivider topColor="transparent" bottomColor="#FAFAF8" variant="curve" height={96} />
 
         <div style={{ background: "#FAFAF8" }}>
           <Features />
         </div>
 
-        {/* Curva off-white → Numbers (dark ink) */}
-        <WaveDivider topColor="#FAFAF8" bottomColor={INK} variant="curve" height={96} />
+        {/* Curva → Numbers (dark) */}
+        <WaveDivider topColor="#FAFAF8" bottomColor={INK} variant="wave" height={96} />
 
         <Numbers />
 
-        {/* Curva dark → Founder (white) */}
+        {/* Curva → Claudia (white) */}
         <WaveDivider topColor={INK} bottomColor="#FFFFFF" variant="wave" height={96} />
 
         <div style={{ background: "#FFFFFF" }}>
           <ClaudiaSection />
         </div>
 
-        {/* Curva white → Testimonials (off-white) */}
-        <WaveDivider topColor="#FFFFFF" bottomColor="#FAFAF8" variant="tilt" height={80} />
+        {/* Curva → FAQ (off-white) — corrigida */}
+        <WaveDivider topColor="#FFFFFF" bottomColor="#FAFAF8" variant="curve" height={96} />
 
         <div style={{ background: "#FAFAF8" }}>
-          <Testimonials />
-        </div>
-
-        {/* Curva off-white → FAQ (mist) */}
-        <WaveDivider topColor="#FAFAF8" bottomColor="#FFFFFF" variant="curve" height={80} />
-
-        <div style={{ background: "#FFFFFF" }}>
           <FAQ />
         </div>
 
-        {/* Curva white → FinalCTA (forest) */}
-        <WaveDivider topColor="#FFFFFF" bottomColor={FOREST} variant="wave" height={96} />
-
-        <FinalCTA />
-
-        {/* Curva forest → Footer (ink) */}
-        <WaveDivider topColor={FOREST} bottomColor={INK} variant="tilt" height={64} />
+        {/* Curva → Footer */}
+        <WaveDivider topColor="#FAFAF8" bottomColor={INK} variant="tilt" height={64} />
       </main>
 
       <footer
@@ -303,7 +282,6 @@ function Landing() {
 
             <FooterCol title="Solução">
               <a href="#metodo">Como funciona</a>
-              <a href="#resultados">Casos</a>
               <a href="#faq">Dúvidas</a>
             </FooterCol>
             <FooterCol title="Aurora">
