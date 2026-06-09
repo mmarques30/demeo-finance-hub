@@ -1,273 +1,255 @@
-// Hero unificado — fundo linho contínuo, sem split vertical abrupto.
-// Conteúdo centralizado-esquerda, com elementos decorativos sutis integrados
-// no background em vez de ocupar uma coluna inteira.
+// Aurora v3 — Hero clínico-minimalista, inspirado em nextsense.io.
+// Grid: lado esquerdo dark (#1C2D45 ink) com headline gigante,
+// lado direito mist com showcase do logo + 2 stats numéricos.
 import { LogoMark } from "@/components/Logo";
 import { AURORA_WHATSAPP } from "@/lib/supabase";
 
 export function HeroPC() {
   return (
-    <section
-      id="hero"
-      className="relative overflow-hidden"
-      style={{
-        background: "var(--linen)",
-        minHeight: "94vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-      }}
-    >
-      {/* ============ Camadas decorativas no background ============ */}
-      {/* Blob orgânico sage no canto inferior direito */}
-      <div
-        aria-hidden
-        className="absolute pointer-events-none"
-        style={{
-          right: "-20%",
-          bottom: "-30%",
-          width: 900,
-          height: 900,
-          background:
-            "radial-gradient(circle, rgba(143,166,136,0.32) 0%, rgba(143,166,136,0.10) 40%, transparent 70%)",
-          filter: "blur(40px)",
-          borderRadius: "50%",
-          zIndex: 0,
-        }}
-      />
-      {/* Blob sutil tan no canto superior direito */}
-      <div
-        aria-hidden
-        className="absolute pointer-events-none"
-        style={{
-          right: "5%",
-          top: "-15%",
-          width: 480,
-          height: 480,
-          background:
-            "radial-gradient(circle, rgba(212,184,150,0.28) 0%, transparent 70%)",
-          filter: "blur(60px)",
-          borderRadius: "50%",
-          zIndex: 0,
-        }}
-      />
+    <section id="hero" className="relative" style={{ minHeight: "100vh" }}>
+      <div className="grid lg:grid-cols-2" style={{ minHeight: "100vh", paddingTop: 64 }}>
+        {/* ============ ESQUERDA — DARK ============ */}
+        <div
+          className="relative overflow-hidden flex flex-col justify-end px-7 lg:px-16 py-20 lg:py-24"
+          style={{ background: "#1C2D45", minHeight: "calc(100vh - 64px)" }}
+        >
+          {/* Mesh radial */}
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(ellipse 60% 50% at 80% 20%, rgba(109,146,166,0.18) 0%, transparent 70%), radial-gradient(ellipse 50% 60% at 20% 80%, rgba(40,76,43,0.22) 0%, transparent 60%)",
+            }}
+          />
+          {/* Letra A gigante */}
+          <div
+            aria-hidden
+            className="absolute pointer-events-none"
+            style={{
+              top: 40,
+              right: 40,
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 260,
+              fontWeight: 200,
+              fontStyle: "italic",
+              color: "rgba(255,255,255,0.03)",
+              lineHeight: 1,
+              letterSpacing: "-10px",
+              userSelect: "none",
+            }}
+          >
+            A
+          </div>
 
-      {/* Símbolo Aurora gigante atrás (marca-d'água editorial) */}
-      <div
-        aria-hidden
-        className="absolute pointer-events-none hidden lg:flex"
-        style={{
-          right: "-8%",
-          top: "50%",
-          transform: "translateY(-50%)",
-          color: "rgba(74,103,65,0.05)",
-          zIndex: 0,
-          pointerEvents: "none",
-        }}
-      >
-        <div style={{ transform: "scale(11)" }}>
-          <LogoMark size={80} />
-        </div>
-      </div>
-
-      {/* ============ Conteúdo ============ */}
-      <div className="relative z-10 px-6 lg:px-14 pt-[140px] pb-20 lg:py-32 w-full">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="grid lg:grid-cols-[1.4fr_1fr] gap-12 lg:gap-20 items-end">
-            {/* Coluna principal — copy */}
-            <div>
-              <div
-                className="text-[11px] uppercase mb-7 inline-flex items-center gap-2.5"
-                style={{ letterSpacing: "3px", color: "var(--green)", fontWeight: 500 }}
-              >
-                <span
-                  aria-hidden
-                  style={{ width: 24, height: 1, background: "var(--green)" }}
-                />
-                Gestão financeira boutique
-              </div>
-
-              <h1
-                className="aurora-serif"
-                style={{
-                  fontSize: "clamp(48px, 7vw, 104px)",
-                  fontWeight: 300,
-                  lineHeight: 0.95,
-                  letterSpacing: "-2.5px",
-                  color: "var(--foreground)",
-                }}
-              >
-                A clareza que faz sua{" "}
-                <em className="italic" style={{ color: "var(--green)" }}>
-                  empresa crescer
-                </em>
-                .
-              </h1>
-
-              <p
-                className="mt-8 max-w-[560px]"
-                style={{
-                  fontSize: 18,
-                  fontWeight: 300,
-                  lineHeight: 1.65,
-                  color: "var(--muted-foreground)",
-                }}
-              >
-                Sócia estratégica do financeiro de empresários ambiciosos. A Aurora cuida do
-                extrato, fecha o DFC, projeta o caixa — e te entrega leitura clara para a
-                próxima decisão.
-              </p>
-
-              <div className="mt-10 flex flex-wrap items-center gap-3">
-                <a
-                  href="#contato"
-                  className="focus-ring inline-flex items-center gap-3 text-[11px] uppercase"
-                  style={{
-                    background: "var(--green)",
-                    color: "#fff",
-                    letterSpacing: "2.5px",
-                    fontWeight: 500,
-                    padding: "18px 28px",
-                  }}
-                >
-                  Agendar conversa →
-                </a>
-                <a
-                  href="#metodo"
-                  className="focus-ring inline-flex items-center gap-3 text-[11px] uppercase"
-                  style={{
-                    background: "transparent",
-                    color: "var(--foreground)",
-                    border: "1px solid var(--foreground)",
-                    letterSpacing: "2.5px",
-                    fontWeight: 500,
-                    padding: "18px 28px",
-                  }}
-                >
-                  Nosso método
-                </a>
-              </div>
+          <div className="relative z-10 reveal">
+            <div className="inline-flex items-center gap-2.5 mb-6" style={{ color: "#6D92A6" }}>
+              <span aria-hidden style={{ width: 28, height: 1, background: "#6D92A6" }} />
+              <span style={{ fontSize: 12, fontWeight: 500 }}>
+                Gestora Financeira · Paleta AICMA · 2026
+              </span>
             </div>
 
-            {/* Coluna secundária — quote pessoal Claudia + stats */}
-            <aside className="flex flex-col gap-7 lg:items-end">
-              {/* Quote card pequeno e elegante */}
-              <figure
-                className="max-w-[400px]"
+            <h1
+              className="aurora-serif"
+              style={{
+                fontSize: "clamp(72px, 12vw, 148px)",
+                fontWeight: 200,
+                letterSpacing: "-6px",
+                lineHeight: 0.85,
+                color: "#fff",
+              }}
+            >
+              Au<em className="italic" style={{ color: "#6D92A6" }}>rora</em>
+            </h1>
+
+            <div className="mt-10 flex items-end justify-between flex-wrap gap-6">
+              <p
+                className="aurora-serif italic"
                 style={{
-                  background: "rgba(255,255,255,0.6)",
-                  backdropFilter: "blur(10px)",
-                  WebkitBackdropFilter: "blur(10px)",
-                  border: "1px solid rgba(74,103,65,0.12)",
-                  padding: 28,
-                  borderLeft: "3px solid var(--green)",
+                  fontSize: 16,
+                  fontWeight: 300,
+                  color: "rgba(255,255,255,0.55)",
+                  lineHeight: 1.5,
+                  maxWidth: 320,
                 }}
               >
-                <div
-                  className="text-[9px] uppercase mb-2"
-                  style={{ letterSpacing: "3px", color: "var(--sage)", fontWeight: 600 }}
-                >
-                  Por trás da Aurora
-                </div>
-                <blockquote
-                  className="aurora-serif italic"
-                  style={{
-                    fontSize: 19,
-                    fontWeight: 300,
-                    lineHeight: 1.45,
-                    color: "var(--foreground)",
-                    letterSpacing: "-0.3px",
-                  }}
-                >
-                  "Não vendemos relatório. Vendemos a decisão informada."
-                </blockquote>
-                <figcaption
-                  className="mt-4 text-[12px]"
-                  style={{ color: "var(--muted-foreground)", letterSpacing: "0.2px" }}
-                >
-                  — Claudia Lima, fundadora
-                </figcaption>
-              </figure>
+                Gestão financeira para empresas que querem enxergar o próprio crescimento.
+              </p>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
+                v3 · Claudia De Meo
+              </span>
+            </div>
 
-              {/* Stats grid 2x1 */}
-              <div className="flex gap-8 lg:justify-end">
+            <div className="mt-12 flex flex-wrap items-center gap-3">
+              <a
+                href="#contato"
+                className="focus-ring inline-flex items-center gap-2.5"
+                style={{
+                  background: "#284C2B",
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  padding: "16px 26px",
+                  borderRadius: 4,
+                  transition: "background 0.2s, transform 0.2s",
+                }}
+              >
+                Quero clareza financeira <span aria-hidden>→</span>
+              </a>
+              <a
+                href="#metodo"
+                className="focus-ring inline-flex items-center gap-2.5"
+                style={{
+                  background: "transparent",
+                  color: "rgba(255,255,255,0.78)",
+                  fontSize: 12,
+                  fontWeight: 400,
+                  padding: "16px 22px",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  borderRadius: 4,
+                }}
+              >
+                Ver como funciona
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* ============ DIREITA — MIST ============ */}
+        <div
+          className="hidden lg:flex flex-col"
+          style={{
+            background: "#FFFFFF",
+            borderLeft: "1px solid rgba(28,45,69,0.1)",
+          }}
+        >
+          <div
+            className="flex-1 flex items-center justify-center px-16 py-12 relative overflow-hidden"
+            style={{ minHeight: 320 }}
+          >
+            <div
+              aria-hidden
+              className="absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(40,76,43,0.05) 0%, transparent 70%)",
+              }}
+            />
+            <div className="relative z-10 reveal" style={{ transitionDelay: "100ms" }}>
+              <div className="flex items-center gap-5" style={{ color: "#284C2B" }}>
+                <LogoMark size={86} />
                 <div>
                   <div
-                    className="text-[10px] uppercase"
+                    className="aurora-serif"
                     style={{
-                      letterSpacing: "2.5px",
-                      color: "var(--muted-foreground)",
-                    }}
-                  >
-                    Já atende
-                  </div>
-                  <div
-                    className="aurora-serif mt-1"
-                    style={{
-                      fontSize: 30,
+                      fontSize: 72,
                       fontWeight: 300,
-                      color: "var(--navy)",
-                      letterSpacing: "-0.5px",
+                      letterSpacing: "-3px",
                       lineHeight: 1,
+                      color: "#1C2D45",
                     }}
                   >
-                    120+ empresários
-                  </div>
-                </div>
-                <div
-                  aria-hidden
-                  style={{ width: 1, background: "var(--line)" }}
-                />
-                <div>
-                  <div
-                    className="text-[10px] uppercase"
-                    style={{
-                      letterSpacing: "2.5px",
-                      color: "var(--muted-foreground)",
-                    }}
-                  >
-                    Em fluxo
+                    Aurora
                   </div>
                   <div
-                    className="aurora-serif mt-1"
+                    className="mt-2"
                     style={{
-                      fontSize: 30,
+                      fontSize: 10,
                       fontWeight: 300,
-                      color: "var(--navy)",
-                      letterSpacing: "-0.5px",
-                      lineHeight: 1,
+                      letterSpacing: "3px",
+                      color: "#6B7A6A",
                     }}
                   >
-                    R$ 2,3 mi/mês
+                    GESTORA FINANCEIRA
                   </div>
                 </div>
               </div>
-            </aside>
+            </div>
+          </div>
+
+          <div
+            className="grid grid-cols-2"
+            style={{ borderTop: "1px solid rgba(28,45,69,0.1)" }}
+          >
+            <div
+              className="py-6 px-7 flex flex-col gap-1.5"
+              style={{ borderRight: "1px solid rgba(28,45,69,0.1)" }}
+            >
+              <div
+                className="aurora-serif"
+                style={{
+                  fontSize: 36,
+                  fontWeight: 300,
+                  letterSpacing: "-1px",
+                  color: "#284C2B",
+                  lineHeight: 1,
+                }}
+              >
+                120+
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: "rgba(28,45,69,0.6)" }}>
+                Empresas atendidas
+              </div>
+            </div>
+            <div className="py-6 px-7 flex flex-col gap-1.5">
+              <div
+                className="aurora-serif"
+                style={{
+                  fontSize: 36,
+                  fontWeight: 300,
+                  letterSpacing: "-1px",
+                  color: "#284C2B",
+                  lineHeight: 1,
+                }}
+              >
+                R$ 2,3mi
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: "rgba(28,45,69,0.6)" }}>
+                Em fluxo organizado/mês
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Strip social — base do hero, ainda dentro do mesmo bg linho */}
+      {/* Ticker forest */}
+      <div className="overflow-hidden py-3" style={{ background: "#284C2B" }}>
+        <div
+          className="flex gap-12 whitespace-nowrap"
+          style={{ animation: "marquee 30s linear infinite" }}
+        >
+          {Array.from({ length: 2 }).map((_, idx) => (
+            <div key={idx} className="flex gap-12">
+              {["AURORA", "GESTÃO FINANCEIRA", "CLAREZA", "CRESCIMENTO", "CLAUDIA DE MEO", "PMEs", "PALETA AICMA"].map((t, j) => (
+                <span key={j} className="flex items-center gap-12">
+                  <span style={{ fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.5)" }}>{t}</span>
+                  <span aria-hidden style={{ color: "rgba(255,255,255,0.2)" }}>·</span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Strip trust signals */}
       <div
-        className="relative z-10 px-6 lg:px-14 py-5 flex items-center justify-center gap-x-8 gap-y-2 flex-wrap text-[10px] uppercase"
+        className="px-6 lg:px-14 py-5 flex items-center justify-center gap-x-8 gap-y-2 flex-wrap"
         style={{
-          letterSpacing: "2.5px",
-          color: "var(--muted-foreground)",
-          borderTop: "1px solid var(--line)",
-          fontWeight: 500,
+          background: "#FFFFFF",
+          borderBottom: "1px solid rgba(28,45,69,0.08)",
+          fontSize: 11,
+          fontWeight: 400,
+          color: "rgba(28,45,69,0.55)",
         }}
       >
         <span>Atende de São Paulo a Porto Alegre</span>
-        <span aria-hidden style={{ color: "var(--tan)" }}>·</span>
+        <span aria-hidden style={{ color: "rgba(28,45,69,0.25)" }}>·</span>
         <span>8 anos no mercado</span>
-        <span aria-hidden style={{ color: "var(--tan)" }}>·</span>
+        <span aria-hidden style={{ color: "rgba(28,45,69,0.25)" }}>·</span>
         <span>Indicada por contadores</span>
-        <span aria-hidden style={{ color: "var(--tan)" }}>·</span>
-        <a
-          href={AURORA_WHATSAPP}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "var(--green)" }}
-        >
+        <span aria-hidden style={{ color: "rgba(28,45,69,0.25)" }}>·</span>
+        <a href={AURORA_WHATSAPP} target="_blank" rel="noopener noreferrer" style={{ color: "#284C2B", fontWeight: 500 }}>
           WhatsApp direto
         </a>
       </div>

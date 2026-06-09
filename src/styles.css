@@ -20,7 +20,7 @@
   --radius-3xl: 40px;
   --radius-4xl: 999px;
 
-  --font-sans: 'Jost', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Space Grotesk', 'Jost', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Cormorant Garamond', ui-serif, Georgia, serif;
 
   --color-background: var(--background);
@@ -72,7 +72,7 @@
 :root {
   --radius: 14px;
 
-  /* Brand palette (hex → kept readable) */
+  /* Brand palette v1 (kept for admin backward compat) */
   --linen:   #F7F1E8;
   --linen2:  #FDF9F4;
   --green:   #4A6741;
@@ -83,6 +83,16 @@
   --tan2:    #D4B896;
   --line:    #E8DFD2;
   --line-soft: rgba(74,103,65,0.08);
+
+  /* ==== Aurora v3 — Paleta AICMA ==== */
+  --ink:     #1C2D45;   /* Navy escuro: texto, sidebar, navbar, overlays */
+  --steel:   #6D92A6;   /* Aço/azul: links, charts, interações */
+  --mist:    #FFFFFF;   /* Background, cards, sections */
+  --sage-v3: #99A989;   /* Tags, labels, ícones */
+  --forest:  #284C2B;   /* Marca, CTAs, receitas, logo */
+  --cream:   #FFFFFF;   /* Backgrounds suaves */
+  --ink-2:   rgba(28,45,69,0.08);  /* Border / divider */
+  --ink-6:   rgba(28,45,69,0.6);   /* Texto secundário */
 
   /* Shadows — multi-layer pra dar profundidade leve */
   --shadow-soft: 0 1px 2px rgba(27,57,77,0.04), 0 8px 24px -12px rgba(74,103,65,0.12);
@@ -133,7 +143,7 @@
   html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: 'Jost', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Space Grotesk', 'Jost', ui-sans-serif, system-ui, sans-serif;
     font-weight: 300;
     -webkit-font-smoothing: antialiased;
     font-feature-settings: "ss01";

@@ -121,7 +121,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         className="hidden lg:flex flex-col shrink-0 sticky top-0 h-screen transition-[width] duration-300"
         style={{
           width: collapsed ? 76 : 260,
-          background: "linear-gradient(180deg, var(--navy) 0%, #15303F 100%)",
+          background: "linear-gradient(180deg, #1C2D45 0%, #142235 100%)",
           color: "#fff",
         }}
       >
