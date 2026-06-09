@@ -153,51 +153,28 @@ function Landing() {
         </div>
       </nav>
 
-      {/* HERO — editorial / magazine masthead */}
-      <section className="relative px-6 lg:px-14 pt-[120px] pb-24 lg:pb-32">
-        {/* Editorial masthead — faixa de identificação tipo periódico */}
-        <div className="relative z-10 max-w-[1320px] mx-auto mb-10 lg:mb-14">
-          <div
-            className="flex items-center justify-between flex-wrap gap-3 pb-4"
-            style={{ borderBottom: "1px solid rgba(74,103,65,0.15)" }}
-          >
-            <div className="flex items-center gap-4">
-              <span
-                className="aurora-cap"
-                style={{ color: "var(--green)", fontSize: 10, letterSpacing: "3.5px" }}
-              >
-                Aurora · Ed. Nº 01
-              </span>
-              <span
-                className="hidden md:inline-block aurora-cap"
-                style={{ color: "var(--muted-foreground)", fontSize: 10 }}
-              >
-                Abril 2026
-              </span>
-            </div>
-            <div className="flex items-center gap-4 text-[10px]" style={{ color: "var(--muted-foreground)", letterSpacing: "1.5px", textTransform: "uppercase" }}>
-              <span className="hidden md:inline">Gestão · Finanças · PMEs</span>
-              <span className="aurora-serif italic" style={{ color: "var(--green)", fontSize: 13, textTransform: "none", letterSpacing: "0" }}>
-                por Claudia Lima
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Grid principal — assimétrico editorial */}
+      {/* HERO */}
+      <section className="relative px-6 lg:px-14 pt-[130px] pb-24 lg:pb-32">
+        {/* Grid principal */}
         <div className="grid lg:grid-cols-[1.15fr_1fr] gap-12 lg:gap-20 items-start relative z-10 max-w-[1320px] mx-auto">
           {/* Coluna texto */}
           <Reveal>
-            {/* Marcador editorial */}
-            <div className="flex items-baseline gap-4 mb-6">
+            {/* Marcador compacto — substitui o masthead full-width que quebrava nas dobras */}
+            <div className="inline-flex items-center gap-2.5 mb-7">
               <span
-                className="aurora-serif italic"
-                style={{ fontSize: 22, color: "var(--sage)", lineHeight: 1, letterSpacing: "-0.5px" }}
+                aria-hidden
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 999,
+                  background: "var(--green)",
+                }}
+              />
+              <span
+                className="aurora-cap"
+                style={{ color: "var(--green)", letterSpacing: "3.5px" }}
               >
-                Em foco —
-              </span>
-              <span className="aurora-cap" style={{ color: "var(--muted-foreground)" }}>
-                Decisão com clareza
+                Em foco · Decisão com clareza
               </span>
             </div>
 
