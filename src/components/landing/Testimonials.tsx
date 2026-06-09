@@ -1,110 +1,175 @@
 import { useState } from "react";
 
-type Item = { author: string; role: string; quote: string };
-
-const ITEMS: Item[] = [
+// {{DEPOIMENTOS}} — placeholders editáveis. Quando real, substituir o array.
+const ITEMS = [
   {
-    author: "Marcos Pereira",
-    role: "Padaria São Jorge · São Paulo",
-    quote: "Pela primeira vez eu olho pro caixa sem medo. A Claudia me devolveu o controle do meu próprio negócio.",
+    quote:
+      "Em três meses, ela me mostrou que eu vendia bem mas perdia dinheiro no caminho. Hoje eu sei exatamente onde corrigir antes de o mês fechar.",
+    name: "Marcos Pereira",
+    company: "Padaria São Jorge",
+    city: "São Paulo · SP",
+    initial: "M",
   },
   {
-    author: "Helena Souza",
-    role: "Restaurante Pernambuco",
-    quote: "Era planilha que ninguém entendia. Hoje abro o portal e em 30 segundos sei se vou ter dinheiro pra folha.",
+    quote:
+      "Era planilha e improviso. Agora eu abro o portal de manhã, leio meus números e decido a semana. Mudou minha relação com o caixa.",
+    name: "Helena Souza",
+    company: "Restaurante Pernambuco",
+    city: "Belo Horizonte · MG",
+    initial: "H",
   },
   {
-    author: "Dra. Ana Ribeiro",
-    role: "Consultório Dra. Ana",
-    quote: "A clareza que ela traz é envolvente. Eu confio na leitura e tomo decisão na mesma semana.",
+    quote:
+      "A Claudia me devolveu a paz de saber. Saber quanto sobra, quanto eu posso reinvestir, quando vou apertar. É isso que ela entrega.",
+    name: "Ana Ribeiro",
+    company: "Consultório Dra. Ana",
+    city: "Porto Alegre · RS",
+    initial: "A",
   },
 ];
 
 export function Testimonials() {
   const [i, setI] = useState(0);
   const cur = ITEMS[i];
+
   return (
-    <div
-      className="relative p-10 lg:p-16 overflow-hidden"
-      style={{
-        background: "linear-gradient(135deg, #FFFFFF 0%, var(--linen2) 100%)",
-        border: "1px solid rgba(74,103,65,0.06)",
-        borderRadius: 32,
-        boxShadow: "0 1px 2px rgba(27,57,77,0.04), 0 24px 64px -32px rgba(74,103,65,0.22)",
-      }}
+    <section
+      id="resultados"
+      className="px-6 lg:px-14 py-24 lg:py-32"
+      style={{ background: "var(--linen2)" }}
     >
-      <div
-        aria-hidden
-        className="aurora-blob aurora-blob--tan"
-        style={{ width: 360, height: 360, right: -120, top: -120 }}
-      />
-      <div className="relative z-10 grid lg:grid-cols-[1fr_auto] gap-12 items-end">
-        <div>
+      <div className="max-w-[1100px] mx-auto">
+        <div className="reveal mb-12">
+          <div
+            className="text-[10px] uppercase mb-3"
+            style={{ letterSpacing: "3px", color: "var(--sage)", fontWeight: 500 }}
+          >
+            Quem já está com a Aurora
+          </div>
+          <h2
+            className="aurora-serif"
+            style={{ fontSize: "clamp(40px, 5.5vw, 64px)", fontWeight: 300, lineHeight: 1, letterSpacing: "-2px" }}
+          >
+            Em <em className="italic" style={{ color: "var(--green)" }}>nome</em> deles.
+          </h2>
+        </div>
+
+        <article
+          key={cur.name}
+          className="relative p-10 lg:p-14"
+          style={{ background: "#FFFFFF", border: "1px solid var(--line)" }}
+        >
+          {/* Aspa gigante */}
           <span
-            className="aurora-serif italic block"
-            style={{ fontSize: 96, color: "var(--sage)", lineHeight: 0.6, marginBottom: 20 }}
+            aria-hidden
+            className="aurora-serif"
+            style={{
+              position: "absolute",
+              top: 8,
+              left: 24,
+              fontSize: 120,
+              fontWeight: 300,
+              color: "var(--green)",
+              opacity: 0.18,
+              lineHeight: 0.7,
+              pointerEvents: "none",
+            }}
           >
             "
           </span>
-          <blockquote
-            key={cur.quote}
-            className="aurora-serif italic aurora-reveal-fade"
-            style={{
-              fontSize: "clamp(26px, 3.6vw, 44px)",
-              lineHeight: 1.4,
-              letterSpacing: "-0.5px",
-              color: "var(--foreground)",
-              maxWidth: 760,
-            }}
-          >
-            {cur.quote}
-          </blockquote>
-          <div className="mt-9 flex items-center gap-4">
-            <span
-              className="rounded-full inline-flex items-center justify-center aurora-serif relative"
+
+          <blockquote className="relative">
+            <p
+              className="aurora-serif italic"
               style={{
-                width: 52,
-                height: 52,
-                background: "linear-gradient(135deg, var(--linen) 0%, #fff 100%)",
-                border: "1px solid rgba(74,103,65,0.12)",
-                color: "var(--green)",
-                fontSize: 22,
-                fontStyle: "italic",
-                boxShadow: "0 6px 16px -8px rgba(74,103,65,0.25)",
+                fontSize: "clamp(20px, 2vw, 24px)",
+                fontWeight: 300,
+                lineHeight: 1.5,
+                color: "var(--foreground)",
+                letterSpacing: "-0.3px",
+                maxWidth: 760,
               }}
             >
-              {cur.author.charAt(0)}
-            </span>
-            <div>
-              <div className="text-[13px]" style={{ fontWeight: 500 }}>
-                {cur.author}
-              </div>
-              <div className="aurora-cap mt-0.5">{cur.role}</div>
-            </div>
-          </div>
-        </div>
+              {cur.quote}
+            </p>
 
-        {/* Pager */}
-        <div className="flex lg:flex-col items-center gap-3">
-          {ITEMS.map((_, idx) => (
+            <footer className="mt-8 flex items-center gap-4">
+              <span
+                className="rounded-full inline-flex items-center justify-center aurora-serif italic"
+                style={{
+                  width: 48,
+                  height: 48,
+                  background: "var(--linen)",
+                  border: "1px solid var(--line)",
+                  color: "var(--green)",
+                  fontSize: 22,
+                  flexShrink: 0,
+                }}
+                aria-hidden
+              >
+                {cur.initial}
+              </span>
+              <div className="text-[13px]" style={{ lineHeight: 1.5 }}>
+                <div style={{ fontWeight: 500 }}>{cur.name}</div>
+                <div style={{ color: "var(--muted-foreground)", fontSize: 12 }}>
+                  {cur.company} · {cur.city}
+                </div>
+              </div>
+            </footer>
+          </blockquote>
+
+          {/* Controles */}
+          <nav
+            className="absolute right-6 bottom-6 lg:right-10 lg:bottom-10 flex items-center gap-2"
+            aria-label="Navegar depoimentos"
+          >
             <button
-              key={idx}
-              aria-label={`Depoimento ${idx + 1}`}
-              onClick={() => setI(idx)}
-              className="transition-all"
+              onClick={() => setI((p) => (p - 1 + ITEMS.length) % ITEMS.length)}
+              className="focus-ring"
+              aria-label="Depoimento anterior"
               style={{
-                width: idx === i ? 44 : 24,
-                height: 3,
-                background:
-                  idx === i
-                    ? "linear-gradient(90deg, var(--green), var(--green2))"
-                    : "rgba(74,103,65,0.15)",
-                borderRadius: 999,
+                width: 36,
+                height: 36,
+                border: "1px solid var(--line)",
+                background: "transparent",
+                color: "var(--green)",
+                fontSize: 14,
               }}
-            />
-          ))}
-        </div>
+            >
+              ←
+            </button>
+            <button
+              onClick={() => setI((p) => (p + 1) % ITEMS.length)}
+              className="focus-ring"
+              aria-label="Próximo depoimento"
+              style={{
+                width: 36,
+                height: 36,
+                background: "var(--green)",
+                color: "#fff",
+                fontSize: 14,
+              }}
+            >
+              →
+            </button>
+          </nav>
+
+          {/* Indicador */}
+          <div className="absolute left-10 bottom-8 flex gap-2" aria-hidden>
+            {ITEMS.map((_, idx) => (
+              <span
+                key={idx}
+                style={{
+                  width: idx === i ? 28 : 14,
+                  height: 2,
+                  background: idx === i ? "var(--green)" : "var(--line)",
+                  transition: "width 0.2s",
+                }}
+              />
+            ))}
+          </div>
+        </article>
       </div>
-    </div>
+    </section>
   );
 }

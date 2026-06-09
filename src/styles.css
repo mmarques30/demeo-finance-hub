@@ -414,4 +414,82 @@
   @keyframes aurora-rotate {
     to { transform: rotate(360deg); }
   }
+
+  /* ================ NOVA LP — reveal/marquee/charts ================ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    will-change: opacity, transform;
+  }
+  .reveal.in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Cards do bento — stagger via inline transition-delay (passado via style) */
+  .bento-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 28px;
+    box-shadow: 0 1px 0 rgba(74,103,65,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .bento-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--green);
+    box-shadow: 0 1px 0 rgba(74,103,65,0.05), 0 0 0 1px var(--green);
+  }
+
+  /* Skip link a11y */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--green);
+    color: #fff;
+    padding: 8px 16px;
+    z-index: 100;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .skip-link:focus {
+    top: 0;
+  }
+
+  /* Bar grow animation no hero chart */
+  .hero-bar {
+    transform-origin: bottom;
+    animation: hero-bar-grow 0.7s cubic-bezier(.22,.61,.36,1) both;
+  }
+  @keyframes hero-bar-grow {
+    from { clip-path: inset(100% 0 0 0); }
+    to   { clip-path: inset(0 0 0 0); }
+  }
+
+  /* Marquee */
+  .marquee-track {
+    animation: marquee 30s linear infinite;
+  }
+  .marquee-track:hover { animation-play-state: paused; }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  /* Focus ring acessível */
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 3px;
+  }
+
+  /* prefers-reduced-motion — desabilita reveal e marquee */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .marquee-track { animation: none; }
+    .hero-bar { animation: none; clip-path: none; }
+    .aurora-float, .aurora-pulse, .aurora-shimmer::before { animation: none !important; }
+  }
 }
