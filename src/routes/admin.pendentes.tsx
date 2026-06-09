@@ -65,7 +65,7 @@ function PendentesPage() {
                 </thead>
                 <tbody>
                   {items.map((t, idx) => (
-                    <tr key={t.id} style={{ background: idx % 2 === 0 ? "#fff" : "var(--linen2)" }}>
+                    <tr key={t.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFAF8" }}>
                       <td className="px-6 py-3 text-[12px]">{t.date}</td>
                       <td className="px-6 py-3 text-[12px]" title={t.rawDescription}>{t.description}</td>
                       <td className="px-6 py-3 aurora-serif text-[14px]" style={{ color: t.amount >= 0 ? "var(--green)" : "var(--navy)" }}>

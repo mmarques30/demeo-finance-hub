@@ -184,7 +184,7 @@ function PrecificacaoPage() {
             </thead>
             <tbody>
               {winRate.map((b, i) => (
-                <tr key={b.label} style={{ background: i % 2 === 0 ? "#fff" : "var(--linen2)", borderTop: "1px solid var(--line)" }}>
+                <tr key={b.label} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
                   <td className="px-5 py-3 text-[13px]">{b.label}</td>
                   <td className="px-5 py-3 text-[12px]">{b.total}</td>
                   <td className="px-5 py-3 text-[12px]" style={{ color: "var(--green)" }}>

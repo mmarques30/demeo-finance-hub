@@ -37,11 +37,16 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const path = location.pathname;
 
   return (
-    <div className="min-h-screen flex" style={{ background: "var(--linen2)" }}>
-      {/* Sidebar */}
+    <div className="min-h-screen flex" style={{ background: "#FFFFFF" }}>
+      {/* Sidebar — fundo navy do brand com gradiente sutil */}
       <aside
-        className="hidden lg:flex flex-col w-[220px] shrink-0 sticky top-0 h-screen"
-        style={{ background: "var(--navy)", color: "#fff" }}
+        className="hidden lg:flex flex-col w-[240px] shrink-0 sticky top-0 h-screen"
+        style={{
+          background:
+            "linear-gradient(180deg, var(--navy) 0%, #15303F 100%)",
+          color: "#fff",
+          borderRight: "1px solid rgba(255,255,255,0.04)",
+        }}
       >
         <div className="px-6 pt-7 pb-8">
           <Link to={"/admin" as string} className="inline-flex items-center gap-2.5 text-white">
@@ -106,13 +111,14 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
       {/* Main */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Topbar */}
+        {/* Topbar — branco translúcido com blur, harmonizando com fundo branco do conteúdo */}
         <header
           className="sticky top-0 z-40 flex items-center justify-between px-8 py-4"
           style={{
-            background: "rgba(253,249,244,0.92)",
-            backdropFilter: "blur(14px)",
-            borderBottom: "1px solid var(--line)",
+            background: "rgba(255,255,255,0.85)",
+            backdropFilter: "blur(16px) saturate(1.2)",
+            WebkitBackdropFilter: "blur(16px) saturate(1.2)",
+            borderBottom: "1px solid #EEEEEE",
           }}
         >
           <div className="lg:hidden">
@@ -153,11 +159,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 min-w-0">{children}</main>
+        <main className="flex-1 min-w-0" style={{ background: "#FFFFFF" }}>
+          {children}
+        </main>
 
         <footer
           className="px-8 py-6 flex items-center justify-between"
-          style={{ borderTop: "1px solid var(--line)" }}
+          style={{ borderTop: "1px solid #EEEEEE", background: "#FFFFFF" }}
         >
           <div className="aurora-serif text-[14px]" style={{ color: "var(--muted-foreground)" }}>
             Clareza que envolve. Resultado que permanece.

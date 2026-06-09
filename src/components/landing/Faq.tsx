@@ -26,20 +26,34 @@ const ITEMS = [
 export function Faq() {
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <div className="max-w-[860px] mx-auto flex flex-col">
+    <div className="max-w-[900px] mx-auto flex flex-col gap-3">
       {ITEMS.map((it, i) => {
         const isOpen = open === i;
         return (
-          <div key={it.q} style={{ borderTop: i === 0 ? "1px solid var(--line)" : undefined, borderBottom: "1px solid var(--line)" }}>
+          <div
+            key={it.q}
+            className="overflow-hidden transition-all"
+            style={{
+              background: isOpen
+                ? "linear-gradient(135deg, #FFFFFF 0%, var(--linen2) 100%)"
+                : "rgba(255,255,255,0.7)",
+              backdropFilter: !isOpen ? "blur(8px)" : "none",
+              border: `1px solid ${isOpen ? "rgba(74,103,65,0.18)" : "rgba(74,103,65,0.06)"}`,
+              borderRadius: 22,
+              boxShadow: isOpen
+                ? "0 14px 40px -20px rgba(74,103,65,0.22), 0 4px 12px rgba(74,103,65,0.06)"
+                : "0 1px 2px rgba(27,57,77,0.03), 0 6px 18px -12px rgba(74,103,65,0.08)",
+            }}
+          >
             <button
               onClick={() => setOpen(isOpen ? null : i)}
-              className="w-full flex items-center justify-between gap-6 py-6 text-left transition-colors"
+              className="w-full flex items-center justify-between gap-6 px-7 py-6 text-left transition-colors"
               aria-expanded={isOpen}
             >
               <span
                 className="aurora-serif"
                 style={{
-                  fontSize: "clamp(20px, 2.4vw, 26px)",
+                  fontSize: "clamp(20px, 2.4vw, 28px)",
                   color: isOpen ? "var(--green)" : "var(--foreground)",
                   letterSpacing: "-0.5px",
                   lineHeight: 1.25,
@@ -50,19 +64,21 @@ export function Faq() {
               <span
                 aria-hidden
                 style={{
-                  width: 28,
-                  height: 28,
+                  width: 36,
+                  height: 36,
                   borderRadius: 999,
-                  background: isOpen ? "var(--green)" : "transparent",
-                  color: isOpen ? "#fff" : "var(--muted-foreground)",
-                  border: `1px solid ${isOpen ? "var(--green)" : "var(--line)"}`,
+                  background: isOpen
+                    ? "linear-gradient(135deg, var(--green), var(--green2))"
+                    : "rgba(74,103,65,0.06)",
+                  color: isOpen ? "#fff" : "var(--green)",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 14,
-                  transition: "transform 0.2s",
+                  fontSize: 18,
+                  transition: "transform 0.35s cubic-bezier(.22,.61,.36,1), background 0.3s",
                   transform: isOpen ? "rotate(45deg)" : "rotate(0)",
                   flexShrink: 0,
+                  boxShadow: isOpen ? "0 6px 16px -6px rgba(74,103,65,0.4)" : "none",
                 }}
               >
                 +
@@ -73,12 +89,12 @@ export function Faq() {
                 maxHeight: isOpen ? 400 : 0,
                 opacity: isOpen ? 1 : 0,
                 overflow: "hidden",
-                transition: "max-height 0.35s ease, opacity 0.25s ease",
+                transition: "max-height 0.4s ease, opacity 0.3s ease",
               }}
             >
               <p
-                className="pb-7 text-[14px]"
-                style={{ color: "var(--muted-foreground)", lineHeight: 1.85, maxWidth: 700 }}
+                className="px-7 pb-7 text-[14px]"
+                style={{ color: "var(--muted-foreground)", lineHeight: 1.9, maxWidth: 720 }}
               >
                 {it.a}
               </p>

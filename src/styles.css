@@ -6,17 +6,19 @@
 
 /* Aurora · Gestão Financeira — Design System
  * Paleta linho/verde/sage/navy/tan, tipografia Cormorant Garamond + Jost.
- * Estética clean inspirada em Ascone Finance. Sem dark mode.
+ * Estética boutique-moderna: cantos orgânicos, sombras suaves multi-layer,
+ * gradients sutis, micro-motion. Sem dark mode.
  */
 
 @theme inline {
-  --radius-sm: 2px;
-  --radius-md: 2px;
-  --radius-lg: 4px;
-  --radius-xl: 6px;
-  --radius-2xl: 8px;
-  --radius-3xl: 12px;
-  --radius-4xl: 16px;
+  /* Radius: cantos vivos só nas tabelas administrativas. Tudo na landing fica orgânico. */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+  --radius-2xl: 32px;
+  --radius-3xl: 40px;
+  --radius-4xl: 999px;
 
   --font-sans: 'Jost', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Cormorant Garamond', ui-serif, Georgia, serif;
@@ -68,7 +70,7 @@
 }
 
 :root {
-  --radius: 2px;
+  --radius: 14px;
 
   /* Brand palette (hex → kept readable) */
   --linen:   #F7F1E8;
@@ -79,7 +81,14 @@
   --navy:    #1B394D;
   --tan:     #B8956A;
   --tan2:    #D4B896;
-  --line:    #E2D8CC;
+  --line:    #E8DFD2;
+  --line-soft: rgba(74,103,65,0.08);
+
+  /* Shadows — multi-layer pra dar profundidade leve */
+  --shadow-soft: 0 1px 2px rgba(27,57,77,0.04), 0 8px 24px -12px rgba(74,103,65,0.12);
+  --shadow-card: 0 1px 2px rgba(27,57,77,0.04), 0 12px 32px -16px rgba(74,103,65,0.18), 0 4px 12px -6px rgba(27,57,77,0.06);
+  --shadow-float: 0 1px 2px rgba(27,57,77,0.04), 0 24px 64px -32px rgba(74,103,65,0.28), 0 12px 32px -12px rgba(27,57,77,0.08);
+  --shadow-glow: 0 0 0 1px rgba(74,103,65,0.06), 0 40px 80px -32px rgba(74,103,65,0.35), 0 16px 48px -16px rgba(143,166,136,0.25);
 
   /* Semantic mapping */
   --background: #FDF9F4;
@@ -98,8 +107,8 @@
   --accent-foreground: #1C1C19;
   --destructive: #C0392B;
   --destructive-foreground: #FDF9F4;
-  --border: #E2D8CC;
-  --input: #E2D8CC;
+  --border: #E8DFD2;
+  --input: #E8DFD2;
   --ring: #4A6741;
   --chart-1: #4A6741;
   --chart-2: #8FA688;
@@ -132,7 +141,7 @@
 
   body {
     font-size: 13px;
-    line-height: 1.7;
+    line-height: 1.75;
   }
 
   h1, h2, h3, h4 {
@@ -140,10 +149,15 @@
     font-weight: 300;
     letter-spacing: -0.02em;
   }
+
+  ::selection {
+    background: rgba(74,103,65,0.18);
+    color: var(--green2);
+  }
 }
 
 @layer components {
-  /* Eyebrow / caption used everywhere */
+  /* Eyebrow / caption */
   .aurora-cap {
     font-size: 9px;
     font-weight: 500;
@@ -158,10 +172,38 @@
     letter-spacing: -0.02em;
   }
 
+  /* Card padrão da landing — cantos generosos, sombra suave, hover-lift */
   .aurora-card {
     background: #fff;
-    border: 1px solid var(--line);
-    padding: 24px;
+    border: 1px solid var(--line-soft);
+    border-radius: 22px;
+    padding: 28px;
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.45s cubic-bezier(.22,.61,.36,1), box-shadow 0.45s cubic-bezier(.22,.61,.36,1), border-color 0.3s;
+  }
+  .aurora-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card);
+    border-color: rgba(74,103,65,0.18);
+  }
+
+  /* Card silencioso (sem hover) — para conteúdo "vivo" */
+  .aurora-card--still {
+    background: #fff;
+    border: 1px solid var(--line-soft);
+    border-radius: 22px;
+    padding: 28px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* Card de vidro (glassmorphism leve) — pra etiquetas e cards flutuantes */
+  .aurora-card--glass {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 18px;
+    box-shadow: var(--shadow-card);
   }
 
   .aurora-badge {
@@ -172,7 +214,7 @@
     font-weight: 500;
     letter-spacing: 2px;
     text-transform: uppercase;
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 999px;
   }
   .aurora-badge--ok   { background: rgba(74,103,65,0.12); color: var(--green); }
@@ -194,65 +236,182 @@
   .aurora-input {
     width: 100%;
     background: #fff;
-    padding: 12px 14px;
+    padding: 14px 18px;
     font-size: 13px;
     border: 1px solid var(--line);
+    border-radius: 14px;
     outline: none;
-    transition: border-color 0.15s;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   }
-  .aurora-input:focus { border-color: var(--green); }
+  .aurora-input:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 4px rgba(74,103,65,0.08);
+  }
   .aurora-input[aria-invalid="true"] { border-color: var(--destructive); }
 
+  /* CTA principal — pill com gradient e brilho de superfície */
   .aurora-cta {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    padding: 16px 28px;
-    background: var(--green);
+    padding: 17px 30px;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green2) 100%);
     color: #fff;
     font-size: 10px;
     letter-spacing: 2.5px;
     text-transform: uppercase;
     font-weight: 500;
-    transition: background 0.2s, transform 0.2s;
+    border-radius: 999px;
+    box-shadow: 0 14px 32px -16px rgba(74,103,65,0.55), 0 2px 6px rgba(74,103,65,0.18);
+    transition: transform 0.35s cubic-bezier(.22,.61,.36,1), box-shadow 0.35s, filter 0.2s;
+    overflow: hidden;
+    isolation: isolate;
   }
-  .aurora-cta:hover { background: var(--green2); transform: translateY(-1px); }
+  .aurora-cta::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.15), transparent 60%);
+    pointer-events: none;
+  }
+  .aurora-cta:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 22px 48px -20px rgba(74,103,65,0.7), 0 4px 12px rgba(74,103,65,0.22);
+    filter: brightness(1.03);
+  }
 
   .aurora-cta--ghost {
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    padding: 16px 28px;
-    background: transparent;
+    padding: 17px 30px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     color: var(--foreground);
     border: 1px solid var(--line);
+    border-radius: 999px;
     font-size: 10px;
     letter-spacing: 2.5px;
     text-transform: uppercase;
     font-weight: 500;
-    transition: border-color 0.2s, color 0.2s;
+    transition: border-color 0.25s, color 0.25s, transform 0.25s, background 0.25s;
   }
-  .aurora-cta--ghost:hover { border-color: var(--green); color: var(--green); }
+  .aurora-cta--ghost:hover {
+    border-color: var(--green);
+    color: var(--green);
+    background: #fff;
+    transform: translateY(-2px);
+  }
+
+  /* Pill que se usa em chips, tags, breadcrumbs leves */
+  .aurora-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(74,103,65,0.06);
+    color: var(--green);
+    border-radius: 999px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: 1px solid rgba(74,103,65,0.08);
+  }
 }
 
 @layer utilities {
   .aurora-reveal-fade {
-    animation: aurora-fade-in 0.6s cubic-bezier(.22,.61,.36,1) both;
+    animation: aurora-fade-in 0.7s cubic-bezier(.22,.61,.36,1) both;
   }
   @keyframes aurora-fade-in {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
+  /* Blob decorativo radial — usado como ambiente atrás de seções */
+  .aurora-blob {
+    position: absolute;
+    pointer-events: none;
+    filter: blur(80px);
+    opacity: 0.45;
+    border-radius: 999px;
+    z-index: 0;
+  }
+  .aurora-blob--sage  { background: radial-gradient(circle, rgba(143,166,136,0.55), transparent 60%); }
+  .aurora-blob--green { background: radial-gradient(circle, rgba(74,103,65,0.45), transparent 60%); }
+  .aurora-blob--tan   { background: radial-gradient(circle, rgba(212,184,150,0.5),  transparent 60%); }
+  .aurora-blob--linen { background: radial-gradient(circle, rgba(247,241,232,0.9),  transparent 65%); }
+
+  /* Grão de papel sutil — adiciona textura quente sem peso */
+  .aurora-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(0,0,0,0.018) 1px, transparent 1px);
+    background-size: 3px 3px;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+    opacity: 0.7;
+    z-index: 1;
+  }
+
+  /* Glow radial atrás de um elemento (ex: dashboard mockup) */
   .aurora-glow {
     position: relative;
   }
   .aurora-glow::before {
     content: "";
     position: absolute;
-    inset: -2px;
-    background: radial-gradient(60% 80% at 50% 0%, rgba(143,166,136,0.25), transparent 70%);
+    inset: -40px;
+    background:
+      radial-gradient(60% 50% at 50% 50%, rgba(143,166,136,0.35), transparent 70%),
+      radial-gradient(40% 40% at 30% 30%, rgba(212,184,150,0.25), transparent 70%);
     z-index: -1;
     pointer-events: none;
+    filter: blur(20px);
+  }
+
+  /* Linhas finas verticais decorativas (organização editorial moderna) */
+  .aurora-rule {
+    background: linear-gradient(90deg, transparent, rgba(74,103,65,0.18) 20%, rgba(74,103,65,0.18) 80%, transparent);
+    height: 1px;
+  }
+
+  /* Float lento — micro-motion contínuo (max 6px de excursão pra ficar discreto) */
+  .aurora-float {
+    animation: aurora-float 8s ease-in-out infinite;
+  }
+  @keyframes aurora-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+
+  /* Pulse sutil (saldo "respirando") */
+  .aurora-pulse {
+    animation: aurora-pulse 4s ease-in-out infinite;
+  }
+  @keyframes aurora-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.72; }
+  }
+
+  /* Shimmer numa border ou border interna (ex: card recomendado) */
+  .aurora-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .aurora-shimmer::before {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    background: conic-gradient(from 0deg, transparent, rgba(143,166,136,0.4), transparent 30%);
+    animation: aurora-rotate 6s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes aurora-rotate {
+    to { transform: rotate(360deg); }
   }
 }
