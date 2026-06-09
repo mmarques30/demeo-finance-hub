@@ -326,26 +326,15 @@ function SidebarContent({
         className="px-4 pt-6 pb-5 flex items-center justify-between"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
       >
+        {/* Só o ícone da logo — sem texto "Aurora" nem "Gestão financeira" */}
         <Link
           to={"/admin" as string}
-          className={`inline-flex items-center gap-2.5 text-white ${collapsed ? "justify-center w-full" : ""}`}
+          aria-label="Aurora · ir para Dashboard"
+          className={`inline-flex items-center text-white ${collapsed ? "justify-center w-full" : ""}`}
         >
           <span style={{ color: "var(--sage)" }}>
-            <LogoMark size={22} />
+            <LogoMark size={28} />
           </span>
-          {!collapsed && (
-            <div>
-              <div className="aurora-serif text-[19px]" style={{ fontWeight: 500, letterSpacing: "0.2px", lineHeight: 1 }}>
-                Aurora
-              </div>
-              <div
-                className="mt-1 text-[8px] uppercase"
-                style={{ letterSpacing: "2.5px", color: "rgba(255,255,255,.4)" }}
-              >
-                Gestão financeira
-              </div>
-            </div>
-          )}
         </Link>
         {!mobile && !collapsed && (
           <button
@@ -410,10 +399,10 @@ function SidebarContent({
               {!collapsed && (
                 <button
                   onClick={() => onToggleGroup(group.id)}
-                  className="flex items-center justify-between px-3 py-2 text-[8px] uppercase transition-colors"
+                  className="flex items-center justify-between px-3 py-2.5 text-[11px] uppercase transition-colors"
                   style={{
                     letterSpacing: "2.5px",
-                    color: hasActive ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.35)",
+                    color: hasActive ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.5)",
                     fontWeight: 600,
                   }}
                   aria-expanded={isOpen}
@@ -421,10 +410,10 @@ function SidebarContent({
                   <span>{group.label}</span>
                   <span
                     style={{
-                      fontSize: 9,
+                      fontSize: 11,
                       transition: "transform 0.25s",
                       transform: isOpen ? "rotate(90deg)" : "rotate(0)",
-                      opacity: 0.55,
+                      opacity: 0.6,
                     }}
                   >
                     ▶
@@ -457,15 +446,16 @@ function SidebarContent({
                       title={collapsed ? item.label : undefined}
                       className="group relative flex items-center gap-3 mx-1.5 my-0.5 transition-all"
                       style={{
-                        padding: collapsed ? "10px" : "9px 12px",
+                        padding: collapsed ? "12px" : "11px 14px",
                         justifyContent: collapsed ? "center" : undefined,
-                        color: active ? "#fff" : "rgba(255,255,255,.62)",
+                        color: active ? "#fff" : "rgba(255,255,255,.78)",
                         background: active
-                          ? "linear-gradient(135deg, rgba(143,166,136,0.24), rgba(143,166,136,0.08))"
+                          ? "linear-gradient(135deg, rgba(143,166,136,0.28), rgba(143,166,136,0.10))"
                           : "transparent",
                         borderRadius: 10,
                         fontWeight: active ? 500 : 400,
-                        fontSize: 12,
+                        fontSize: 14,
+                        lineHeight: 1.2,
                       }}
                     >
                       {active && (
@@ -477,23 +467,23 @@ function SidebarContent({
                             top: "50%",
                             transform: "translateY(-50%)",
                             width: 3,
-                            height: 20,
+                            height: 22,
                             background: "var(--sage)",
                             borderRadius: 999,
-                            boxShadow: "0 0 12px rgba(143,166,136,0.55)",
+                            boxShadow: "0 0 12px rgba(143,166,136,0.6)",
                           }}
                         />
                       )}
                       <span
                         aria-hidden
                         style={{
-                          width: 18,
-                          height: 18,
+                          width: 20,
+                          height: 20,
                           display: "inline-flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          color: active ? "var(--sage)" : "rgba(255,255,255,0.45)",
-                          fontSize: 12,
+                          color: active ? "var(--sage)" : "rgba(255,255,255,0.6)",
+                          fontSize: 15,
                           flexShrink: 0,
                         }}
                       >
