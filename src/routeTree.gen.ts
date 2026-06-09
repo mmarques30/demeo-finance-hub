@@ -13,12 +13,19 @@ import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminServicosRouteImport } from './routes/admin.servicos'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
+import { Route as AdminPropostasRouteImport } from './routes/admin.propostas'
 import { Route as AdminPipelineRouteImport } from './routes/admin.pipeline'
 import { Route as AdminPendentesRouteImport } from './routes/admin.pendentes'
 import { Route as AdminImportarRouteImport } from './routes/admin.importar'
 import { Route as AdminDfcRouteImport } from './routes/admin.dfc'
+import { Route as AdminContratosRouteImport } from './routes/admin.contratos'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
+import { Route as PPropostaTokenRouteImport } from './routes/p.proposta.$token'
+import { Route as AdminPropostasNovaRouteImport } from './routes/admin.propostas.nova'
+import { Route as AdminInsightsPrecificacaoRouteImport } from './routes/admin.insights.precificacao'
+import { Route as AdminContratosNovoRouteImport } from './routes/admin.contratos.novo'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -40,9 +47,19 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminServicosRoute = AdminServicosRouteImport.update({
+  id: '/admin/servicos',
+  path: '/admin/servicos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRelatoriosRoute = AdminRelatoriosRouteImport.update({
   id: '/admin/relatorios',
   path: '/admin/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPropostasRoute = AdminPropostasRouteImport.update({
+  id: '/admin/propostas',
+  path: '/admin/propostas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPipelineRoute = AdminPipelineRouteImport.update({
@@ -65,10 +82,36 @@ const AdminDfcRoute = AdminDfcRouteImport.update({
   path: '/admin/dfc',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminContratosRoute = AdminContratosRouteImport.update({
+  id: '/admin/contratos',
+  path: '/admin/contratos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminClientesRoute = AdminClientesRouteImport.update({
   id: '/admin/clientes',
   path: '/admin/clientes',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PPropostaTokenRoute = PPropostaTokenRouteImport.update({
+  id: '/p/proposta/$token',
+  path: '/p/proposta/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPropostasNovaRoute = AdminPropostasNovaRouteImport.update({
+  id: '/nova',
+  path: '/nova',
+  getParentRoute: () => AdminPropostasRoute,
+} as any)
+const AdminInsightsPrecificacaoRoute =
+  AdminInsightsPrecificacaoRouteImport.update({
+    id: '/admin/insights/precificacao',
+    path: '/admin/insights/precificacao',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AdminContratosNovoRoute = AdminContratosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AdminContratosRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -76,24 +119,38 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
   '/admin/importar': typeof AdminImportarRoute
   '/admin/pendentes': typeof AdminPendentesRoute
   '/admin/pipeline': typeof AdminPipelineRoute
+  '/admin/propostas': typeof AdminPropostasRouteWithChildren
   '/admin/relatorios': typeof AdminRelatoriosRoute
+  '/admin/servicos': typeof AdminServicosRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/contratos/novo': typeof AdminContratosNovoRoute
+  '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
+  '/admin/propostas/nova': typeof AdminPropostasNovaRoute
+  '/p/proposta/$token': typeof PPropostaTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
   '/admin/importar': typeof AdminImportarRoute
   '/admin/pendentes': typeof AdminPendentesRoute
   '/admin/pipeline': typeof AdminPipelineRoute
+  '/admin/propostas': typeof AdminPropostasRouteWithChildren
   '/admin/relatorios': typeof AdminRelatoriosRoute
+  '/admin/servicos': typeof AdminServicosRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/contratos/novo': typeof AdminContratosNovoRoute
+  '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
+  '/admin/propostas/nova': typeof AdminPropostasNovaRoute
+  '/p/proposta/$token': typeof PPropostaTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -101,12 +158,19 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
   '/admin/importar': typeof AdminImportarRoute
   '/admin/pendentes': typeof AdminPendentesRoute
   '/admin/pipeline': typeof AdminPipelineRoute
+  '/admin/propostas': typeof AdminPropostasRouteWithChildren
   '/admin/relatorios': typeof AdminRelatoriosRoute
+  '/admin/servicos': typeof AdminServicosRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/contratos/novo': typeof AdminContratosNovoRoute
+  '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
+  '/admin/propostas/nova': typeof AdminPropostasNovaRoute
+  '/p/proposta/$token': typeof PPropostaTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -115,36 +179,57 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/admin/clientes'
+    | '/admin/contratos'
     | '/admin/dfc'
     | '/admin/importar'
     | '/admin/pendentes'
     | '/admin/pipeline'
+    | '/admin/propostas'
     | '/admin/relatorios'
+    | '/admin/servicos'
     | '/admin/'
+    | '/admin/contratos/novo'
+    | '/admin/insights/precificacao'
+    | '/admin/propostas/nova'
+    | '/p/proposta/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/portal'
     | '/admin/clientes'
+    | '/admin/contratos'
     | '/admin/dfc'
     | '/admin/importar'
     | '/admin/pendentes'
     | '/admin/pipeline'
+    | '/admin/propostas'
     | '/admin/relatorios'
+    | '/admin/servicos'
     | '/admin'
+    | '/admin/contratos/novo'
+    | '/admin/insights/precificacao'
+    | '/admin/propostas/nova'
+    | '/p/proposta/$token'
   id:
     | '__root__'
     | '/'
     | '/login'
     | '/portal'
     | '/admin/clientes'
+    | '/admin/contratos'
     | '/admin/dfc'
     | '/admin/importar'
     | '/admin/pendentes'
     | '/admin/pipeline'
+    | '/admin/propostas'
     | '/admin/relatorios'
+    | '/admin/servicos'
     | '/admin/'
+    | '/admin/contratos/novo'
+    | '/admin/insights/precificacao'
+    | '/admin/propostas/nova'
+    | '/p/proposta/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -152,12 +237,17 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRoute
   AdminClientesRoute: typeof AdminClientesRoute
+  AdminContratosRoute: typeof AdminContratosRouteWithChildren
   AdminDfcRoute: typeof AdminDfcRoute
   AdminImportarRoute: typeof AdminImportarRoute
   AdminPendentesRoute: typeof AdminPendentesRoute
   AdminPipelineRoute: typeof AdminPipelineRoute
+  AdminPropostasRoute: typeof AdminPropostasRouteWithChildren
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
+  AdminServicosRoute: typeof AdminServicosRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminInsightsPrecificacaoRoute: typeof AdminInsightsPrecificacaoRoute
+  PPropostaTokenRoute: typeof PPropostaTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -190,11 +280,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/servicos': {
+      id: '/admin/servicos'
+      path: '/admin/servicos'
+      fullPath: '/admin/servicos'
+      preLoaderRoute: typeof AdminServicosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/relatorios': {
       id: '/admin/relatorios'
       path: '/admin/relatorios'
       fullPath: '/admin/relatorios'
       preLoaderRoute: typeof AdminRelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/propostas': {
+      id: '/admin/propostas'
+      path: '/admin/propostas'
+      fullPath: '/admin/propostas'
+      preLoaderRoute: typeof AdminPropostasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/pipeline': {
@@ -225,6 +329,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDfcRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/contratos': {
+      id: '/admin/contratos'
+      path: '/admin/contratos'
+      fullPath: '/admin/contratos'
+      preLoaderRoute: typeof AdminContratosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/clientes': {
       id: '/admin/clientes'
       path: '/admin/clientes'
@@ -232,20 +343,77 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/p/proposta/$token': {
+      id: '/p/proposta/$token'
+      path: '/p/proposta/$token'
+      fullPath: '/p/proposta/$token'
+      preLoaderRoute: typeof PPropostaTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/propostas/nova': {
+      id: '/admin/propostas/nova'
+      path: '/nova'
+      fullPath: '/admin/propostas/nova'
+      preLoaderRoute: typeof AdminPropostasNovaRouteImport
+      parentRoute: typeof AdminPropostasRoute
+    }
+    '/admin/insights/precificacao': {
+      id: '/admin/insights/precificacao'
+      path: '/admin/insights/precificacao'
+      fullPath: '/admin/insights/precificacao'
+      preLoaderRoute: typeof AdminInsightsPrecificacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/contratos/novo': {
+      id: '/admin/contratos/novo'
+      path: '/novo'
+      fullPath: '/admin/contratos/novo'
+      preLoaderRoute: typeof AdminContratosNovoRouteImport
+      parentRoute: typeof AdminContratosRoute
+    }
   }
 }
+
+interface AdminContratosRouteChildren {
+  AdminContratosNovoRoute: typeof AdminContratosNovoRoute
+}
+
+const AdminContratosRouteChildren: AdminContratosRouteChildren = {
+  AdminContratosNovoRoute: AdminContratosNovoRoute,
+}
+
+const AdminContratosRouteWithChildren = AdminContratosRoute._addFileChildren(
+  AdminContratosRouteChildren,
+)
+
+interface AdminPropostasRouteChildren {
+  AdminPropostasNovaRoute: typeof AdminPropostasNovaRoute
+}
+
+const AdminPropostasRouteChildren: AdminPropostasRouteChildren = {
+  AdminPropostasNovaRoute: AdminPropostasNovaRoute,
+}
+
+const AdminPropostasRouteWithChildren = AdminPropostasRoute._addFileChildren(
+  AdminPropostasRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRoute,
   AdminClientesRoute: AdminClientesRoute,
+  AdminContratosRoute: AdminContratosRouteWithChildren,
   AdminDfcRoute: AdminDfcRoute,
   AdminImportarRoute: AdminImportarRoute,
   AdminPendentesRoute: AdminPendentesRoute,
   AdminPipelineRoute: AdminPipelineRoute,
+  AdminPropostasRoute: AdminPropostasRouteWithChildren,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
+  AdminServicosRoute: AdminServicosRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminInsightsPrecificacaoRoute: AdminInsightsPrecificacaoRoute,
+  PPropostaTokenRoute: PPropostaTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
