@@ -565,6 +565,37 @@ function DropdownItem({ icon, label, onClick }: { icon: string; label: string; o
   );
 }
 
+// Mapa de identidade visual por rota — cada módulo tem ícone + acento
+type ModuleIdentity = {
+  icon: string;
+  accent: string;
+  accentSoft: string;
+  group: string;
+};
+
+const MODULE_MAP: Record<string, ModuleIdentity> = {
+  "/admin": { icon: "▦", accent: "var(--navy)", accentSoft: "rgba(27,57,77,0.10)", group: "Visão" },
+  "/admin/clientes": { icon: "◷", accent: "var(--sage)", accentSoft: "rgba(143,166,136,0.12)", group: "Visão" },
+  "/admin/dfc": { icon: "◈", accent: "var(--navy)", accentSoft: "rgba(27,57,77,0.10)", group: "Visão" },
+  "/admin/relatorios": { icon: "≡", accent: "var(--navy)", accentSoft: "rgba(27,57,77,0.10)", group: "Visão" },
+  "/admin/importar": { icon: "↓", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Operação" },
+  "/admin/pendentes": { icon: "⊙", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Operação" },
+  "/admin/pipeline": { icon: "⋯", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
+  "/admin/propostas": { icon: "✎", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
+  "/admin/contratos": { icon: "❍", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
+  "/admin/servicos": { icon: "◇", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Catálogo" },
+  "/admin/insights/precificacao": { icon: "↗", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Catálogo" },
+};
+
+function resolveModule(pathname: string): ModuleIdentity {
+  // Casa o prefixo mais longo
+  const sorted = Object.keys(MODULE_MAP).sort((a, b) => b.length - a.length);
+  for (const key of sorted) {
+    if (pathname.startsWith(key)) return MODULE_MAP[key];
+  }
+  return MODULE_MAP["/admin"];
+}
+
 export function PageHeader({
   cap,
   title,
@@ -578,47 +609,94 @@ export function PageHeader({
   description?: string;
   right?: ReactNode;
 }) {
+  const location = useLocation();
+  const mod = resolveModule(location.pathname);
+
   return (
     <div
-      className="relative overflow-hidden px-4 lg:px-10 pt-8 lg:pt-10 pb-7"
+      className="relative px-6 lg:px-10 pt-10 lg:pt-14 pb-10"
       style={{
-        background: "linear-gradient(180deg, #FAFAF8 0%, #FFFFFF 100%)",
+        background: "#FFFFFF",
         borderBottom: "1px solid #EFEFEF",
       }}
     >
-      <div
-        aria-hidden
-        className="aurora-blob aurora-blob--sage"
-        style={{ width: 320, height: 320, right: "-5%", top: "-30%", opacity: 0.22 }}
-      />
-      <div className="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-5">
-        <div>
-          <div className="aurora-cap mb-3" style={{ color: "var(--sage)" }}>
-            ✦ {cap}
-          </div>
-          <h1
-            className="aurora-serif"
-            style={{ fontSize: "clamp(30px, 4vw, 48px)", lineHeight: 1, letterSpacing: "-1.8px" }}
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-7">
+        <div className="flex items-start gap-5 max-w-3xl">
+          {/* Badge ícone do módulo */}
+          <div
+            aria-hidden
+            className="shrink-0 hidden md:inline-flex items-center justify-center"
+            style={{
+              width: 64,
+              height: 64,
+              background: mod.accentSoft,
+              color: mod.accent,
+              fontSize: 26,
+              border: `1px solid ${mod.accent}`,
+              borderColor: "transparent",
+            }}
           >
-            {title}
-            {emphasis && (
-              <>
-                {" "}
-                <em className="italic" style={{ color: "var(--green)" }}>
-                  {emphasis}
-                </em>
-              </>
-            )}
-          </h1>
-          {description && (
-            <p
-              className="mt-4 max-w-xl text-[13px]"
-              style={{ color: "var(--muted-foreground)", lineHeight: 1.85 }}
+            {mod.icon}
+          </div>
+
+          <div className="min-w-0">
+            {/* Cap com cor do módulo */}
+            <div
+              className="flex items-center gap-3 mb-4 flex-wrap"
+              style={{ color: mod.accent }}
             >
-              {description}
-            </p>
-          )}
+              <span
+                className="text-[11px] uppercase"
+                style={{ letterSpacing: "3px", fontWeight: 600 }}
+              >
+                {mod.group}
+              </span>
+              <span aria-hidden style={{ opacity: 0.4 }}>·</span>
+              <span
+                className="text-[11px] uppercase"
+                style={{ letterSpacing: "2.5px", fontWeight: 500 }}
+              >
+                {cap}
+              </span>
+            </div>
+
+            <h1
+              className="aurora-serif"
+              style={{
+                fontSize: "clamp(34px, 4.5vw, 56px)",
+                fontWeight: 300,
+                lineHeight: 1.05,
+                letterSpacing: "-1.8px",
+                color: "var(--foreground)",
+              }}
+            >
+              {title}
+              {emphasis && (
+                <>
+                  {" "}
+                  <em className="italic" style={{ color: mod.accent, fontWeight: 300 }}>
+                    {emphasis}
+                  </em>
+                </>
+              )}
+            </h1>
+
+            {description && (
+              <p
+                className="mt-5 max-w-2xl"
+                style={{
+                  fontSize: 15,
+                  fontWeight: 300,
+                  color: "var(--muted-foreground)",
+                  lineHeight: 1.7,
+                }}
+              >
+                {description}
+              </p>
+            )}
+          </div>
         </div>
+
         {right && <div className="shrink-0">{right}</div>}
       </div>
     </div>
