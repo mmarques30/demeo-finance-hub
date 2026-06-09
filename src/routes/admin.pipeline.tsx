@@ -1,38 +1,135 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { toast } from "sonner";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { brl } from "@/lib/mockData";
+import { MetricsRow } from "@/components/MetricsRow";
+import { DealDrawer } from "@/components/DealDrawer";
+import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
+import { authHeaders } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin/pipeline")({
   component: PipelinePage,
   head: () => ({ meta: [{ title: "Pipeline · Aurora" }] }),
 });
 
-const colunas: { key: string; label: string; cards: { name: string; source: string; date: string; value: number }[] }[] = [
-  { key: "lead", label: "Lead", cards: [
-    { name: "Confeitaria Aurora", source: "Indicação", date: "14/04", value: 24000 },
-    { name: "Studio Pilates Vita", source: "Instagram", date: "16/04", value: 18000 },
-  ] },
-  { key: "contato", label: "Primeiro Contato", cards: [
-    { name: "Pet Shop Petricor", source: "Landing page", date: "12/04", value: 21000 },
-  ] },
-  { key: "diag", label: "Diagnóstico", cards: [
-    { name: "Auto Center Ponto Forte", source: "Indicação", date: "08/04", value: 28000 },
-  ] },
-  { key: "prop", label: "Proposta Enviada", cards: [
-    { name: "Atelier de Costura M.", source: "Indicação", date: "05/04", value: 22000 },
-  ] },
-  { key: "ganho", label: "Fechado", cards: [
-    { name: "Restaurante Pernambuco", source: "Indicação", date: "01/04", value: 36000 },
-  ] },
-  { key: "perdido", label: "Perdido", cards: [
-    { name: "Loja Calçados X", source: "Landing page", date: "02/04", value: 12000 },
-  ] },
-];
+type Stage = { id: string; slug: string; label: string; color: string; is_won: boolean; is_lost: boolean; position: number };
+type Deal = {
+  id: string;
+  contact_name: string;
+  company: string | null;
+  service_type: string | null;
+  expected_value: number | null;
+  stage_id: string;
+  stage_changed_at: string;
+};
+
+function brl(n: number) {
+  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
+}
+
+function daysSince(dateStr: string): number {
+  const ms = Date.now() - new Date(dateStr).getTime();
+  return Math.max(0, Math.floor(ms / 86_400_000));
+}
 
 function PipelinePage() {
-  const totalAtivos = colunas.filter((c) => !["ganho", "perdido"].includes(c.key)).reduce((s, c) => s + c.cards.length, 0);
-  const valorNeg = colunas.filter((c) => !["ganho", "perdido"].includes(c.key)).reduce((s, c) => s + c.cards.reduce((a, b) => a + b.value, 0), 0);
-  const ticket = colunas.find((c) => c.key === "ganho")!.cards.reduce((a, b) => a + b.value, 0) / Math.max(1, colunas.find((c) => c.key === "ganho")!.cards.length);
+  const qc = useQueryClient();
+  const [drawerDealId, setDrawerDealId] = useState<string | null>(null);
+  const [dragDealId, setDragDealId] = useState<string | null>(null);
+  const [lossModal, setLossModal] = useState<{ deal_id: string; to_stage_slug: string } | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  const { data: stages = [] } = useQuery({
+    queryKey: ["deal_stages"],
+    queryFn: async (): Promise<Stage[]> => {
+      const { data } = await supabase()
+        .from("deal_stages")
+        .select("*")
+        .order("position");
+      return (data ?? []) as Stage[];
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: deals = [] } = useQuery({
+    queryKey: ["deals"],
+    queryFn: async (): Promise<Deal[]> => {
+      const { data } = await supabase()
+        .from("deals")
+        .select("id, contact_name, company, service_type, expected_value, stage_id, stage_changed_at")
+        .order("stage_changed_at", { ascending: false });
+      return (data ?? []) as Deal[];
+    },
+  });
+
+  const byStage = useMemo(() => {
+    const map = new Map<string, Deal[]>();
+    for (const s of stages) map.set(s.id, []);
+    for (const d of deals) {
+      const arr = map.get(d.stage_id);
+      if (arr) arr.push(d);
+    }
+    return map;
+  }, [stages, deals]);
+
+  async function moveDeal(deal_id: string, to_stage_slug: string, lost_reason?: string) {
+    const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+    const res = await fetch(`${FUNCTIONS_URL}/deal-move`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ deal_id, to_stage_slug, lost_reason }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(j.error ?? "Falha ao mover");
+    }
+  }
+
+  function onDragStart(e: DragStartEvent) {
+    setDragDealId(String(e.active.id));
+  }
+
+  async function onDragEnd(e: DragEndEvent) {
+    setDragDealId(null);
+    if (!e.over) return;
+    const deal_id = String(e.active.id);
+    const to_stage_id = String(e.over.id);
+    const stage = stages.find((s) => s.id === to_stage_id);
+    if (!stage) return;
+    const deal = deals.find((d) => d.id === deal_id);
+    if (!deal || deal.stage_id === to_stage_id) return;
+
+    if (stage.is_lost) {
+      setLossModal({ deal_id, to_stage_slug: stage.slug });
+      return;
+    }
+
+    // Otimismo
+    qc.setQueryData<Deal[]>(["deals"], (prev) =>
+      (prev ?? []).map((d) => (d.id === deal_id ? { ...d, stage_id: to_stage_id, stage_changed_at: new Date().toISOString() } : d)),
+    );
+
+    try {
+      await moveDeal(deal_id, stage.slug);
+      qc.invalidateQueries({ queryKey: ["kpis", "pipeline"] });
+      toast.success(`Movido para ${stage.label}`);
+    } catch (e) {
+      qc.invalidateQueries({ queryKey: ["deals"] });
+      toast.error(e instanceof Error ? e.message : "Falha ao mover");
+    }
+  }
 
   return (
     <AdminLayout>
@@ -40,49 +137,195 @@ function PipelinePage() {
         cap="CRM comercial"
         title="Pipeline"
         emphasis="de captação"
-        description="Visualização kanban dos leads ativos da Aurora."
+        description="Arraste cards entre colunas. Drop em Perdido pede o motivo."
       />
 
       <div className="px-8 lg:px-12 pb-12 flex flex-col gap-8">
-        {/* Métricas */}
-        <div className="grid md:grid-cols-4 gap-5">
-          <Metric label="Leads ativos" value={String(totalAtivos)} tone="green" />
-          <Metric label="Em negociação" value={brl(valorNeg)} tone="navy" />
-          <Metric label="Taxa de conversão" value="24%" tone="green" />
-          <Metric label="Ticket médio" value={brl(ticket)} tone="tan" />
-        </div>
+        <MetricsRow />
 
-        {/* Kanban */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {colunas.map((col) => (
-            <div key={col.key} className="flex flex-col gap-3">
-              <div className="flex items-center justify-between px-2">
-                <div className="aurora-cap">{col.label}</div>
-                <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{col.cards.length}</div>
+        <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {stages.map((s) => (
+              <KanbanColumn
+                key={s.id}
+                stage={s}
+                deals={byStage.get(s.id) ?? []}
+                onCardClick={setDrawerDealId}
+                isActiveDrag={!!dragDealId}
+              />
+            ))}
+          </div>
+          <DragOverlay>
+            {dragDealId && (
+              <div className="bg-white p-4 shadow-lg" style={{ border: "1px solid var(--green)" }}>
+                <div className="text-[12px]" style={{ fontWeight: 500 }}>
+                  {deals.find((d) => d.id === dragDealId)?.contact_name}
+                </div>
               </div>
-              <div className="flex flex-col gap-2 min-h-[200px]">
-                {col.cards.map((card) => (
-                  <div key={card.name} className="bg-white p-4 transition-shadow hover:shadow-sm" style={{ border: "1px solid var(--line)" }}>
-                    <div className="text-[12px]" style={{ fontWeight: 500 }}>{card.name}</div>
-                    <div className="text-[10px] mt-1" style={{ color: "var(--muted-foreground)" }}>{card.source} · {card.date}</div>
-                    <div className="aurora-serif text-[18px] mt-3" style={{ color: "var(--green)" }}>{brl(card.value)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </DragOverlay>
+        </DndContext>
       </div>
+
+      <DealDrawer dealId={drawerDealId} onClose={() => setDrawerDealId(null)} />
+
+      {lossModal && (
+        <LossReasonModal
+          onCancel={() => setLossModal(null)}
+          onConfirm={async (reason) => {
+            const stage = stages.find((s) => s.slug === lossModal.to_stage_slug)!;
+            qc.setQueryData<Deal[]>(["deals"], (prev) =>
+              (prev ?? []).map((d) => (d.id === lossModal.deal_id ? { ...d, stage_id: stage.id, stage_changed_at: new Date().toISOString() } : d)),
+            );
+            try {
+              await moveDeal(lossModal.deal_id, lossModal.to_stage_slug, reason);
+              qc.invalidateQueries({ queryKey: ["kpis", "pipeline"] });
+              toast.success("Marcado como perdido");
+              setLossModal(null);
+            } catch (e) {
+              qc.invalidateQueries({ queryKey: ["deals"] });
+              toast.error(e instanceof Error ? e.message : "Falha");
+            }
+          }}
+        />
+      )}
     </AdminLayout>
   );
 }
 
-function Metric({ label, value, tone }: { label: string; value: string; tone: "green" | "tan" | "navy" }) {
-  const color = tone === "green" ? "var(--green)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
+function KanbanColumn({
+  stage,
+  deals,
+  onCardClick,
+  isActiveDrag,
+}: {
+  stage: Stage;
+  deals: Deal[];
+  onCardClick: (id: string) => void;
+  isActiveDrag: boolean;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage.id });
+  const sum = deals.reduce((s, d) => s + (Number(d.expected_value) || 0), 0);
   return (
-    <div className="aurora-card">
-      <div className="aurora-cap mb-3">{label}</div>
-      <div className="aurora-serif" style={{ fontSize: 30, color, lineHeight: 1, letterSpacing: "-1px" }}>{value}</div>
+    <div
+      ref={setNodeRef}
+      className="flex flex-col gap-2"
+      style={{
+        padding: 4,
+        background: isOver ? "rgba(74,103,65,0.04)" : "transparent",
+        border: isOver ? "1px solid var(--green)" : "1px solid transparent",
+        transition: "background 0.15s",
+        opacity: isActiveDrag && !isOver ? 0.85 : 1,
+      }}
+    >
+      <div className="flex items-center justify-between px-2" style={{ borderBottom: "1px solid var(--line)", paddingBottom: 6 }}>
+        <div className="aurora-cap" style={{ color: stage.color }}>
+          ● {stage.label}
+        </div>
+        <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+          {deals.length}
+        </div>
+      </div>
+      <div className="text-[10px] px-2" style={{ color: "var(--muted-foreground)" }}>
+        {brl(sum)}
+      </div>
+      <div className="flex flex-col gap-2 min-h-[160px] pt-1">
+        {deals.map((d) => (
+          <DealCard key={d.id} deal={d} onClick={() => onCardClick(d.id)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DealCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: deal.id });
+  const style: React.CSSProperties = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0.5 : 1,
+    background: "#fff",
+    border: "1px solid var(--line)",
+    padding: 12,
+    cursor: "grab",
+  };
+  const days = daysSince(deal.stage_changed_at);
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onDoubleClick={onClick}>
+      <div className="text-[12px]" style={{ fontWeight: 500 }}>
+        {deal.contact_name}
+      </div>
+      <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+        {deal.company ?? "—"}
+      </div>
+      {deal.service_type && (
+        <div
+          className="inline-block mt-2 text-[9px] uppercase px-2 py-0.5"
+          style={{
+            letterSpacing: "1px",
+            background: "rgba(74,103,65,0.10)",
+            color: "var(--green)",
+            fontWeight: 500,
+          }}
+        >
+          {deal.service_type}
+        </div>
+      )}
+      <div className="flex items-end justify-between mt-3">
+        <div className="aurora-serif" style={{ fontSize: 18, color: "var(--green)" }}>
+          {deal.expected_value ? brl(Number(deal.expected_value)) : "—"}
+        </div>
+        <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+          {days}d
+        </div>
+      </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        className="aurora-link mt-2 text-[9px]"
+      >
+        Detalhes →
+      </button>
+    </div>
+  );
+}
+
+function LossReasonModal({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: (reason: string) => void;
+}) {
+  const [reason, setReason] = useState("");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onCancel}>
+      <div className="bg-white p-8 max-w-[480px] w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="aurora-cap mb-2">Motivo da perda</div>
+        <h3 className="aurora-serif text-[24px] mb-4">Por que esse deal foi perdido?</h3>
+        <textarea
+          autoFocus
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={4}
+          className="aurora-input mb-4"
+          placeholder="Preço, timing, concorrente, sumiu..."
+        />
+        <div className="flex justify-end gap-2">
+          <button onClick={onCancel} className="aurora-link">
+            Cancelar
+          </button>
+          <button
+            disabled={!reason.trim()}
+            onClick={() => onConfirm(reason.trim())}
+            className="text-[10px] uppercase px-4 py-2 disabled:opacity-50"
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+          >
+            Marcar como perdido →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

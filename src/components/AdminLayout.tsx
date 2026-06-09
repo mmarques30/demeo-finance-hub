@@ -13,6 +13,10 @@ const sidebarItems: SidebarItem[] = [
   { to: "/admin/dfc", label: "DFC / DRE" },
   { to: "/admin/relatorios", label: "Relatórios" },
   { to: "/admin/pipeline", label: "Pipeline" },
+  { to: "/admin/propostas", label: "Propostas" },
+  { to: "/admin/contratos", label: "Contratos" },
+  { to: "/admin/servicos", label: "Serviços" },
+  { to: "/admin/insights/precificacao", label: "Precificação" },
 ];
 
 const topLinks: { to: string; label: string }[] = [

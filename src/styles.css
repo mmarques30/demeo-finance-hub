@@ -190,4 +190,16 @@
   }
   .aurora-link:hover { color: var(--green); }
   .aurora-link[data-status="active"] { color: var(--green); }
+
+  .aurora-input {
+    width: 100%;
+    background: #fff;
+    padding: 12px 14px;
+    font-size: 13px;
+    border: 1px solid var(--line);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .aurora-input:focus { border-color: var(--green); }
+  .aurora-input[aria-invalid="true"] { border-color: var(--destructive); }
 }
