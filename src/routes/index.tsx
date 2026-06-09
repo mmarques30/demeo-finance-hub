@@ -9,6 +9,9 @@ import { ClaudiaSection } from "@/components/landing/ClaudiaSection";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
+import { AmbientBackground } from "@/components/landing/motion/AmbientBackground";
+import { ScrollProgress } from "@/components/landing/motion/ScrollProgress";
+import { WaveDivider } from "@/components/landing/motion/WaveDivider";
 import { AURORA_WHATSAPP } from "@/lib/supabase";
 
 const INK = "#1C2D45";
@@ -26,10 +29,7 @@ export const Route = createFileRoute("/")({
           "A Aurora cuida do financeiro da sua empresa de ponta a ponta — extrato, DFC, projeção e portal — para você decidir com clareza.",
       },
       { property: "og:title", content: "Aurora · Gestora Financeira" },
-      {
-        property: "og:description",
-        content: "Cada real da sua empresa, visível.",
-      },
+      { property: "og:description", content: "Cada real da sua empresa, visível." },
       { property: "og:image", content: "/brand/aurora-logo-primary.svg" },
     ],
   }),
@@ -83,30 +83,41 @@ function Landing() {
   useRevealOnScroll();
 
   return (
-    <div className="min-h-screen" style={{ background: "#FFFFFF", color: INK }}>
+    <div className="min-h-screen relative" style={{ color: INK }}>
+      <AmbientBackground />
+      <ScrollProgress />
+
       <a href="#hero" className="skip-link focus-ring">
         Pular para o conteúdo
       </a>
 
-      {/* NAV — clean white nextsense-style */}
+      {/* NAV pill flutuante moderna */}
       <nav
         aria-label="Navegação principal"
-        className="fixed top-0 left-0 right-0 z-50"
+        className="fixed z-50 transition-all"
         style={{
-          background: scrolled
-            ? "rgba(255,255,255,0.96)"
-            : "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          borderBottom: scrolled
-            ? "1px solid rgba(28,45,69,0.08)"
-            : "1px solid transparent",
-          transition: "background 0.2s, border-color 0.2s",
+          top: scrolled ? 16 : 24,
+          left: 16,
+          right: 16,
+          margin: "0 auto",
+          maxWidth: 1280,
         }}
       >
         <div
-          className="px-6 lg:px-14 flex items-center justify-between max-w-[1320px] mx-auto"
-          style={{ height: 72 }}
+          className="flex items-center justify-between transition-all"
+          style={{
+            background: scrolled
+              ? "rgba(255,255,255,0.85)"
+              : "rgba(255,255,255,0.7)",
+            backdropFilter: "blur(18px) saturate(1.4)",
+            WebkitBackdropFilter: "blur(18px) saturate(1.4)",
+            border: "1px solid rgba(28,45,69,0.08)",
+            borderRadius: 999,
+            padding: "12px 14px 12px 24px",
+            boxShadow: scrolled
+              ? "0 10px 30px -10px rgba(28,45,69,0.18), 0 1px 0 rgba(255,255,255,0.6) inset"
+              : "0 1px 0 rgba(255,255,255,0.5) inset",
+          }}
         >
           <Link
             to="/"
@@ -128,23 +139,29 @@ function Landing() {
             </span>
           </Link>
 
-          <ul className="hidden md:flex items-center gap-8">
+          <ul className="hidden md:flex items-center gap-1">
             {NAV.map((n) => (
               <li key={n.href}>
                 <a
                   href={n.href}
-                  className="focus-ring"
+                  className="focus-ring relative"
                   style={{
-                    fontSize: 14,
-                    fontWeight: 400,
-                    color: "rgba(28,45,69,0.65)",
-                    padding: "6px 0",
-                    transition: "color 0.2s",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "rgba(28,45,69,0.7)",
+                    padding: "8px 14px",
+                    borderRadius: 999,
+                    transition: "color 0.2s, background 0.2s",
+                    display: "inline-block",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = FOREST)}
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "rgba(28,45,69,0.65)")
-                  }
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = FOREST;
+                    e.currentTarget.style.background = "rgba(40,76,43,0.06)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "rgba(28,45,69,0.7)";
+                    e.currentTarget.style.background = "transparent";
+                  }}
                 >
                   {n.label}
                 </a>
@@ -157,24 +174,33 @@ function Landing() {
               to="/login"
               className="hidden sm:inline-flex focus-ring"
               style={{
-                fontSize: 14,
-                fontWeight: 400,
-                color: "rgba(28,45,69,0.65)",
+                fontSize: 13,
+                fontWeight: 500,
+                color: "rgba(28,45,69,0.7)",
                 padding: "8px 14px",
+                borderRadius: 999,
               }}
             >
               Entrar
             </Link>
             <a
               href="#contato"
-              className="focus-ring inline-flex items-center gap-2"
+              className="focus-ring inline-flex items-center gap-2 relative overflow-hidden"
               style={{
-                background: FOREST,
+                background: `linear-gradient(135deg, ${FOREST} 0%, #1f3a22 100%)`,
                 color: "#fff",
                 fontSize: 13,
                 fontWeight: 500,
-                padding: "11px 22px",
-                borderRadius: 4,
+                padding: "10px 20px",
+                borderRadius: 999,
+                boxShadow: "0 6px 16px -6px rgba(40,76,43,0.5)",
+                transition: "transform 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px) scale(1.02)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "";
               }}
             >
               Agendar conversa →
@@ -185,28 +211,64 @@ function Landing() {
 
       <main id="main-content">
         <HeroPC />
-        <ValueProp />
-        <Features />
+
+        {/* Curva de hero → ValueProp (mist) */}
+        <WaveDivider topColor="transparent" bottomColor="#FFFFFF" variant="curve" height={80} />
+
+        <div style={{ background: "#FFFFFF" }}>
+          <ValueProp />
+        </div>
+
+        {/* Curva mist → Features (off-white) */}
+        <WaveDivider topColor="#FFFFFF" bottomColor="#FAFAF8" variant="wave" height={96} />
+
+        <div style={{ background: "#FAFAF8" }}>
+          <Features />
+        </div>
+
+        {/* Curva off-white → Numbers (dark ink) */}
+        <WaveDivider topColor="#FAFAF8" bottomColor={INK} variant="curve" height={96} />
+
         <Numbers />
-        <ClaudiaSection />
-        <Testimonials />
-        <FAQ />
+
+        {/* Curva dark → Founder (white) */}
+        <WaveDivider topColor={INK} bottomColor="#FFFFFF" variant="wave" height={96} />
+
+        <div style={{ background: "#FFFFFF" }}>
+          <ClaudiaSection />
+        </div>
+
+        {/* Curva white → Testimonials (off-white) */}
+        <WaveDivider topColor="#FFFFFF" bottomColor="#FAFAF8" variant="tilt" height={80} />
+
+        <div style={{ background: "#FAFAF8" }}>
+          <Testimonials />
+        </div>
+
+        {/* Curva off-white → FAQ (mist) */}
+        <WaveDivider topColor="#FAFAF8" bottomColor="#FFFFFF" variant="curve" height={80} />
+
+        <div style={{ background: "#FFFFFF" }}>
+          <FAQ />
+        </div>
+
+        {/* Curva white → FinalCTA (forest) */}
+        <WaveDivider topColor="#FFFFFF" bottomColor={FOREST} variant="wave" height={96} />
+
         <FinalCTA />
+
+        {/* Curva forest → Footer (ink) */}
+        <WaveDivider topColor={FOREST} bottomColor={INK} variant="tilt" height={64} />
       </main>
 
-      {/* FOOTER ink minimal nextsense-style */}
       <footer
-        className="px-6 lg:px-14 pt-16 pb-8"
+        className="px-6 lg:px-14 pt-16 pb-8 relative"
         style={{ background: INK, color: "#fff" }}
       >
         <div className="max-w-[1280px] mx-auto">
           <div className="grid lg:grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-12">
             <div>
-              <Link
-                to="/"
-                className="inline-flex items-center gap-2.5"
-                style={{ color: SAGE }}
-              >
+              <Link to="/" className="inline-flex items-center gap-2.5" style={{ color: SAGE }}>
                 <LogoMark size={22} />
                 <span
                   style={{
@@ -233,11 +295,7 @@ function Landing() {
               </p>
               <p
                 className="mt-6 max-w-xs"
-                style={{
-                  fontSize: 12,
-                  color: "rgba(255,255,255,0.4)",
-                  lineHeight: 1.7,
-                }}
+                style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.7 }}
               >
                 Gestora financeira para pequenas e médias empresas. Atendimento por convite.
               </p>
@@ -248,7 +306,6 @@ function Landing() {
               <a href="#resultados">Casos</a>
               <a href="#faq">Dúvidas</a>
             </FooterCol>
-
             <FooterCol title="Aurora">
               <a href="#quem">Quem somos</a>
               <Link to="/login">Entrar</Link>
@@ -257,20 +314,12 @@ function Landing() {
                 WhatsApp
               </a>
             </FooterCol>
-
             <FooterCol title="Acompanhe">
-              <a href="#" rel="noopener noreferrer">
-                Instagram
-              </a>
-              <a href="#" rel="noopener noreferrer">
-                LinkedIn
-              </a>
-              <a href="#" rel="noopener noreferrer">
-                Blog
-              </a>
+              <a href="#" rel="noopener noreferrer">Instagram</a>
+              <a href="#" rel="noopener noreferrer">LinkedIn</a>
+              <a href="#" rel="noopener noreferrer">Blog</a>
             </FooterCol>
           </div>
-
           <div
             className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pt-7"
             style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
