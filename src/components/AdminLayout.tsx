@@ -3,28 +3,23 @@ import type { ReactNode } from "react";
 import { Logo, LogoMark } from "./Logo";
 import { currentAdmin, pendingTransactions } from "@/lib/mockData";
 
-type SidebarItem = { to: string; label: string; badge?: () => number };
+type SidebarItem = { to: string; label: string; badge?: () => number; group?: string };
 
 const sidebarItems: SidebarItem[] = [
-  { to: "/admin", label: "Dashboard" },
-  { to: "/admin/clientes", label: "Meus Clientes" },
-  { to: "/admin/importar", label: "Importar Extratos" },
-  { to: "/admin/pendentes", label: "Pendentes", badge: () => pendingTransactions().length },
-  { to: "/admin/dfc", label: "DFC / DRE" },
-  { to: "/admin/relatorios", label: "Relatórios" },
-  { to: "/admin/pipeline", label: "Pipeline" },
-  { to: "/admin/propostas", label: "Propostas" },
-  { to: "/admin/contratos", label: "Contratos" },
-  { to: "/admin/servicos", label: "Serviços" },
-  { to: "/admin/insights/precificacao", label: "Precificação" },
-];
+  { to: "/admin", label: "Dashboard", group: "Visão" },
+  { to: "/admin/clientes", label: "Clientes", group: "Visão" },
+  { to: "/admin/dfc", label: "DFC / DRE", group: "Visão" },
+  { to: "/admin/relatorios", label: "Relatórios", group: "Visão" },
 
-const topLinks: { to: string; label: string }[] = [
-  { to: "/admin", label: "Dashboard" },
-  { to: "/admin/clientes", label: "Clientes" },
-  { to: "/admin/importar", label: "Extratos" },
-  { to: "/admin/dfc", label: "Relatórios" },
-  { to: "/admin/pipeline", label: "Pipeline" },
+  { to: "/admin/importar", label: "Importar Extratos", group: "Operação" },
+  { to: "/admin/pendentes", label: "Pendentes", badge: () => pendingTransactions().length, group: "Operação" },
+
+  { to: "/admin/pipeline", label: "Pipeline", group: "Comercial" },
+  { to: "/admin/propostas", label: "Propostas", group: "Comercial" },
+  { to: "/admin/contratos", label: "Contratos", group: "Comercial" },
+
+  { to: "/admin/servicos", label: "Serviços", group: "Catálogo" },
+  { to: "/admin/insights/precificacao", label: "Precificação", group: "Catálogo" },
 ];
 
 function isActive(pathname: string, to: string) {
@@ -36,22 +31,32 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const path = location.pathname;
 
+  // Agrupa itens da sidebar
+  const grouped = sidebarItems.reduce<Record<string, SidebarItem[]>>((acc, item) => {
+    const g = item.group ?? "Outros";
+    (acc[g] ||= []).push(item);
+    return acc;
+  }, {});
+
   return (
     <div className="min-h-screen flex" style={{ background: "#FFFFFF" }}>
-      {/* Sidebar — fundo navy do brand com gradiente sutil */}
+      {/* Sidebar — gradient navy com pills modernos */}
       <aside
-        className="hidden lg:flex flex-col w-[240px] shrink-0 sticky top-0 h-screen"
+        className="hidden lg:flex flex-col w-[256px] shrink-0 sticky top-0 h-screen"
         style={{
           background:
             "linear-gradient(180deg, var(--navy) 0%, #15303F 100%)",
           color: "#fff",
-          borderRight: "1px solid rgba(255,255,255,0.04)",
         }}
       >
-        <div className="px-6 pt-7 pb-8">
+        <div className="px-6 pt-7 pb-6">
           <Link to={"/admin" as string} className="inline-flex items-center gap-2.5 text-white">
-            <LogoMark size={20} />
-            <span className="aurora-serif text-[18px]" style={{ fontWeight: 500 }}>Aurora</span>
+            <span style={{ color: "var(--sage)" }}>
+              <LogoMark size={22} />
+            </span>
+            <span className="aurora-serif text-[20px]" style={{ fontWeight: 500, letterSpacing: "0.2px" }}>
+              Aurora
+            </span>
           </Link>
           <div
             className="mt-1.5 text-[9px] uppercase"
@@ -61,82 +66,121 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <nav className="px-3 flex flex-col gap-0.5">
-          {sidebarItems.map((item) => {
-            const active = isActive(path, item.to);
-            const badge = item.badge ? item.badge() : 0;
-            return (
-              <Link
-                key={item.to}
-                to={item.to as string}
-                className="group flex items-center gap-3 px-3 py-2.5 text-[11px] uppercase transition-colors"
-                style={{
-                  letterSpacing: "1.5px",
-                  color: active ? "#fff" : "rgba(255,255,255,.55)",
-                  background: active ? "rgba(143,166,136,0.20)" : "transparent",
-                  borderLeft: active ? "2px solid var(--sage)" : "2px solid transparent",
-                }}
+        <nav className="flex-1 overflow-y-auto px-3 pb-4 flex flex-col gap-5">
+          {Object.entries(grouped).map(([group, items]) => (
+            <div key={group} className="flex flex-col gap-0.5">
+              <div
+                className="px-3 mb-2 text-[8px] uppercase"
+                style={{ letterSpacing: "2.5px", color: "rgba(255,255,255,0.35)" }}
               >
-                <span
-                  className="block rounded-full"
-                  style={{
-                    width: 6,
-                    height: 6,
-                    background: active ? "var(--sage)" : "rgba(255,255,255,0.25)",
-                  }}
-                />
-                <span className="flex-1">{item.label}</span>
-                {badge > 0 && (
-                  <span
-                    className="text-[9px] px-1.5 py-0.5 rounded-full"
+                {group}
+              </div>
+              {items.map((item) => {
+                const active = isActive(path, item.to);
+                const badge = item.badge ? item.badge() : 0;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to as string}
+                    className="group relative flex items-center gap-3 px-3 py-2.5 text-[12px] transition-all"
                     style={{
-                      background: "rgba(184,149,106,0.85)",
-                      color: "#fff",
-                      letterSpacing: "1px",
-                      fontWeight: 500,
+                      letterSpacing: "0.3px",
+                      color: active ? "#fff" : "rgba(255,255,255,.6)",
+                      background: active
+                        ? "linear-gradient(135deg, rgba(143,166,136,0.24), rgba(143,166,136,0.10))"
+                        : "transparent",
+                      borderRadius: 12,
+                      fontWeight: active ? 500 : 400,
                     }}
                   >
-                    {badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+                    {active && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          left: -8,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: 3,
+                          height: 22,
+                          background: "var(--sage)",
+                          borderRadius: 999,
+                          boxShadow: "0 0 14px rgba(143,166,136,0.6)",
+                        }}
+                      />
+                    )}
+                    <span
+                      className="block rounded-full"
+                      style={{
+                        width: 6,
+                        height: 6,
+                        background: active ? "var(--sage)" : "rgba(255,255,255,0.25)",
+                        transition: "background 0.2s",
+                      }}
+                    />
+                    <span className="flex-1">{item.label}</span>
+                    {badge > 0 && (
+                      <span
+                        className="text-[9px] px-2 py-0.5"
+                        style={{
+                          background: "linear-gradient(135deg, var(--tan), #9F7E59)",
+                          color: "#fff",
+                          letterSpacing: "0.5px",
+                          fontWeight: 600,
+                          borderRadius: 999,
+                          boxShadow: "0 2px 6px -2px rgba(184,149,106,0.6)",
+                        }}
+                      >
+                        {badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
-        <div className="mt-auto px-6 py-6 text-[9px] uppercase" style={{ letterSpacing: "2px", color: "rgba(255,255,255,.35)" }}>
-          v0.1 · Abril 2026
+        <div
+          className="px-6 py-4 flex items-center justify-between text-[9px] uppercase"
+          style={{
+            letterSpacing: "2px",
+            color: "rgba(255,255,255,.35)",
+            borderTop: "1px solid rgba(255,255,255,0.05)",
+          }}
+        >
+          <span>v0.1</span>
+          <span>Abril · 2026</span>
         </div>
       </aside>
 
       {/* Main */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Topbar — branco translúcido com blur, harmonizando com fundo branco do conteúdo */}
+        {/* Topbar glass */}
         <header
-          className="sticky top-0 z-40 flex items-center justify-between px-8 py-4"
+          className="sticky top-0 z-40 flex items-center justify-between px-6 lg:px-10 py-3.5"
           style={{
-            background: "rgba(255,255,255,0.85)",
-            backdropFilter: "blur(16px) saturate(1.2)",
-            WebkitBackdropFilter: "blur(16px) saturate(1.2)",
-            borderBottom: "1px solid #EEEEEE",
+            background: "rgba(255,255,255,0.78)",
+            backdropFilter: "blur(20px) saturate(1.2)",
+            WebkitBackdropFilter: "blur(20px) saturate(1.2)",
+            borderBottom: "1px solid #EFEFEF",
           }}
         >
           <div className="lg:hidden">
             <Logo />
           </div>
-          <nav className="hidden lg:flex items-center gap-7">
-            {topLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to as string}
-                className="aurora-link"
-                data-status={isActive(path, link.to) ? "active" : undefined}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex items-center gap-4">
+          {/* Breadcrumb leve */}
+          <div className="hidden lg:flex items-center gap-2 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+            <span>Aurora</span>
+            <span style={{ color: "rgba(0,0,0,0.2)" }}>/</span>
+            <span style={{ color: "var(--foreground)", fontWeight: 500 }}>
+              {(() => {
+                const m = sidebarItems.find((i) => isActive(path, i.to));
+                return m?.label ?? "Painel";
+              })()}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
             <div className="hidden md:block text-right">
               <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>
                 {currentAdmin.role}
@@ -144,8 +188,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               <div className="aurora-serif text-[15px]">{currentAdmin.name}</div>
             </div>
             <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "1px" }}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-medium"
+              style={{
+                background: "linear-gradient(135deg, var(--green), var(--green2))",
+                color: "#fff",
+                letterSpacing: "1px",
+                boxShadow: "0 6px 16px -6px rgba(74,103,65,0.45)",
+              }}
             >
               {currentAdmin.initials}
             </div>
@@ -164,10 +213,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         </main>
 
         <footer
-          className="px-8 py-6 flex items-center justify-between"
-          style={{ borderTop: "1px solid #EEEEEE", background: "#FFFFFF" }}
+          className="px-6 lg:px-10 py-6 flex items-center justify-between"
+          style={{ borderTop: "1px solid #EFEFEF", background: "#FFFFFF" }}
         >
-          <div className="aurora-serif text-[14px]" style={{ color: "var(--muted-foreground)" }}>
+          <div className="aurora-serif italic text-[14px]" style={{ color: "var(--muted-foreground)" }}>
             Clareza que envolve. Resultado que permanece.
           </div>
           <div className="text-[9px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>
@@ -193,30 +242,50 @@ export function PageHeader({
   right?: ReactNode;
 }) {
   return (
-    <div className="px-8 lg:px-12 pt-10 pb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-      <div>
-        <div className="aurora-cap mb-3">{cap}</div>
-        <h1 className="aurora-serif text-[44px] md:text-[56px] leading-[0.95]">
-          {title}
-          {emphasis && (
-            <>
-              {" "}
-              <em className="italic" style={{ color: "var(--green)" }}>
-                {emphasis}
-              </em>
-            </>
-          )}
-        </h1>
-        {description && (
-          <p
-            className="mt-4 max-w-xl text-[13px]"
-            style={{ color: "var(--muted-foreground)", lineHeight: 1.75 }}
+    <div
+      className="relative overflow-hidden px-6 lg:px-10 pt-10 pb-8"
+      style={{
+        background:
+          "linear-gradient(180deg, #FAFAF8 0%, #FFFFFF 100%)",
+        borderBottom: "1px solid #EFEFEF",
+      }}
+    >
+      {/* Blob ambient */}
+      <div
+        aria-hidden
+        className="aurora-blob aurora-blob--sage"
+        style={{ width: 320, height: 320, right: "-5%", top: "-30%", opacity: 0.25 }}
+      />
+      <div className="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+        <div>
+          <div className="aurora-cap mb-3" style={{ color: "var(--sage)" }}>
+            ✦ {cap}
+          </div>
+          <h1
+            className="aurora-serif"
+            style={{ fontSize: "clamp(36px, 4.5vw, 52px)", lineHeight: 1, letterSpacing: "-2px" }}
           >
-            {description}
-          </p>
-        )}
+            {title}
+            {emphasis && (
+              <>
+                {" "}
+                <em className="italic" style={{ color: "var(--green)" }}>
+                  {emphasis}
+                </em>
+              </>
+            )}
+          </h1>
+          {description && (
+            <p
+              className="mt-4 max-w-xl text-[13px]"
+              style={{ color: "var(--muted-foreground)", lineHeight: 1.85 }}
+            >
+              {description}
+            </p>
+          )}
+        </div>
+        {right && <div>{right}</div>}
       </div>
-      {right && <div>{right}</div>}
     </div>
   );
 }

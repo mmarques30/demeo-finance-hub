@@ -9,6 +9,10 @@ import { StatsBand } from "@/components/landing/StatsBand";
 import { FeatureTabs } from "@/components/landing/FeatureTabs";
 import { Faq } from "@/components/landing/Faq";
 import { Testimonials } from "@/components/landing/Testimonials";
+import { PipelinePreview } from "@/components/landing/PipelinePreview";
+import { DFCPreview } from "@/components/landing/DFCPreview";
+import { PortalPreview } from "@/components/landing/PortalPreview";
+import { Deliverables } from "@/components/landing/Deliverables";
 import { supabase, AURORA_WHATSAPP } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
@@ -149,66 +153,130 @@ function Landing() {
         </div>
       </nav>
 
-      {/* HERO */}
-      <section className="relative px-6 lg:px-14 pt-[140px] pb-24 lg:pb-36">
-        {/* Marca d'água símbolo */}
-        <div
-          aria-hidden
-          className="absolute pointer-events-none select-none aurora-float"
-          style={{
-            right: -90,
-            top: 40,
-            color: "rgba(74,103,65,0.06)",
-            transform: "scale(7) rotate(-12deg)",
-            transformOrigin: "top right",
-          }}
-        >
-          <LogoMark size={140} />
+      {/* HERO — editorial / magazine masthead */}
+      <section className="relative px-6 lg:px-14 pt-[120px] pb-24 lg:pb-32">
+        {/* Editorial masthead — faixa de identificação tipo periódico */}
+        <div className="relative z-10 max-w-[1320px] mx-auto mb-10 lg:mb-14">
+          <div
+            className="flex items-center justify-between flex-wrap gap-3 pb-4"
+            style={{ borderBottom: "1px solid rgba(74,103,65,0.15)" }}
+          >
+            <div className="flex items-center gap-4">
+              <span
+                className="aurora-cap"
+                style={{ color: "var(--green)", fontSize: 10, letterSpacing: "3.5px" }}
+              >
+                Aurora · Ed. Nº 01
+              </span>
+              <span
+                className="hidden md:inline-block aurora-cap"
+                style={{ color: "var(--muted-foreground)", fontSize: 10 }}
+              >
+                Abril 2026
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-[10px]" style={{ color: "var(--muted-foreground)", letterSpacing: "1.5px", textTransform: "uppercase" }}>
+              <span className="hidden md:inline">Gestão · Finanças · PMEs</span>
+              <span className="aurora-serif italic" style={{ color: "var(--green)", fontSize: 13, textTransform: "none", letterSpacing: "0" }}>
+                por Claudia Lima
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div className="grid lg:grid-cols-[1.05fr_1fr] gap-14 lg:gap-20 items-center relative z-10 max-w-[1320px] mx-auto">
+        {/* Grid principal — assimétrico editorial */}
+        <div className="grid lg:grid-cols-[1.15fr_1fr] gap-12 lg:gap-20 items-start relative z-10 max-w-[1320px] mx-auto">
+          {/* Coluna texto */}
           <Reveal>
-            <div className="aurora-pill mb-7">
-              <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--green)" }} />
-              Gestão financeira boutique · 2026
+            {/* Marcador editorial */}
+            <div className="flex items-baseline gap-4 mb-6">
+              <span
+                className="aurora-serif italic"
+                style={{ fontSize: 22, color: "var(--sage)", lineHeight: 1, letterSpacing: "-0.5px" }}
+              >
+                Em foco —
+              </span>
+              <span className="aurora-cap" style={{ color: "var(--muted-foreground)" }}>
+                Decisão com clareza
+              </span>
             </div>
+
+            {/* H1 contido, editorial */}
             <h1
               className="aurora-serif"
-              style={{ fontSize: "clamp(56px, 8.5vw, 124px)", lineHeight: 0.92, letterSpacing: "-4px" }}
+              style={{
+                fontSize: "clamp(48px, 6vw, 88px)",
+                lineHeight: 0.95,
+                letterSpacing: "-2.5px",
+                color: "var(--foreground)",
+                maxWidth: 720,
+              }}
             >
-              Clareza<br />
-              <em className="italic" style={{ color: "var(--green)" }}>que envolve.</em>
-              <br />
-              <span style={{ color: "var(--muted-foreground)" }}>Resultado</span>{" "}
-              <em className="italic" style={{ color: "var(--green)" }}>que permanece.</em>
+              Gestão <em className="italic" style={{ color: "var(--green)" }}>boutique</em>{" "}
+              do caixa <em className="italic" style={{ color: "var(--green)" }}>da sua empresa.</em>
             </h1>
-            <p
-              className="mt-8 text-[16px] lg:text-[18px] max-w-xl"
-              style={{ color: "var(--muted-foreground)", lineHeight: 1.85 }}
-            >
-              A Aurora cuida do financeiro da sua empresa de ponta a ponta — extrato, DFC, projeção e portal do cliente — com tecnologia própria e atendimento humano boutique. Sem planilha, sem dúvida, sem improviso.
-            </p>
-            <div className="mt-10 flex flex-wrap items-center gap-3">
+
+            {/* Tagline italic com rule editorial */}
+            <div className="mt-8 flex items-start gap-5 max-w-xl">
+              <span
+                aria-hidden
+                style={{
+                  display: "inline-block",
+                  width: 3,
+                  background: "linear-gradient(180deg, var(--green), var(--sage))",
+                  borderRadius: 999,
+                  alignSelf: "stretch",
+                  minHeight: 60,
+                }}
+              />
+              <div>
+                <p
+                  className="aurora-serif italic"
+                  style={{
+                    fontSize: "clamp(18px, 1.6vw, 22px)",
+                    color: "var(--foreground)",
+                    lineHeight: 1.5,
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  "Clareza que envolve. Resultado que permanece."
+                </p>
+                <p
+                  className="mt-4 text-[14px] lg:text-[15px]"
+                  style={{ color: "var(--muted-foreground)", lineHeight: 1.85 }}
+                >
+                  Cuidamos do financeiro de ponta a ponta — extrato, DFC, projeção e portal — com tecnologia própria e atendimento humano. Para PMEs entre R$ 50 mil e R$ 1 milhão de faturamento mensal.
+                </p>
+              </div>
+            </div>
+
+            {/* CTAs */}
+            <div className="mt-9 flex flex-wrap items-center gap-3">
               <a href="#contato" className="aurora-cta">
                 Quero ver com clareza →
               </a>
-              <a href="#solucao" className="aurora-cta--ghost">
-                Conhecer o método
+              <a href="#sistema" className="aurora-cta--ghost">
+                Ver o sistema por dentro
               </a>
             </div>
-            <div className="mt-12 flex items-center gap-5 flex-wrap">
+
+            {/* Editorial footer-bar com prova social */}
+            <div
+              className="mt-10 flex items-center gap-5 flex-wrap pt-6"
+              style={{ borderTop: "1px solid rgba(74,103,65,0.08)" }}
+            >
               <div className="flex -space-x-3">
                 {["M", "H", "A", "R"].map((l, i) => (
                   <span
                     key={l}
                     className="inline-flex items-center justify-center aurora-serif italic"
                     style={{
-                      width: 38,
-                      height: 38,
+                      width: 32,
+                      height: 32,
                       borderRadius: 999,
                       background: ["var(--linen)", "var(--sage)", "var(--tan2)", "var(--linen)"][i],
                       color: "var(--green)",
-                      fontSize: 16,
+                      fontSize: 14,
                       border: "2.5px solid var(--linen2)",
                       boxShadow: "0 4px 10px -4px rgba(74,103,65,0.2)",
                     }}
@@ -290,6 +358,86 @@ function Landing() {
       {/* STATS BAND */}
       <section className="relative px-6 lg:px-14 py-14 max-w-[1320px] mx-auto">
         <StatsBand />
+      </section>
+
+      {/* DELIVERABLES — seção dark com proposta clara de entrega */}
+      <section
+        className="relative px-6 lg:px-14 py-24 lg:py-32 overflow-hidden"
+        style={{
+          background:
+            "radial-gradient(120% 80% at 0% 0%, #234C66 0%, var(--navy) 60%), var(--navy)",
+        }}
+      >
+        <div
+          aria-hidden
+          className="aurora-blob aurora-blob--green"
+          style={{ width: 600, height: 600, right: "-15%", top: "-10%", opacity: 0.35 }}
+        />
+        <div className="max-w-[1320px] mx-auto relative z-10">
+          <Reveal>
+            <Deliverables />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* SISTEMA POR DENTRO — mockups realistas dos módulos */}
+      <section id="sistema" className="relative px-6 lg:px-14 py-24 lg:py-32 max-w-[1320px] mx-auto">
+        <Reveal>
+          <div className="flex items-end justify-between flex-wrap gap-6 mb-12">
+            <div>
+              <div className="aurora-pill mb-5" style={{ background: "rgba(143,166,136,0.12)", color: "var(--sage)", borderColor: "rgba(143,166,136,0.2)" }}>
+                ✦ Sistema por dentro
+              </div>
+              <h2
+                className="aurora-serif"
+                style={{ fontSize: "clamp(36px, 5vw, 60px)", lineHeight: 1, letterSpacing: "-2.5px" }}
+              >
+                Não é maquete.<br />
+                <em className="italic" style={{ color: "var(--green)" }}>É o que você usa.</em>
+              </h2>
+            </div>
+            <p className="max-w-md text-[15px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.9 }}>
+              4 módulos integrados. Sidebar dark com seu cliente sempre acessível, canvas claro com seus números.
+            </p>
+          </div>
+        </Reveal>
+
+        {/* Bento de mockups: Dashboard grande + 3 menores */}
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
+          <Reveal delay={80}>
+            <div className="flex flex-col gap-4">
+              <span className="aurora-cap" style={{ color: "var(--sage)" }}>
+                01 · Operacional
+              </span>
+              <span className="aurora-serif text-[24px]" style={{ letterSpacing: "-0.5px" }}>
+                Pipeline · CRM kanban
+              </span>
+              <PipelinePreview />
+            </div>
+          </Reveal>
+          <Reveal delay={160}>
+            <div className="flex flex-col gap-4">
+              <span className="aurora-cap" style={{ color: "var(--sage)" }}>
+                02 · Relatório
+              </span>
+              <span className="aurora-serif text-[24px]" style={{ letterSpacing: "-0.5px" }}>
+                DFC · Fluxo + drill-down
+              </span>
+              <DFCPreview />
+            </div>
+          </Reveal>
+          <Reveal delay={240}>
+            <div className="flex flex-col gap-4">
+              <span className="aurora-cap" style={{ color: "var(--sage)" }}>
+                03 · Visão do cliente
+              </span>
+              <span className="aurora-serif text-[24px]" style={{ letterSpacing: "-0.5px" }}>
+                Portal · seu empresário vê
+              </span>
+              <PortalPreview />
+            </div>
+          </Reveal>
+        </div>
       </section>
 
       {/* SOLUÇÃO — BENTO GRID */}
