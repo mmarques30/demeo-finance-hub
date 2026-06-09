@@ -1,5 +1,7 @@
-// Background ambient animado — mesh gradient + 3 blobs flutuando.
-// Sem fundo branco morto. Tudo se move sutilmente.
+// Background ambient — branco com blobs orgânicos animados e símbolo Aurora.
+// Substitui qualquer fundo bege.
+import { LogoMark } from "@/components/Logo";
+
 export function AmbientBackground() {
   return (
     <div
@@ -7,23 +9,18 @@ export function AmbientBackground() {
       className="fixed inset-0 pointer-events-none"
       style={{ zIndex: -1, overflow: "hidden" }}
     >
-      <div
-        className="absolute"
-        style={{
-          inset: 0,
-          background: "linear-gradient(180deg, #FAFAF8 0%, #FFFFFF 50%, #FAFAF8 100%)",
-        }}
-      />
+      <div className="absolute" style={{ inset: 0, background: "#FFFFFF" }} />
+
       {/* Blob 1 — sage */}
       <div
         className="absolute"
         style={{
           left: "-10%",
           top: "5%",
-          width: 720,
-          height: 720,
+          width: 760,
+          height: 760,
           background:
-            "radial-gradient(circle, rgba(153,169,137,0.32) 0%, transparent 60%)",
+            "radial-gradient(circle, rgba(153,169,137,0.38) 0%, transparent 60%)",
           filter: "blur(60px)",
           borderRadius: "50%",
           animation: "ambient-drift-1 28s ease-in-out infinite",
@@ -35,10 +32,10 @@ export function AmbientBackground() {
         style={{
           right: "-15%",
           top: "30%",
-          width: 800,
-          height: 800,
+          width: 820,
+          height: 820,
           background:
-            "radial-gradient(circle, rgba(109,146,166,0.22) 0%, transparent 60%)",
+            "radial-gradient(circle, rgba(109,146,166,0.28) 0%, transparent 60%)",
           filter: "blur(80px)",
           borderRadius: "50%",
           animation: "ambient-drift-2 36s ease-in-out infinite",
@@ -50,15 +47,48 @@ export function AmbientBackground() {
         style={{
           left: "20%",
           bottom: "-10%",
-          width: 600,
-          height: 600,
+          width: 640,
+          height: 640,
           background:
-            "radial-gradient(circle, rgba(40,76,43,0.18) 0%, transparent 60%)",
+            "radial-gradient(circle, rgba(40,76,43,0.22) 0%, transparent 60%)",
           filter: "blur(70px)",
           borderRadius: "50%",
           animation: "ambient-drift-3 32s ease-in-out infinite",
         }}
       />
+
+      {/* Logo gigante atrás — identidade integrada entre dobras */}
+      <div
+        aria-hidden
+        className="absolute select-none"
+        style={{
+          right: "-6%",
+          top: "12%",
+          color: "#284C2B",
+          opacity: 0.04,
+          transform: "scale(8) rotate(-6deg)",
+          transformOrigin: "top right",
+          pointerEvents: "none",
+        }}
+      >
+        <LogoMark size={60} />
+      </div>
+      <div
+        aria-hidden
+        className="absolute select-none"
+        style={{
+          left: "-4%",
+          bottom: "5%",
+          color: "#6D92A6",
+          opacity: 0.05,
+          transform: "scale(6) rotate(12deg)",
+          transformOrigin: "bottom left",
+          pointerEvents: "none",
+        }}
+      >
+        <LogoMark size={60} />
+      </div>
+
       <style>{`
         @keyframes ambient-drift-1 {
           0%, 100% { transform: translate(0, 0) scale(1); }

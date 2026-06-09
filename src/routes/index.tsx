@@ -180,15 +180,13 @@ function Landing() {
               Entrar
             </Link>
             <a
-              href={AURORA_WHATSAPP}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#diagnostico"
               className="focus-ring inline-flex items-center gap-2"
               style={{
                 background: `linear-gradient(135deg, ${FOREST} 0%, #1f3a22 100%)`,
                 color: "#fff",
                 fontSize: 13,
-                fontWeight: 500,
+                fontWeight: 600,
                 padding: "10px 20px",
                 borderRadius: 999,
                 boxShadow: "0 6px 16px -6px rgba(40,76,43,0.5)",
@@ -201,7 +199,7 @@ function Landing() {
                 e.currentTarget.style.transform = "";
               }}
             >
-              WhatsApp →
+              Agendar diagnóstico →
             </a>
           </div>
         </div>
@@ -211,14 +209,14 @@ function Landing() {
         <HeroPC />
 
         {/* Curva → Features */}
-        <WaveDivider topColor="transparent" bottomColor="#FAFAF8" variant="curve" height={96} />
+        <WaveDivider topColor="transparent" bottomColor="#FFFFFF" variant="curve" height={96} />
 
-        <div style={{ background: "#FAFAF8" }}>
+        <div style={{ background: "transparent" }}>
           <Features />
         </div>
 
         {/* Curva → Numbers (dark) */}
-        <WaveDivider topColor="#FAFAF8" bottomColor={INK} variant="wave" height={96} />
+        <WaveDivider topColor="#FFFFFF" bottomColor={INK} variant="wave" height={96} />
 
         <Numbers />
 
@@ -230,14 +228,14 @@ function Landing() {
         </div>
 
         {/* Curva → FAQ (off-white) — corrigida */}
-        <WaveDivider topColor="#FFFFFF" bottomColor="#FAFAF8" variant="curve" height={96} />
+        <WaveDivider topColor="#FFFFFF" bottomColor="#FFFFFF" variant="curve" height={96} />
 
-        <div style={{ background: "#FAFAF8" }}>
+        <div style={{ background: "transparent" }}>
           <FAQ />
         </div>
 
         {/* Curva → Footer */}
-        <WaveDivider topColor="#FAFAF8" bottomColor={INK} variant="tilt" height={64} />
+        <WaveDivider topColor="#FFFFFF" bottomColor={INK} variant="tilt" height={64} />
       </main>
 
       <footer

@@ -1,5 +1,5 @@
-// Hero — substitui o ProductPreview pelo HeroLeadForm objetivo.
-// Tira a pill "Atendendo PMEs desde 2018".
+// Hero — foco em agendar diagnóstico (form no lado direito).
+// CTA secundária outline. SEM WhatsApp aqui (só a partir da 3ª dobra).
 import { HeroLeadForm } from "./HeroLeadForm";
 import { MagneticButton } from "./motion/MagneticButton";
 import { RevealText } from "./motion/RevealText";
@@ -41,7 +41,7 @@ export function HeroPC() {
                 fontSize: 18,
                 fontWeight: 400,
                 lineHeight: 1.6,
-                color: "rgba(28,45,69,0.7)",
+                color: "rgba(28,45,69,0.78)",
               }}
             >
               A Aurora cuida do financeiro da sua empresa de ponta a ponta —
@@ -50,6 +50,13 @@ export function HeroPC() {
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-4 reveal-ctas">
+              <MagneticButton
+                href="#diagnostico"
+                variant="solid"
+                style={{ background: `linear-gradient(135deg, ${FOREST} 0%, #1f3a22 100%)` }}
+              >
+                Agendar diagnóstico →
+              </MagneticButton>
               <MagneticButton href="#metodo" variant="outline">
                 Ver como funciona
               </MagneticButton>
@@ -57,26 +64,26 @@ export function HeroPC() {
 
             <div
               className="mt-12 flex items-center gap-3 reveal-trust"
-              style={{ fontSize: 13, color: "rgba(28,45,69,0.55)" }}
+              style={{ fontSize: 14, color: "rgba(28,45,69,0.7)" }}
             >
               <div className="flex -space-x-2">
                 {[FOREST, STEEL, SAGE, "#B8956A"].map((c, i) => (
                   <span
                     key={i}
                     style={{
-                      width: 28,
-                      height: 28,
+                      width: 30,
+                      height: 30,
                       borderRadius: 999,
                       background: c,
-                      border: "2.5px solid #FFF",
-                      boxShadow: "0 2px 6px rgba(28,45,69,0.12)",
+                      border: "3px solid #FFF",
+                      boxShadow: "0 3px 8px rgba(28,45,69,0.18)",
                     }}
                     aria-hidden
                   />
                 ))}
               </div>
               <span>
-                <strong style={{ color: INK, fontWeight: 600 }}>
+                <strong style={{ color: INK, fontWeight: 700 }}>
                   <Counter value={120} suffix="+" /> empresários
                 </strong>{" "}
                 já decidem com Aurora
@@ -84,8 +91,8 @@ export function HeroPC() {
             </div>
           </div>
 
-          {/* Form no lugar do ProductPreview */}
-          <div className="reveal-form">
+          {/* Form — id #diagnostico para CTA "Agendar diagnóstico" do hero */}
+          <div className="reveal-form" id="diagnostico">
             <HeroLeadForm />
           </div>
         </div>

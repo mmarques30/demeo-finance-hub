@@ -1,8 +1,8 @@
-// Aurora — FAQ semântico (details/summary) com paleta v3.
+// Aurora — FAQ com fundo branco + brand backdrop sutil. Contraste forte.
 import { useState } from "react";
+import { BrandBackdrop } from "./motion/BrandBackdrop";
 
 const INK = "#1C2D45";
-const SAGE = "#99A989";
 const FOREST = "#284C2B";
 
 const ITEMS = [
@@ -37,17 +37,19 @@ export function FAQ() {
   return (
     <section
       id="faq"
-      className="px-6 lg:px-14 py-20 lg:py-28"
-      style={{ background: "#FAFAF8" }}
+      className="px-6 lg:px-14 py-20 lg:py-28 relative overflow-hidden"
+      style={{ background: "transparent" }}
     >
-      <div className="max-w-[920px] mx-auto">
+      <BrandBackdrop position="left-bottom" scale={5} color={FOREST} opacity={0.05} rotate={-10} />
+
+      <div className="max-w-[920px] mx-auto relative z-10">
         <div className="reveal mb-12 max-w-2xl">
           <div
             style={{
-              fontSize: 11,
-              fontWeight: 600,
+              fontSize: 12,
+              fontWeight: 700,
               letterSpacing: "1.5px",
-              color: SAGE,
+              color: FOREST,
               marginBottom: 14,
             }}
           >
@@ -84,8 +86,8 @@ export function FAQ() {
                   else if (open === idx) setOpen(null);
                 }}
                 style={{
-                  borderTop: idx === 0 ? "1px solid rgba(28,45,69,0.1)" : undefined,
-                  borderBottom: "1px solid rgba(28,45,69,0.1)",
+                  borderTop: idx === 0 ? "1px solid rgba(28,45,69,0.14)" : undefined,
+                  borderBottom: "1px solid rgba(28,45,69,0.14)",
                 }}
               >
                 <summary
@@ -96,7 +98,7 @@ export function FAQ() {
                     style={{
                       fontFamily: "'Cormorant Garamond', serif",
                       fontSize: "clamp(20px, 2.2vw, 26px)",
-                      fontWeight: 300,
+                      fontWeight: 400,
                       color: isOpen ? FOREST : INK,
                       lineHeight: 1.3,
                       letterSpacing: "-0.3px",
@@ -127,7 +129,7 @@ export function FAQ() {
                   style={{
                     fontSize: 15,
                     fontWeight: 400,
-                    color: "rgba(28,45,69,0.65)",
+                    color: "rgba(28,45,69,0.78)",
                     lineHeight: 1.7,
                     maxWidth: 760,
                   }}
