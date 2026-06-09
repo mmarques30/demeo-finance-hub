@@ -202,4 +202,57 @@
   }
   .aurora-input:focus { border-color: var(--green); }
   .aurora-input[aria-invalid="true"] { border-color: var(--destructive); }
+
+  .aurora-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 28px;
+    background: var(--green);
+    color: #fff;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    font-weight: 500;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .aurora-cta:hover { background: var(--green2); transform: translateY(-1px); }
+
+  .aurora-cta--ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 28px;
+    background: transparent;
+    color: var(--foreground);
+    border: 1px solid var(--line);
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    font-weight: 500;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .aurora-cta--ghost:hover { border-color: var(--green); color: var(--green); }
+}
+
+@layer utilities {
+  .aurora-reveal-fade {
+    animation: aurora-fade-in 0.6s cubic-bezier(.22,.61,.36,1) both;
+  }
+  @keyframes aurora-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .aurora-glow {
+    position: relative;
+  }
+  .aurora-glow::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background: radial-gradient(60% 80% at 50% 0%, rgba(143,166,136,0.25), transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+  }
 }
