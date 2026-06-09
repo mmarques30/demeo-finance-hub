@@ -186,13 +186,13 @@ function Landing() {
         <FinalCTA />
       </main>
 
-      {/* FOOTER — Podcast Coach style com newsletter */}
+      {/* FOOTER */}
       <footer
         className="px-6 lg:px-14 pt-20 pb-10"
         style={{ background: "var(--navy)", color: "#fff" }}
       >
         <div className="max-w-[1280px] mx-auto grid lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12 mb-16">
-          {/* Coluna 1 — marca + newsletter */}
+          {/* Coluna 1 — marca + tagline (sem newsletter) */}
           <div>
             <Link to="/" className="inline-flex items-center gap-2.5" style={{ color: "#fff" }}>
               <span style={{ color: "var(--sage)" }}>
@@ -208,61 +208,14 @@ function Landing() {
             >
               A clareza que faz sua empresa crescer.
             </p>
-
-            <form
-              className="mt-7 max-w-[400px]"
-              onSubmit={(e) => {
-                e.preventDefault();
-                // {{NEWSLETTER_SUBMIT}} — integrar com Resend ou edge function depois
-                alert("Em breve! Por enquanto: claudia@aurora.com.br");
-              }}
+            <p
+              className="mt-6 text-[12px] max-w-xs"
+              style={{ color: "rgba(255,255,255,0.45)", lineHeight: 1.7 }}
             >
-              <label
-                htmlFor="footer-newsletter"
-                className="text-[10px] uppercase block mb-2"
-                style={{ letterSpacing: "2.5px", color: "var(--sage)", fontWeight: 600 }}
-              >
-                Newsletter mensal
-              </label>
-              <div
-                className="flex items-stretch"
-                style={{ border: "1px solid rgba(255,255,255,0.2)" }}
-              >
-                <input
-                  id="footer-newsletter"
-                  type="email"
-                  required
-                  placeholder="seu@email.com"
-                  aria-describedby="newsletter-help"
-                  className="flex-1 px-4 py-3 text-[13px] focus-ring"
-                  style={{
-                    background: "transparent",
-                    color: "#fff",
-                    border: "none",
-                    outline: "none",
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="focus-ring text-[11px] uppercase px-5"
-                  style={{
-                    background: "var(--green)",
-                    color: "#fff",
-                    letterSpacing: "2px",
-                    fontWeight: 500,
-                  }}
-                >
-                  Quero →
-                </button>
-              </div>
-              <p
-                id="newsletter-help"
-                className="mt-2 text-[11px]"
-                style={{ color: "rgba(255,255,255,0.4)" }}
-              >
-                Uma leitura por mês sobre gestão financeira de PME. Sem spam.
-              </p>
-            </form>
+              Gestão financeira boutique para pequenas e médias empresas.
+              <br />
+              Atendimento por convite.
+            </p>
           </div>
 
           <FooterCol title="Plataforma">
