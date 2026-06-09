@@ -15,17 +15,17 @@ export const Route = createFileRoute("/")({
   component: Landing,
   head: () => ({
     meta: [
-      { title: "Aurora · Gestão Financeira Boutique para Empresários" },
+      { title: "Aurora · Gestora Financeira para empresas que crescem" },
       {
         name: "description",
         content:
-          "Sócia estratégica do financeiro de empresários ambiciosos. A Aurora cuida do extrato, fecha o DFC, projeta o caixa — e te entrega leitura clara para a próxima decisão.",
+          "Gestão financeira para empresas que querem enxergar o próprio crescimento. A Aurora cuida do extrato, fecha o DFC e te entrega clareza para decidir.",
       },
-      { property: "og:title", content: "Aurora · Gestão Financeira Boutique" },
+      { property: "og:title", content: "Aurora · Gestora Financeira" },
       {
         property: "og:description",
         content:
-          "A clareza que faz sua empresa crescer. Sócia estratégica do financeiro de empresários ambiciosos.",
+          "Clareza que ilumina. Resultado que permanece. Gestora financeira para PMEs.",
       },
       { property: "og:image", content: "/brand/aurora-logo-primary.svg" },
     ],
@@ -81,55 +81,68 @@ function Landing() {
   useRevealOnScroll();
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--linen2)" }}>
+    <div className="min-h-screen" style={{ background: "#FFFFFF", color: "#1C2D45" }}>
       <a href="#hero" className="skip-link focus-ring">
         Pular para o conteúdo
       </a>
 
-      {/* NAV — clean, dark text on light bg (Podcast Coach style) */}
+      {/* NAV v3 — clean clinical, branco com backdrop blur */}
       <nav
         aria-label="Navegação principal"
         className="fixed top-0 left-0 right-0 z-50"
         style={{
-          background: scrolled ? "rgba(253,249,244,0.94)" : "rgba(253,249,244,0)",
-          backdropFilter: scrolled ? "blur(16px)" : "none",
-          WebkitBackdropFilter: scrolled ? "blur(16px)" : "none",
-          borderBottom: scrolled ? "1px solid var(--line)" : "1px solid transparent",
+          background: scrolled
+            ? "rgba(255,255,255,0.94)"
+            : "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderBottom: scrolled
+            ? "1px solid rgba(28,45,69,0.08)"
+            : "1px solid transparent",
           transition: "background 0.2s, border-color 0.2s",
         }}
       >
-        <div className="px-6 lg:px-14 flex items-center justify-between" style={{ height: 72 }}>
+        <div
+          className="px-6 lg:px-14 flex items-center justify-between"
+          style={{ height: 64 }}
+        >
           <Link
             to="/"
             aria-label="Aurora · página inicial"
             className="inline-flex items-center gap-2.5 focus-ring"
-            style={{ color: "var(--green)" }}
+            style={{ color: "#284C2B" }}
           >
-            <LogoMark size={22} />
+            <LogoMark size={18} />
             <span
               className="aurora-serif"
               style={{
-                color: "var(--foreground)",
-                fontSize: 20,
-                fontWeight: 500,
-                letterSpacing: "0.2px",
+                color: "#1C2D45",
+                fontSize: 17,
+                fontWeight: 400,
+                letterSpacing: "-0.3px",
               }}
             >
               Aurora
             </span>
           </Link>
 
-          <ul className="hidden lg:flex items-center gap-9">
+          <ul className="hidden lg:flex items-center gap-0">
             {NAV.map((n) => (
               <li key={n.href}>
                 <a
                   href={n.href}
-                  className="text-[12px] uppercase focus-ring"
+                  className="focus-ring"
                   style={{
-                    letterSpacing: "2px",
-                    color: "var(--foreground)",
-                    fontWeight: 500,
+                    fontSize: 13,
+                    fontWeight: 400,
+                    color: "rgba(28,45,69,0.5)",
+                    padding: "6px 14px",
+                    transition: "color 0.2s",
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#284C2B")}
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = "rgba(28,45,69,0.5)")
+                  }
                 >
                   {n.label}
                 </a>
@@ -137,14 +150,14 @@ function Landing() {
             ))}
           </ul>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Link
               to="/login"
-              className="hidden sm:inline-flex text-[12px] uppercase focus-ring"
+              className="hidden sm:inline-flex focus-ring"
               style={{
-                letterSpacing: "2px",
-                color: "var(--foreground)",
-                fontWeight: 500,
+                fontSize: 13,
+                fontWeight: 400,
+                color: "rgba(28,45,69,0.5)",
                 padding: "8px 14px",
               }}
             >
@@ -152,13 +165,14 @@ function Landing() {
             </Link>
             <a
               href="#contato"
-              className="focus-ring text-[11px] uppercase"
+              className="focus-ring inline-flex items-center gap-2"
               style={{
-                background: "var(--green)",
+                background: "#284C2B",
                 color: "#fff",
-                letterSpacing: "2px",
+                fontSize: 12,
                 fontWeight: 500,
-                padding: "12px 22px",
+                padding: "10px 18px",
+                borderRadius: 4,
               }}
             >
               Agendar conversa →
@@ -171,48 +185,52 @@ function Landing() {
         <HeroPC />
         <ValueProp />
 
-        {/* Anchor explícito para "Método" + "Casos" — a section CaseStudies tem id próprio internamente */}
-        <div id="metodo" />
         <div id="casos" />
         <CaseStudies />
 
         <ClaudiaSection />
         <ServicesList />
-
-        {/* Testimonials já tem seu próprio bg/wrapper — reuso o componente */}
         <Testimonials />
-
         <FAQ />
         <FinalCTA />
       </main>
 
-      {/* FOOTER */}
+      {/* FOOTER v3 — ink #1C2D45 */}
       <footer
-        className="px-6 lg:px-14 pt-20 pb-10"
-        style={{ background: "var(--navy)", color: "#fff" }}
+        className="px-6 lg:px-16 pt-16 pb-8"
+        style={{ background: "#1C2D45", color: "#fff" }}
       >
-        <div className="max-w-[1280px] mx-auto grid lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12 mb-16">
-          {/* Coluna 1 — marca + tagline (sem newsletter) */}
+        <div className="max-w-[1280px] mx-auto grid lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12 mb-12">
           <div>
-            <Link to="/" className="inline-flex items-center gap-2.5" style={{ color: "#fff" }}>
-              <span style={{ color: "var(--sage)" }}>
-                <LogoMark size={22} />
-              </span>
-              <span className="aurora-serif" style={{ fontSize: 22, fontWeight: 500 }}>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2.5"
+              style={{ color: "#99A989" }}
+            >
+              <LogoMark size={20} />
+              <span
+                className="aurora-serif"
+                style={{ color: "#fff", fontSize: 22, fontWeight: 400 }}
+              >
                 Aurora
               </span>
             </Link>
             <p
-              className="aurora-serif italic mt-4 max-w-xs"
-              style={{ fontSize: 17, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}
+              className="aurora-serif italic mt-5 max-w-xs"
+              style={{ fontSize: 17, color: "rgba(255,255,255,0.6)", lineHeight: 1.5 }}
             >
-              A clareza que faz sua empresa crescer.
+              Clareza que ilumina. Resultado que permanece.
             </p>
             <p
-              className="mt-6 text-[12px] max-w-xs"
-              style={{ color: "rgba(255,255,255,0.45)", lineHeight: 1.7 }}
+              className="mt-6 max-w-xs"
+              style={{
+                fontSize: 12,
+                fontWeight: 300,
+                color: "rgba(255,255,255,0.4)",
+                lineHeight: 1.7,
+              }}
             >
-              Gestão financeira boutique para pequenas e médias empresas.
+              Gestão financeira para pequenas e médias empresas.
               <br />
               Atendimento por convite.
             </p>
@@ -228,7 +246,7 @@ function Landing() {
           <FooterCol title="Aurora">
             <a href="#quem">Quem somos</a>
             <Link to="/login">Entrar</Link>
-            <a href="mailto:claudia@aurora.com.br">Contato</a>
+            <a href="mailto:claudia@aurora.fin.br">Contato</a>
             <a href={AURORA_WHATSAPP} target="_blank" rel="noopener noreferrer">
               WhatsApp
             </a>
@@ -251,11 +269,11 @@ function Landing() {
           className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pt-7"
           style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
         >
-          <div className="text-[11px]" style={{ color: "rgba(255,255,255,0.5)", letterSpacing: "0.3px" }}>
-            © Aurora Gestão Financeira 2026 · CNPJ {/* {{CNPJ}} */}00.000.000/0001-00
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+            © Aurora Gestão Financeira · Claudia De Meo · 2026
           </div>
-          <div className="text-[11px]" style={{ color: "rgba(255,255,255,0.4)", letterSpacing: "0.3px" }}>
-            Feito com ✶ pela IAplicada
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+            IAplicada Business
           </div>
         </div>
       </footer>
@@ -267,18 +285,24 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
   return (
     <div>
       <div
-        className="text-[9px] uppercase mb-4"
-        style={{ letterSpacing: "2.5px", color: "var(--sage)", fontWeight: 600 }}
+        style={{
+          fontSize: 11,
+          fontWeight: 500,
+          color: "#99A989",
+          marginBottom: 16,
+        }}
       >
         {title}
       </div>
-      <div className="flex flex-col gap-2.5 text-[13px]">{children}</div>
+      <div className="flex flex-col gap-2.5" style={{ fontSize: 13 }}>
+        {children}
+      </div>
       <style>{`
         footer a {
-          color: rgba(255,255,255,0.65);
+          color: rgba(255,255,255,0.6);
           transition: color 0.15s;
         }
-        footer a:hover { color: #fff; }
+        footer a:hover { color: #99A989; }
       `}</style>
     </div>
   );
