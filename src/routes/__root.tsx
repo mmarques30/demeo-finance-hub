@@ -1,9 +1,10 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, redirect } from "@tanstack/react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { getQueryClient } from "../lib/query";
+import { supabase } from "../lib/supabase";
 
 function NotFoundComponent() {
   return (
@@ -28,6 +29,34 @@ function NotFoundComponent() {
 }
 
 export const Route = createRootRoute({
+  beforeLoad: async ({ location }) => {
+    const path = location.pathname;
+    // Setup é página especial — sempre passa (auto-blocks se já tem admin)
+    if (path === "/admin/setup") return;
+    // Guard só em /admin/*
+    if (!path.startsWith("/admin")) return;
+    // Roda apenas no browser (SSR não tem sessão)
+    if (typeof window === "undefined") return;
+    try {
+      const sb = supabase();
+      const { data: sessionData } = await sb.auth.getSession();
+      const session = sessionData.session;
+      if (!session?.user) {
+        throw redirect({ to: "/login" });
+      }
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (profile?.role !== "admin") {
+        throw redirect({ to: "/portal" });
+      }
+    } catch (e) {
+      // Re-lança redirect; engole apenas erros de leitura (banco indisponível)
+      if (e && typeof e === "object" && "to" in e) throw e;
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
