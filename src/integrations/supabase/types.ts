@@ -14,6 +14,106 @@ export type Database = {
   }
   public: {
     Tables: {
+      classification_rules: {
+        Row: {
+          category: string
+          client_id: string
+          created_at: string | null
+          hit_count: number | null
+          id: string
+          is_recurring: boolean | null
+          pattern: string
+        }
+        Insert: {
+          category: string
+          client_id: string
+          created_at?: string | null
+          hit_count?: number | null
+          id?: string
+          is_recurring?: boolean | null
+          pattern: string
+        }
+        Update: {
+          category?: string
+          client_id?: string
+          created_at?: string | null
+          hit_count?: number | null
+          id?: string
+          is_recurring?: boolean | null
+          pattern?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classification_rules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_banks: {
+        Row: {
+          bank_name: string
+          client_id: string
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          bank_name: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          bank_name?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_banks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          cnpj: string | null
+          created_at: string | null
+          id: string
+          last_upload_at: string | null
+          name: string
+          owner_name: string
+          portal_features: Json | null
+          status: string
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string | null
+          id?: string
+          last_upload_at?: string | null
+          name: string
+          owner_name: string
+          portal_features?: Json | null
+          status?: string
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string | null
+          id?: string
+          last_upload_at?: string | null
+          name?: string
+          owner_name?: string
+          portal_features?: Json | null
+          status?: string
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           client_document: string | null
@@ -683,6 +783,122 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          bank: string
+          category: string | null
+          client_id: string
+          confidence: number | null
+          created_at: string | null
+          date: string
+          description: string
+          id: string
+          is_recurring: boolean | null
+          raw_description: string | null
+          status: string
+          upload_id: string | null
+        }
+        Insert: {
+          amount: number
+          bank: string
+          category?: string | null
+          client_id: string
+          confidence?: number | null
+          created_at?: string | null
+          date: string
+          description: string
+          id?: string
+          is_recurring?: boolean | null
+          raw_description?: string | null
+          status?: string
+          upload_id?: string | null
+        }
+        Update: {
+          amount?: number
+          bank?: string
+          category?: string | null
+          client_id?: string
+          confidence?: number | null
+          created_at?: string | null
+          date?: string
+          description?: string
+          id?: string
+          is_recurring?: boolean | null
+          raw_description?: string | null
+          status?: string
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      uploads: {
+        Row: {
+          bank_name: string
+          client_id: string
+          created_at: string | null
+          error_message: string | null
+          filename: string
+          id: string
+          period: string
+          status: string
+          storage_path: string
+          tx_classified: number | null
+          tx_pending: number | null
+          tx_total: number | null
+        }
+        Insert: {
+          bank_name: string
+          client_id: string
+          created_at?: string | null
+          error_message?: string | null
+          filename: string
+          id?: string
+          period: string
+          status?: string
+          storage_path: string
+          tx_classified?: number | null
+          tx_pending?: number | null
+          tx_total?: number | null
+        }
+        Update: {
+          bank_name?: string
+          client_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          filename?: string
+          id?: string
+          period?: string
+          status?: string
+          storage_path?: string
+          tx_classified?: number | null
+          tx_pending?: number | null
+          tx_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uploads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       v_pipeline_kpis: {
@@ -710,6 +926,7 @@ export type Database = {
       }
     }
     Functions: {
+      current_client_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       next_contract_number: { Args: never; Returns: string }
       next_proposal_number: { Args: never; Returns: string }
