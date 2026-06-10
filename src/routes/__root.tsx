@@ -40,8 +40,8 @@ export const Route = createRootRoute({
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Aurora · Gestão Financeira para Empresas" },
       { name: "twitter:description", content: "Plataforma multi-cliente da Aurora" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d5a1a293-5b1a-4f3f-b7d4-0f995a442f59/id-preview-01377871--0bbab5d0-6726-45bd-92b2-f096965588c7.lovable.app-1781031609932.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d5a1a293-5b1a-4f3f-b7d4-0f995a442f59/id-preview-01377871--0bbab5d0-6726-45bd-92b2-f096965588c7.lovable.app-1781031609932.png" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1de17e07-7ac7-47bf-978b-1b0494ae0e46/id-preview-c501635a--0bbab5d0-6726-45bd-92b2-f096965588c7.lovable.app-1781052305153.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1de17e07-7ac7-47bf-978b-1b0494ae0e46/id-preview-c501635a--0bbab5d0-6726-45bd-92b2-f096965588c7.lovable.app-1781052305153.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
