@@ -9,6 +9,7 @@ import { FAQ } from "@/components/landing/FAQ";
 import { AmbientBackground } from "@/components/landing/motion/AmbientBackground";
 import { ScrollProgress } from "@/components/landing/motion/ScrollProgress";
 import { WaveDivider } from "@/components/landing/motion/WaveDivider";
+import { DesignedFold } from "@/components/landing/motion/DesignedFold";
 import { AURORA_WHATSAPP } from "@/lib/supabase";
 
 const INK = "#1C2D45";
@@ -195,27 +196,27 @@ function Landing() {
       <main id="main-content">
         <HeroPC />
 
-        {/* Curva → Features */}
-        <WaveDivider topColor="transparent" bottomColor="transparent" variant="curve" height={96} />
+        {/* Dobra → Features (branco → branco, com vinco verde) */}
+        <DesignedFold topColor="transparent" bottomColor="transparent" accent="forest" height={96} />
 
         <div style={{ background: "transparent" }}>
           <Features />
         </div>
 
-        {/* Curva → Numbers (dark) */}
-        <WaveDivider topColor="transparent" bottomColor={INK} variant="wave" height={96} />
+        {/* Dobra → Numbers (branco → escuro) */}
+        <DesignedFold topColor="transparent" bottomColor={INK} accent="forest" height={96} />
 
         <Numbers />
 
-        {/* Curva → Claudia */}
-        <WaveDivider topColor={INK} bottomColor="transparent" variant="wave" height={96} />
+        {/* Dobra → Claudia (escuro → branco, vinco em sage pra contrastar no dark) */}
+        <DesignedFold topColor={INK} bottomColor="transparent" accent="sage" height={96} />
 
         <div style={{ background: "transparent" }}>
           <ClaudiaSection />
         </div>
 
-        {/* Curva → FAQ */}
-        <WaveDivider topColor="transparent" bottomColor="transparent" variant="curve" height={96} />
+        {/* Dobra → FAQ */}
+        <DesignedFold topColor="transparent" bottomColor="transparent" accent="steel" height={96} />
 
         <div style={{ background: "transparent" }}>
           <FAQ />
