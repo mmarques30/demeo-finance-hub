@@ -50,13 +50,6 @@ export function HeroPC() {
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-4 reveal-ctas">
-              <MagneticButton
-                href="#diagnostico"
-                variant="solid"
-                style={{ background: `linear-gradient(135deg, ${FOREST} 0%, #1f3a22 100%)` }}
-              >
-                Agendar diagnóstico →
-              </MagneticButton>
               <MagneticButton href="#metodo" variant="outline">
                 Ver como funciona
               </MagneticButton>

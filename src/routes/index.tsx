@@ -165,22 +165,9 @@ function Landing() {
             ))}
           </ul>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <Link
               to="/login"
-              className="hidden sm:inline-flex focus-ring"
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "rgba(28,45,69,0.7)",
-                padding: "8px 14px",
-                borderRadius: 999,
-              }}
-            >
-              Entrar
-            </Link>
-            <a
-              href="#diagnostico"
               className="focus-ring inline-flex items-center gap-2"
               style={{
                 background: `linear-gradient(135deg, ${FOREST} 0%, #1f3a22 100%)`,
@@ -199,8 +186,8 @@ function Landing() {
                 e.currentTarget.style.transform = "";
               }}
             >
-              Agendar diagnóstico →
-            </a>
+              Entrar
+            </Link>
           </div>
         </div>
       </nav>
@@ -209,33 +196,33 @@ function Landing() {
         <HeroPC />
 
         {/* Curva → Features */}
-        <WaveDivider topColor="transparent" bottomColor="#FFFFFF" variant="curve" height={96} />
+        <WaveDivider topColor="transparent" bottomColor="transparent" variant="curve" height={96} />
 
         <div style={{ background: "transparent" }}>
           <Features />
         </div>
 
         {/* Curva → Numbers (dark) */}
-        <WaveDivider topColor="#FFFFFF" bottomColor={INK} variant="wave" height={96} />
+        <WaveDivider topColor="transparent" bottomColor={INK} variant="wave" height={96} />
 
         <Numbers />
 
-        {/* Curva → Claudia (white) */}
-        <WaveDivider topColor={INK} bottomColor="#FFFFFF" variant="wave" height={96} />
+        {/* Curva → Claudia */}
+        <WaveDivider topColor={INK} bottomColor="transparent" variant="wave" height={96} />
 
-        <div style={{ background: "#FFFFFF" }}>
+        <div style={{ background: "transparent" }}>
           <ClaudiaSection />
         </div>
 
-        {/* Curva → FAQ (off-white) — corrigida */}
-        <WaveDivider topColor="#FFFFFF" bottomColor="#FFFFFF" variant="curve" height={96} />
+        {/* Curva → FAQ */}
+        <WaveDivider topColor="transparent" bottomColor="transparent" variant="curve" height={96} />
 
         <div style={{ background: "transparent" }}>
           <FAQ />
         </div>
 
         {/* Curva → Footer */}
-        <WaveDivider topColor="#FFFFFF" bottomColor={INK} variant="tilt" height={64} />
+        <WaveDivider topColor="transparent" bottomColor={INK} variant="tilt" height={64} />
       </main>
 
       <footer

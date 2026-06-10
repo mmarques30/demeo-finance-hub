@@ -38,7 +38,7 @@ export function HeroLeadForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !phone || !fat || !dor) return;
+    if (!name || !phone || !email || !fat || !dor) return;
     setStatus("loading");
     // TODO integrar com /functions/v1/lead-intake real
     setTimeout(() => setStatus("ok"), 700);
@@ -184,12 +184,13 @@ export function HeroLeadForm() {
                 style={inputStyle}
               />
             </Field>
-            <Field label="E-mail (opcional)">
+            <Field label="E-mail">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="você@empresa.com"
+                required
                 className="focus-ring"
                 style={inputStyle}
               />
@@ -312,7 +313,7 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "11px 14px",
   fontSize: 13.5,
-  background: "#FAFAFA",
+  background: "#FFFFFF",
   border: "1px solid rgba(28,45,69,0.14)",
   borderRadius: 8,
   outline: "none",
