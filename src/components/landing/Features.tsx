@@ -53,7 +53,7 @@ export function Features() {
       <BrandBackdrop position="left-bottom" scale={4} color={STEEL} opacity={0.06} rotate={8} />
 
       <div className="max-w-[1280px] mx-auto relative z-10">
-        <div className="reveal mb-16 max-w-2xl">
+        <div className="reveal mb-16">
           <div
             style={{
               fontSize: 12,
@@ -68,18 +68,19 @@ export function Features() {
           <h2
             style={{
               fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "clamp(40px, 5vw, 64px)",
+              fontSize: "clamp(28px, 4.2vw, 56px)",
               fontWeight: 300,
               lineHeight: 1.0,
-              letterSpacing: "-2px",
+              letterSpacing: "-1.6px",
               color: INK,
+              whiteSpace: "nowrap",
             }}
           >
             Quatro entregas. Uma{" "}
             <em className="italic" style={{ color: FOREST }}>
               clareza
-            </em>{" "}
-            só.
+            </em>
+            &nbsp;só.
           </h2>
         </div>
 

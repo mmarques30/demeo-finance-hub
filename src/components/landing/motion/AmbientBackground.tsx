@@ -11,7 +11,7 @@ export function AmbientBackground() {
     >
       <div className="absolute" style={{ inset: 0, background: "#FFFFFF" }} />
 
-      {/* Blob 1 — sage */}
+      {/* Blob 1 — sage (sutil) */}
       <div
         className="absolute"
         style={{
@@ -20,13 +20,13 @@ export function AmbientBackground() {
           width: 760,
           height: 760,
           background:
-            "radial-gradient(circle, rgba(153,169,137,0.38) 0%, transparent 60%)",
+            "radial-gradient(circle, rgba(153,169,137,0.18) 0%, transparent 60%)",
           filter: "blur(60px)",
           borderRadius: "50%",
           animation: "ambient-drift-1 28s ease-in-out infinite",
         }}
       />
-      {/* Blob 2 — steel */}
+      {/* Blob 2 — steel (sutil) */}
       <div
         className="absolute"
         style={{
@@ -35,13 +35,13 @@ export function AmbientBackground() {
           width: 820,
           height: 820,
           background:
-            "radial-gradient(circle, rgba(109,146,166,0.28) 0%, transparent 60%)",
+            "radial-gradient(circle, rgba(109,146,166,0.14) 0%, transparent 60%)",
           filter: "blur(80px)",
           borderRadius: "50%",
           animation: "ambient-drift-2 36s ease-in-out infinite",
         }}
       />
-      {/* Blob 3 — forest */}
+      {/* Blob 3 — forest (sutil) */}
       <div
         className="absolute"
         style={{
@@ -50,7 +50,7 @@ export function AmbientBackground() {
           width: 640,
           height: 640,
           background:
-            "radial-gradient(circle, rgba(40,76,43,0.22) 0%, transparent 60%)",
+            "radial-gradient(circle, rgba(40,76,43,0.12) 0%, transparent 60%)",
           filter: "blur(70px)",
           borderRadius: "50%",
           animation: "ambient-drift-3 32s ease-in-out infinite",
