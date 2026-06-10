@@ -101,24 +101,24 @@
   --shadow-glow: 0 0 0 1px rgba(74,103,65,0.06), 0 40px 80px -32px rgba(74,103,65,0.35), 0 16px 48px -16px rgba(143,166,136,0.25);
 
   /* Semantic mapping */
-  --background: #FDF9F4;
+  --background: #FFFFFF;
   --foreground: #1C1C19;
   --card: #FFFFFF;
   --card-foreground: #1C1C19;
   --popover: #FFFFFF;
   --popover-foreground: #1C1C19;
   --primary: #4A6741;
-  --primary-foreground: #FDF9F4;
-  --secondary: #F7F1E8;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F6F2;
   --secondary-foreground: #1C1C19;
-  --muted: #F7F1E8;
+  --muted: #F4F6F2;
   --muted-foreground: #7A7260;
-  --accent: #F7F1E8;
+  --accent: #F4F6F2;
   --accent-foreground: #1C1C19;
   --destructive: #C0392B;
-  --destructive-foreground: #FDF9F4;
-  --border: #E8DFD2;
-  --input: #E8DFD2;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5E7E2;
+  --input: #E5E7E2;
   --ring: #4A6741;
   --chart-1: #4A6741;
   --chart-2: #8FA688;
