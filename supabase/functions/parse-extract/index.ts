@@ -67,9 +67,17 @@ function cleanDescription(raw: string): string {
 function parseCSV(text: string, bankName: string): ParsedTransaction[] {
   const normalized = bankName.toLowerCase().trim().normalize("NFD");
   const key = normalized.replace(new RegExp("[\\u0300-\\u036f]", "g"), "");
+  console.log("[parse-extract] resolvendo banco (CSV)", {
+    bankName_original: bankName,
+    bankName_chars: Array.from(bankName).map((c) => c.charCodeAt(0)),
+    normalized,
+    key_final: key,
+    bancos_suportados: Object.keys(BANK_CONFIGS),
+    match: Boolean(BANK_CONFIGS[key]),
+  });
   const config = BANK_CONFIGS[key];
   if (!config) {
-    throw new Error(`Banco "${bankName}" não configurado. Bancos suportados: ${Object.keys(BANK_CONFIGS).join(", ")}`);
+    throw new Error(`Banco "${bankName}" (normalizado: "${key}") não configurado. Bancos suportados: ${Object.keys(BANK_CONFIGS).join(", ")}`);
   }
   const lines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
   const transactions: ParsedTransaction[] = [];
@@ -205,6 +213,14 @@ Deno.serve(async (req) => {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log("[parse-extract] upload carregado", {
+      upload_id,
+      filename: upload.filename,
+      bank_name: upload.bank_name,
+      bank_name_chars: upload.bank_name ? Array.from(upload.bank_name as string).map((c: string) => c.charCodeAt(0)) : null,
+      storage_path: upload.storage_path,
+    });
 
     const filename = upload.filename.toLowerCase();
     let transactions: ParsedTransaction[] = [];
