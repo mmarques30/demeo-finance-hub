@@ -23,6 +23,17 @@ Deno.serve(async (req) => {
 
     const { file_base64, filename, client_id, bank_name, period } = await req.json();
 
+    console.log("[create-upload] payload recebido", {
+      filename,
+      client_id,
+      bank_name,
+      bank_name_type: typeof bank_name,
+      bank_name_length: bank_name?.length,
+      bank_name_chars: bank_name ? Array.from(bank_name as string).map((c) => c.charCodeAt(0)) : null,
+      period,
+      file_base64_length: file_base64?.length,
+    });
+
     if (!file_base64 || !filename || !client_id || !bank_name) {
       return new Response(
         JSON.stringify({ error: "Campos obrigatórios: file_base64, filename, client_id, bank_name" }),
@@ -106,6 +117,14 @@ Deno.serve(async (req) => {
     );
 
     const parseResult = await parseRes.json();
+
+    console.log("[create-upload] parse-extract respondeu", {
+      ok: parseRes.ok,
+      status: parseRes.status,
+      result: parseResult,
+      upload_id: upload.id,
+      bank_name_enviado: bank_name,
+    });
 
     if (!parseRes.ok) {
       return new Response(
