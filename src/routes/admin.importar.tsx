@@ -46,6 +46,7 @@ function ImportarPage() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleUpload(fileList: File[]) {
+    console.log("handleUpload chamado", fileList.length);
     if (!fileList.length) return;
     setFiles(fileList);
     setError(null);
@@ -57,28 +58,27 @@ function ImportarPage() {
 
       setStage("identifying");
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
       setStage("classifying");
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-upload`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session?.access_token ?? anonKey}`,
-            "apikey": anonKey,
-          },
-          body: JSON.stringify({
-            file_base64,
-            filename: file.name,
-            client_id: clientId,
-            bank_name: bank,
-          }),
-        }
-      );
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-upload`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? anonKey}`,
+          apikey: anonKey,
+        },
+        body: JSON.stringify({
+          file_base64,
+          filename: file.name,
+          client_id: clientId,
+          bank_name: bank,
+        }),
+      });
 
       const result = await res.json();
 
@@ -120,7 +120,10 @@ function ImportarPage() {
       <div className="px-8 lg:px-12 pb-12 grid gap-8">
         {/* Upload zone */}
         <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
           onClick={() => inputRef.current?.click()}
@@ -137,11 +140,14 @@ function ImportarPage() {
             accept=".pdf,.csv,.xlsx,.png,.jpg,.jpeg"
             className="hidden"
             onChange={(e) => {
+              console.log("onChange disparado", e.target.files?.length, e.target.files);
               const fileList = e.target.files ? Array.from(e.target.files) : [];
               if (fileList.length) handleUpload(fileList);
             }}
           />
-          <div className="aurora-serif text-[32px]" style={{ color: "var(--green)", letterSpacing: "-1px" }}>↓</div>
+          <div className="aurora-serif text-[32px]" style={{ color: "var(--green)", letterSpacing: "-1px" }}>
+            ↓
+          </div>
           <div className="aurora-serif text-[24px] mt-2">Arraste o extrato aqui</div>
           <div className="text-[12px] mt-2" style={{ color: "var(--muted-foreground)" }}>
             ou clique para selecionar · PDF, CSV, XLSX, PNG, JPG · múltiplos arquivos suportados
@@ -170,7 +176,11 @@ function ImportarPage() {
                 className="w-full bg-white px-3 py-2.5 text-[13px]"
                 style={{ border: "1px solid var(--line)" }}
               >
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="aurora-card">
@@ -181,7 +191,9 @@ function ImportarPage() {
                 className="w-full bg-white px-3 py-2.5 text-[13px]"
                 style={{ border: "1px solid var(--line)" }}
               >
-                {["Itaú", "Santander", "Bradesco", "Banco do Brasil", "Inter", "Nubank"].map((b) => <option key={b}>{b}</option>)}
+                {["Itaú", "Santander", "Bradesco", "Banco do Brasil", "Inter", "Nubank"].map((b) => (
+                  <option key={b}>{b}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -190,41 +202,63 @@ function ImportarPage() {
         {/* Status */}
         {stage !== "idle" && stage !== "done" && (
           <div className="aurora-card flex items-center gap-4">
-            <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
+            <div
+              className="w-5 h-5 rounded-full border-2 animate-spin"
+              style={{ borderColor: "var(--green)", borderTopColor: "transparent" }}
+            />
             <div>
               <div className="text-[13px]" style={{ fontWeight: 500 }}>
                 {stage === "reading" && "Lendo arquivo..."}
                 {stage === "identifying" && "Identificando lançamentos..."}
                 {stage === "classifying" && "Classificando com IA..."}
               </div>
-              <div className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Não feche esta janela.</div>
+              <div className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                Não feche esta janela.
+              </div>
             </div>
           </div>
         )}
 
         {/* Error */}
         {error && (
-          <div className="aurora-card flex items-center gap-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)" }}>
+          <div
+            className="aurora-card flex items-center gap-3"
+            style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)" }}
+          >
             <span style={{ color: "var(--tan)", fontSize: 18 }}>!</span>
-            <div className="text-[13px]" style={{ color: "var(--foreground)" }}>{error}</div>
+            <div className="text-[13px]" style={{ color: "var(--foreground)" }}>
+              {error}
+            </div>
           </div>
         )}
 
         {/* Result table */}
         {stage === "done" && transactions.length > 0 && (
           <div className="aurora-card p-0 overflow-hidden">
-            <div className="px-6 py-5 flex items-center justify-between flex-wrap gap-3" style={{ borderBottom: "1px solid var(--line)" }}>
+            <div
+              className="px-6 py-5 flex items-center justify-between flex-wrap gap-3"
+              style={{ borderBottom: "1px solid var(--line)" }}
+            >
               <div>
                 <div className="aurora-cap mb-1">Resultado</div>
                 <div className="aurora-serif text-[20px]">
-                  {transactions.length} lançamentos · <em className="italic" style={{ color: "var(--green)" }}>{transactions.filter(t => t.status !== "pending").length} classificados</em>
+                  {transactions.length} lançamentos ·{" "}
+                  <em className="italic" style={{ color: "var(--green)" }}>
+                    {transactions.filter((t) => t.status !== "pending").length} classificados
+                  </em>
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="text-[10px] uppercase px-4 py-2" style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" }}>
+                <button
+                  className="text-[10px] uppercase px-4 py-2"
+                  style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" }}
+                >
                   Aprovar selecionados
                 </button>
-                <button className="text-[10px] uppercase px-4 py-2" style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+                <button
+                  className="text-[10px] uppercase px-4 py-2"
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                >
                   ✓ Aprovar todos
                 </button>
               </div>
@@ -232,9 +266,13 @@ function ImportarPage() {
             <table className="w-full">
               <thead>
                 <tr style={{ background: "var(--linen)" }}>
-                  <th className="px-4 py-3"><input type="checkbox" checked={selected.size === transactions.length} onChange={toggleAll} /></th>
+                  <th className="px-4 py-3">
+                    <input type="checkbox" checked={selected.size === transactions.length} onChange={toggleAll} />
+                  </th>
                   {["Data", "Descrição", "Valor", "Categoria sugerida", "Ação"].map((h) => (
-                    <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
+                    <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -263,12 +301,23 @@ function ImportarPage() {
                       <td className="px-5 py-3 text-[12px]">{tx.date}</td>
                       <td className="px-5 py-3 text-[12px]">
                         {tx.description}
-                        {tx.is_recurring && <span title="Recorrente" className="ml-2" style={{ color: "var(--sage)" }}>↻</span>}
+                        {tx.is_recurring && (
+                          <span title="Recorrente" className="ml-2" style={{ color: "var(--sage)" }}>
+                            ↻
+                          </span>
+                        )}
                       </td>
-                      <td className="px-5 py-3 text-[12px] aurora-serif" style={{ color: tx.amount >= 0 ? "var(--green)" : "var(--navy)", fontSize: 14 }}>
-                        {tx.amount >= 0 ? "+" : ""}{brl(tx.amount)}
+                      <td
+                        className="px-5 py-3 text-[12px] aurora-serif"
+                        style={{ color: tx.amount >= 0 ? "var(--green)" : "var(--navy)", fontSize: 14 }}
+                      >
+                        {tx.amount >= 0 ? "+" : ""}
+                        {brl(tx.amount)}
                       </td>
-                      <td className="px-5 py-3 text-[12px]" style={{ color: isClassified ? "var(--foreground)" : "var(--tan)" }}>
+                      <td
+                        className="px-5 py-3 text-[12px]"
+                        style={{ color: isClassified ? "var(--foreground)" : "var(--tan)" }}
+                      >
                         {isClassified ? tx.category : "Pendente de classificação"}
                       </td>
                       <td className="px-5 py-3 text-[11px]">

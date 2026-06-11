@@ -23,6 +23,17 @@ Deno.serve(async (req) => {
 
     const { file_base64, filename, client_id, bank_name, period } = await req.json();
 
+    console.log("[create-upload] payload recebido", {
+      filename,
+      client_id,
+      bank_name,
+      bank_name_type: typeof bank_name,
+      bank_name_length: bank_name?.length,
+      bank_name_chars: bank_name ? Array.from(bank_name as string).map((c) => c.charCodeAt(0)) : null,
+      period,
+      file_base64_length: file_base64?.length,
+    });
+
     if (!file_base64 || !filename || !client_id || !bank_name) {
       return new Response(
         JSON.stringify({ error: "Campos obrigatórios: file_base64, filename, client_id, bank_name" }),
@@ -107,6 +118,14 @@ Deno.serve(async (req) => {
 
     const parseResult = await parseRes.json();
 
+    console.log("[create-upload] parse-extract respondeu", {
+      ok: parseRes.ok,
+      status: parseRes.status,
+      result: parseResult,
+      upload_id: upload.id,
+      bank_name_enviado: bank_name,
+    });
+
     if (!parseRes.ok) {
       return new Response(
         JSON.stringify({ error: `parse-extract falhou: ${parseResult.error}` }),
@@ -128,11 +147,11 @@ Deno.serve(async (req) => {
       }
     );
 
+    const classifyData = await classifyRes.json().catch(() => ({ classified: 0, pending_manual: 0 }));
     if (!classifyRes.ok) {
-      const classifyErr = await classifyRes.json().catch(() => ({ error: "unknown" }));
       await supabase
         .from("uploads")
-        .update({ error_message: `classify-batch: ${classifyErr.error}` })
+        .update({ error_message: `classify-batch: ${classifyData.error ?? "unknown"}` })
         .eq("id", upload.id);
     }
 
@@ -142,6 +161,19 @@ Deno.serve(async (req) => {
       .select("id, date, description, amount, category, status, is_recurring, confidence")
       .eq("upload_id", upload.id)
       .order("date");
+
+    // 6. Notifica n8n (fire and forget)
+    fetch("https://mariaiaplicada.app.n8n.cloud/webhook/aurora-extrato", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        upload_id: upload.id,
+        client_id,
+        tx_count: parseResult.tx_count ?? 0,
+        classified: classifyData.classified ?? 0,
+        pending_manual: classifyData.pending_manual ?? 0,
+      }),
+    }).catch(() => {});
 
     return new Response(
       JSON.stringify({

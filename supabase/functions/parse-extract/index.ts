@@ -69,7 +69,7 @@ function parseCSV(text: string, bankName: string): ParsedTransaction[] {
   const key = normalized.replace(new RegExp("[\\u0300-\\u036f]", "g"), "");
   const config = BANK_CONFIGS[key];
   if (!config) {
-    throw new Error(`Banco "${bankName}" não configurado. Bancos suportados: ${Object.keys(BANK_CONFIGS).join(", ")}`);
+    throw new Error(`Banco "${bankName}" (normalizado: "${key}") não configurado. Bancos suportados: ${Object.keys(BANK_CONFIGS).join(", ")}`);
   }
   const lines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
   const transactions: ParsedTransaction[] = [];
