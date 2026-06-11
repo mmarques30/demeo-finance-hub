@@ -1,0 +1,35 @@
+-- =============================================================================
+-- Setup: Edge Function `status` — monitoramento público com token
+-- =============================================================================
+-- Esta migration não altera schema. Serve como documentação de configuração.
+--
+-- PASSO 1: Gerar um token secreto (rode no terminal):
+--   openssl rand -hex 32
+--
+-- PASSO 2: No Supabase Dashboard → Settings → Edge Functions → Secrets:
+--   Adicionar:  STATUS_TOKEN = <valor gerado no passo 1>
+--
+-- PASSO 3: Deploy da função (via Lovable ou CLI):
+--   supabase functions deploy status
+--
+-- PASSO 4: Testar:
+--   curl "https://ofvhmiugqkpzlgziqnjb.supabase.co/functions/v1/status?token=SEU_TOKEN"
+--
+-- A URL final para monitoramento será:
+--   https://ofvhmiugqkpzlgziqnjb.supabase.co/functions/v1/status?token=SEU_TOKEN
+--
+-- Resposta esperada (JSON):
+-- {
+--   "generated_at": "2026-06-11T...",
+--   "clients":           { "total": N, "by_status": { "Em andamento": N, ... } },
+--   "uploads_last_30d":  { "total": N, "by_status": { "done": N, "error": N, ... } },
+--   "transactions":      { "total": N, "by_status": { "pending": N, "classified": N, "approved": N } },
+--   "pipeline":          { "active_deals": N, "won_deals": N, "conversion_rate_pct": N, ... },
+--   "leads_last_7d":     N,
+--   "proposals":         { "total": N, "by_status": { "draft": N, "sent": N, "accepted": N, ... } }
+-- }
+-- =============================================================================
+
+-- Sem alterações de schema necessárias.
+-- A função usa SUPABASE_SERVICE_ROLE_KEY injetado automaticamente pelo Lovable Cloud.
+SELECT 1; -- no-op para satisfazer o parser de migrations
