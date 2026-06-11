@@ -140,6 +140,7 @@ function ImportarPage() {
             accept=".pdf,.csv,.xlsx,.png,.jpg,.jpeg"
             className="hidden"
             onChange={(e) => {
+              console.log("onChange disparado", e.target.files?.length, e.target.files);
               const fileList = e.target.files ? Array.from(e.target.files) : [];
               if (fileList.length) handleUpload(fileList);
             }}
