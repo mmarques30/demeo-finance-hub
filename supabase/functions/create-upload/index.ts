@@ -147,11 +147,11 @@ Deno.serve(async (req) => {
       }
     );
 
+    const classifyData = await classifyRes.json().catch(() => ({ classified: 0, pending_manual: 0 }));
     if (!classifyRes.ok) {
-      const classifyErr = await classifyRes.json().catch(() => ({ error: "unknown" }));
       await supabase
         .from("uploads")
-        .update({ error_message: `classify-batch: ${classifyErr.error}` })
+        .update({ error_message: `classify-batch: ${classifyData.error ?? "unknown"}` })
         .eq("id", upload.id);
     }
 
@@ -161,6 +161,19 @@ Deno.serve(async (req) => {
       .select("id, date, description, amount, category, status, is_recurring, confidence")
       .eq("upload_id", upload.id)
       .order("date");
+
+    // 6. Notifica n8n (fire and forget)
+    fetch("https://mariaiaplicada.app.n8n.cloud/webhook/aurora-extrato", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        upload_id: upload.id,
+        client_id,
+        tx_count: parseResult.tx_count ?? 0,
+        classified: classifyData.classified ?? 0,
+        pending_manual: classifyData.pending_manual ?? 0,
+      }),
+    }).catch(() => {});
 
     return new Response(
       JSON.stringify({
