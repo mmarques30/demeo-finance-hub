@@ -34,12 +34,60 @@ interface BankConfig {
 }
 
 const BANK_CONFIGS: Record<string, BankConfig> = {
-  nubank: { separator: ",", dateFormat: "YYYY-MM-DD", colDate: 0, colDesc: 2, colAmount: 3, skipRows: 1, skipKeywords: [] },
-  itau: { separator: ";", dateFormat: "DD/MM/YYYY", colDate: 0, colDesc: 1, colAmount: 2, skipRows: 3, skipKeywords: ["Saldo", "SALDO", "Total", "TOTAL"] },
-  bradesco: { separator: ";", dateFormat: "DD/MM/YYYY", colDate: 0, colDesc: 2, colAmount: 4, skipRows: 4, skipKeywords: ["Saldo", "SALDO", "Total"] },
-  inter: { separator: ",", dateFormat: "DD/MM/YYYY", colDate: 0, colDesc: 1, colAmount: 3, skipRows: 1, skipKeywords: ["Saldo"] },
-  "banco do brasil": { separator: "\t", dateFormat: "DD/MM/YYYY", colDate: 0, colDesc: 2, colAmount: 3, skipRows: 2, skipKeywords: ["Saldo", "S A L D O"] },
-  santander: { separator: ";", dateFormat: "DD/MM/YYYY", colDate: 0, colDesc: 1, colAmount: 3, skipRows: 2, skipKeywords: ["Saldo", "Total"] },
+  nubank: {
+    separator: ",",
+    dateFormat: "YYYY-MM-DD",
+    colDate: 0,
+    colDesc: 2,
+    colAmount: 3,
+    skipRows: 1,
+    skipKeywords: [],
+  },
+  itau: {
+    separator: ";",
+    dateFormat: "DD/MM/YYYY",
+    colDate: 0,
+    colDesc: 1,
+    colAmount: 2,
+    skipRows: 3,
+    skipKeywords: ["Saldo", "SALDO", "Total", "TOTAL"],
+  },
+  bradesco: {
+    separator: ";",
+    dateFormat: "DD/MM/YYYY",
+    colDate: 0,
+    colDesc: 2,
+    colAmount: 4,
+    skipRows: 4,
+    skipKeywords: ["Saldo", "SALDO", "Total"],
+  },
+  inter: {
+    separator: ",",
+    dateFormat: "DD/MM/YYYY",
+    colDate: 0,
+    colDesc: 1,
+    colAmount: 3,
+    skipRows: 1,
+    skipKeywords: ["Saldo"],
+  },
+  "banco do brasil": {
+    separator: "\t",
+    dateFormat: "DD/MM/YYYY",
+    colDate: 0,
+    colDesc: 2,
+    colAmount: 3,
+    skipRows: 2,
+    skipKeywords: ["Saldo", "S A L D O"],
+  },
+  santander: {
+    separator: ";",
+    dateFormat: "DD/MM/YYYY",
+    colDate: 0,
+    colDesc: 1,
+    colAmount: 3,
+    skipRows: 2,
+    skipKeywords: ["Saldo", "Total"],
+  },
 };
 
 function parseDate(raw: string, format: BankConfig["dateFormat"]): string {
@@ -57,7 +105,11 @@ function parseDate(raw: string, format: BankConfig["dateFormat"]): string {
 }
 
 function parseAmount(raw: string): number {
-  const cleaned = raw.trim().replace(/\./g, "").replace(",", ".").replace(/[^0-9.\-]/g, "");
+  const cleaned = raw
+    .trim()
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^0-9.\-]/g, "");
   return parseFloat(cleaned) || 0;
 }
 
@@ -70,10 +122,18 @@ function parseCSV(text: string, bankName: string): ParsedTransaction[] {
   const key = normalized.replace(new RegExp("[\\u0300-\\u036f]", "g"), "");
   const config = BANK_CONFIGS[key];
   if (!config) {
-    throw new Error(`Banco "${bankName}" (normalizado: "${key}") não configurado. Bancos suportados: ${Object.keys(BANK_CONFIGS).join(", ")}`);
+    throw new Error(
+      `Banco "${bankName}" (normalizado: "${key}") não configurado. Bancos suportados: ${Object.keys(BANK_CONFIGS).join(", ")}`,
+    );
   }
-  const clean = text.replace(/^﻿/, "").replace(/^\xFF\xFE/, "").replace(/^\xFE\xFF/, "");
-  const lines = clean.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+  const clean = text
+    .replace(/^﻿/, "")
+    .replace(/^\xFF\xFE/, "")
+    .replace(/^\xFE\xFF/, "");
+  const lines = clean
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
   const transactions: ParsedTransaction[] = [];
   for (let i = config.skipRows; i < lines.length; i++) {
     const line = lines[i];
@@ -183,11 +243,7 @@ interface AITransaction {
   amount: number;
 }
 
-async function parseWithAI(
-  fileData: Blob,
-  filename: string,
-  bankName: string
-): Promise<ParsedTransaction[]> {
+async function parseWithAI(fileData: Blob, filename: string, bankName: string): Promise<ParsedTransaction[]> {
   const client = new Anthropic();
   const buffer = await fileData.arrayBuffer();
   const base64 = arrayBufferToBase64(buffer);
@@ -203,12 +259,12 @@ async function parseWithAI(
   const mediaType = isPDF
     ? "application/pdf"
     : ext === "jpg" || ext === "jpeg"
-    ? "image/jpeg"
-    : ext === "png"
-    ? "image/png"
-    : ext === "webp"
-    ? "image/webp"
-    : "image/gif";
+      ? "image/jpeg"
+      : ext === "png"
+        ? "image/png"
+        : ext === "webp"
+          ? "image/webp"
+          : "image/gif";
 
   const contentBlock = isPDF
     ? {
@@ -278,38 +334,45 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const { upload_id } = await req.json();
 
     if (!upload_id) {
       return new Response(JSON.stringify({ error: "upload_id é obrigatório" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { data: upload, error: uploadError } = await supabase
-      .from("uploads").select("*").eq("id", upload_id).single();
+      .from("uploads")
+      .select("*")
+      .eq("id", upload_id)
+      .single();
 
     if (uploadError || !upload) {
       return new Response(JSON.stringify({ error: "Upload não encontrado" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { data: fileData, error: storageError } = await supabase.storage
-      .from("extratos").download(upload.storage_path);
+      .from("extratos")
+      .download(upload.storage_path);
 
     if (storageError || !fileData) {
-      await supabase.from("uploads").update({
-        status: "error",
-        error_message: `Erro ao baixar arquivo: ${storageError?.message}`,
-      }).eq("id", upload_id);
+      await supabase
+        .from("uploads")
+        .update({
+          status: "error",
+          error_message: `Erro ao baixar arquivo: ${storageError?.message}`,
+        })
+        .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "Erro ao baixar arquivo do Storage" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -331,22 +394,30 @@ Deno.serve(async (req) => {
     ) {
       transactions = await parseWithAI(fileData, upload.filename, upload.bank_name);
     } else {
-      await supabase.from("uploads").update({
-        status: "error",
-        error_message: `Formato não suportado: ${filename}. Use CSV, XLSX, PDF, PNG ou JPG.`,
-      }).eq("id", upload_id);
+      await supabase
+        .from("uploads")
+        .update({
+          status: "error",
+          error_message: `Formato não suportado: ${filename}. Use CSV, XLSX, PDF, PNG ou JPG.`,
+        })
+        .eq("id", upload_id);
       return new Response(JSON.stringify({ error: `Formato não suportado: ${filename}` }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (transactions.length === 0) {
-      await supabase.from("uploads").update({
-        status: "error",
-        error_message: "Nenhum lançamento encontrado no arquivo. Verifique o formato e o banco selecionado.",
-      }).eq("id", upload_id);
+      await supabase
+        .from("uploads")
+        .update({
+          status: "error",
+          error_message: "Nenhum lançamento encontrado no arquivo. Verifique o formato e o banco selecionado.",
+        })
+        .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "Nenhum lançamento encontrado" }), {
-        status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -364,32 +435,42 @@ Deno.serve(async (req) => {
     const { error: insertError } = await supabase.from("transactions").insert(txRows);
 
     if (insertError) {
-      await supabase.from("uploads").update({
-        status: "error",
-        error_message: `Erro ao salvar lançamentos: ${insertError.message}`,
-      }).eq("id", upload_id);
+      await supabase
+        .from("uploads")
+        .update({
+          status: "error",
+          error_message: `Erro ao salvar lançamentos: ${insertError.message}`,
+        })
+        .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "Erro ao salvar transações" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    await supabase.from("uploads").update({
-      status: "parsed",
-      tx_total: transactions.length,
-      tx_pending: transactions.length,
-    }).eq("id", upload_id);
+    await supabase
+      .from("uploads")
+      .update({
+        status: "parsed",
+        tx_total: transactions.length,
+        tx_pending: transactions.length,
+      })
+      .eq("id", upload_id);
 
-    return new Response(JSON.stringify({
-      success: true,
-      upload_id,
-      tx_count: transactions.length,
-      message: `${transactions.length} lançamentos extraídos com sucesso`,
-    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
+    return new Response(
+      JSON.stringify({
+        success: true,
+        upload_id,
+        tx_count: transactions.length,
+        message: `${transactions.length} lançamentos extraídos com sucesso`,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (err) {
     console.error("parse-extract error:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
