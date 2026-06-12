@@ -1,12 +1,13 @@
 // ============================================================
 // Aurora · Edge Function: parse-extract
 // Lê um arquivo de extrato bancário do Storage,
-// detecta o formato (CSV ou XLSX) e insere os lançamentos
-// na tabela transactions.
+// detecta o formato (CSV, XLSX, PDF, imagem) e insere os
+// lançamentos na tabela transactions.
 // ============================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,7 +71,8 @@ function parseCSV(text: string, bankName: string): ParsedTransaction[] {
   if (!config) {
     throw new Error(`Banco "${bankName}" não configurado. Bancos suportados: ${Object.keys(BANK_CONFIGS).join(", ")}`);
   }
-  const lines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+  const clean = text.replace(/^﻿/, "").replace(/^\xFF\xFE/, "").replace(/^\xFE\xFF/, "");
+  const lines = clean.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
   const transactions: ParsedTransaction[] = [];
   for (let i = config.skipRows; i < lines.length; i++) {
     const line = lines[i];
@@ -164,6 +166,111 @@ function parseXLSX(buffer: ArrayBuffer, bankName: string): ParsedTransaction[] {
   return transactions;
 }
 
+// Converte ArrayBuffer para string base64
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+interface AITransaction {
+  date: string;
+  description: string;
+  amount: number;
+}
+
+async function parseWithAI(
+  fileData: Blob,
+  filename: string,
+  bankName: string
+): Promise<ParsedTransaction[]> {
+  const client = new Anthropic();
+  const buffer = await fileData.arrayBuffer();
+  const base64 = arrayBufferToBase64(buffer);
+  const ext = filename.toLowerCase().split(".").pop() ?? "";
+
+  const isImage = ["png", "jpg", "jpeg", "webp", "gif"].includes(ext);
+  const isPDF = ext === "pdf";
+
+  if (!isImage && !isPDF) {
+    throw new Error(`parseWithAI não suporta o formato .${ext}`);
+  }
+
+  const mediaType = isPDF
+    ? "application/pdf"
+    : ext === "jpg" || ext === "jpeg"
+    ? "image/jpeg"
+    : ext === "png"
+    ? "image/png"
+    : ext === "webp"
+    ? "image/webp"
+    : "image/gif";
+
+  const contentBlock = isPDF
+    ? {
+        type: "document" as const,
+        source: {
+          type: "base64" as const,
+          media_type: mediaType as "application/pdf",
+          data: base64,
+        },
+      }
+    : {
+        type: "image" as const,
+        source: {
+          type: "base64" as const,
+          media_type: mediaType as "image/jpeg" | "image/png" | "image/webp" | "image/gif",
+          data: base64,
+        },
+      };
+
+  const { content } = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content: [
+          contentBlock,
+          {
+            type: "text",
+            text: `Este é um extrato bancário do banco "${bankName}". Extraia TODOS os lançamentos financeiros.
+
+Retorne SOMENTE um JSON array no formato abaixo, sem texto adicional:
+[{"date":"YYYY-MM-DD","description":"DESCRIÇÃO EM MAIÚSCULAS","amount":valor_numerico}]
+
+Regras:
+- date: formato ISO YYYY-MM-DD obrigatório
+- description: texto limpo em MAIÚSCULAS, sem caracteres especiais extras
+- amount: número (positivo = crédito/entrada, negativo = débito/saída)
+- Ignore linhas de saldo, totais e cabeçalhos
+- Inclua TODOS os lançamentos visíveis, sem filtrar
+- Se não conseguir identificar lançamentos, retorne []`,
+          },
+        ],
+      },
+    ],
+  });
+
+  const raw = content[0].type === "text" ? content[0].text.trim() : "[]";
+  const jsonMatch = raw.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) return [];
+
+  const parsed: AITransaction[] = JSON.parse(jsonMatch[0]);
+  return parsed
+    .filter((t) => t.date && t.description && t.amount !== 0)
+    .map((t) => ({
+      date: t.date,
+      description: cleanDescription(t.description),
+      raw_description: t.description.trim(),
+      amount: t.amount,
+      bank: bankName,
+    }));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -214,12 +321,20 @@ Deno.serve(async (req) => {
     } else if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
       const buffer = await fileData.arrayBuffer();
       transactions = parseXLSX(buffer, upload.bank_name);
+    } else if (
+      filename.endsWith(".pdf") ||
+      filename.endsWith(".png") ||
+      filename.endsWith(".jpg") ||
+      filename.endsWith(".jpeg") ||
+      filename.endsWith(".webp")
+    ) {
+      transactions = await parseWithAI(fileData, upload.filename, upload.bank_name);
     } else {
       await supabase.from("uploads").update({
         status: "error",
-        error_message: `Formato não suportado: ${filename}. Use CSV ou XLSX. PDF e imagem serão adicionados em breve.`,
+        error_message: `Formato não suportado: ${filename}. Use CSV, XLSX, PDF, PNG ou JPG.`,
       }).eq("id", upload_id);
-      return new Response(JSON.stringify({ error: "Formato não suportado nesta versão (CSV e XLSX disponíveis)" }), {
+      return new Response(JSON.stringify({ error: `Formato não suportado: ${filename}` }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

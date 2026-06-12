@@ -37,6 +37,10 @@ Deno.serve(async (req) => {
       ext === "csv" ? "text/csv" :
       ext === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" :
       ext === "xls" ? "application/vnd.ms-excel" :
+      ext === "pdf" ? "application/pdf" :
+      ext === "png" ? "image/png" :
+      ext === "jpg" || ext === "jpeg" ? "image/jpeg" :
+      ext === "webp" ? "image/webp" :
       "application/octet-stream";
 
     // Valida existência do cliente antes de processar
