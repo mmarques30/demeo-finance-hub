@@ -128,48 +128,48 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Aciona classify-batch
-    const classifyRes = await fetch(
-      `${Deno.env.get("SUPABASE_URL")}/functions/v1/classify-batch`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-        },
-        body: JSON.stringify({ upload_id: upload.id }),
-      }
-    );
-
-    const classifyData = await classifyRes.json().catch(() => ({ classified: 0, pending_manual: 0 }));
-    if (!classifyRes.ok) {
-      await supabase
-        .from("uploads")
-        .update({ error_message: `classify-batch: ${classifyData.error ?? "unknown"}` })
-        .eq("id", upload.id);
-    }
-
-    // 5. Busca transações já classificadas
+    // 4. Busca transações parseadas (status=pending) para retornar imediatamente
     const { data: transactions } = await supabase
       .from("transactions")
       .select("id, date, description, amount, category, status, is_recurring, confidence")
       .eq("upload_id", upload.id)
       .order("date");
 
-    // 6. Notifica n8n (fire and forget)
-    const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL") ?? "https://mariaiaplicada.app.n8n.cloud/webhook/aurora-extrato";
-    fetch(n8nUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        upload_id: upload.id,
-        client_id,
-        tx_count: parseResult.tx_count ?? 0,
-        classified: classifyData.classified ?? 0,
-        pending_manual: classifyData.pending_manual ?? 0,
-      }),
-    }).catch(() => {});
+    // 5. classify-batch + n8n em background (fire and forget — não bloqueia resposta)
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+
+    Promise.resolve().then(async () => {
+      try {
+        const classifyRes = await fetch(`${supabaseUrl}/functions/v1/classify-batch`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${serviceKey}`,
+            "apikey": serviceKey,
+          },
+          body: JSON.stringify({ upload_id: upload.id }),
+        });
+        const classifyData = await classifyRes.json().catch(() => ({}));
+
+        const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL");
+        if (n8nUrl) {
+          fetch(n8nUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              upload_id: upload.id,
+              client_id,
+              tx_count: parseResult.tx_count ?? 0,
+              classified: classifyData.classified ?? 0,
+              pending_manual: classifyData.pending_manual ?? 0,
+            }),
+          }).catch(() => {});
+        }
+      } catch (e) {
+        console.error("[create-upload] background classify error:", e);
+      }
+    });
 
     return new Response(
       JSON.stringify({
