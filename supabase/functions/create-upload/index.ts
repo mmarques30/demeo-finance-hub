@@ -23,16 +23,7 @@ Deno.serve(async (req) => {
 
     const { file_base64, filename, client_id, bank_name, period } = await req.json();
 
-    console.log("[create-upload] payload recebido", {
-      filename,
-      client_id,
-      bank_name,
-      bank_name_type: typeof bank_name,
-      bank_name_length: bank_name?.length,
-      bank_name_chars: bank_name ? Array.from(bank_name as string).map((c) => c.charCodeAt(0)) : null,
-      period,
-      file_base64_length: file_base64?.length,
-    });
+    console.log("[create-upload] payload recebido", { filename, client_id, bank_name, period, file_base64_length: file_base64?.length });
 
     if (!file_base64 || !filename || !client_id || !bank_name) {
       return new Response(
@@ -167,7 +158,8 @@ Deno.serve(async (req) => {
       .order("date");
 
     // 6. Notifica n8n (fire and forget)
-    fetch("https://mariaiaplicada.app.n8n.cloud/webhook/aurora-extrato", {
+    const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL") ?? "https://mariaiaplicada.app.n8n.cloud/webhook/aurora-extrato";
+    fetch(n8nUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
