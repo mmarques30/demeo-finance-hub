@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { clients, brl } from "@/lib/mockData";
+import { brl } from "@/lib/mockData";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/importar")({
@@ -22,6 +22,11 @@ interface Transaction {
   confidence: number | null;
 }
 
+interface ClientOption {
+  id: string;
+  name: string;
+}
+
 function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -37,16 +42,34 @@ function toBase64(file: File): Promise<string> {
 function ImportarPage() {
   const [stage, setStage] = useState<Stage>("idle");
   const [files, setFiles] = useState<File[]>([]);
-  const [clientId, setClientId] = useState(clients[0].id);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [clientId, setClientId] = useState("");
   const [bank, setBank] = useState("Itaú");
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
+
+  // Carrega clientes reais do Supabase
+  useEffect(() => {
+    async function loadClients() {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name")
+        .order("name");
+      if (data && data.length > 0) {
+        setClients(data);
+        setClientId(data[0].id);
+      } else if (error) {
+        console.error("[importar] erro ao carregar clientes:", error.message);
+      }
+    }
+    loadClients();
+  }, []);
 
   async function handleUpload(fileList: File[]) {
-    console.log("handleUpload chamado", fileList.length);
     if (!fileList.length) return;
     setFiles(fileList);
     setError(null);
@@ -108,6 +131,43 @@ function ImportarPage() {
     else setSelected(new Set(transactions.map((_, i) => i)));
   }
 
+  async function approveTransactions(ids: string[]) {
+    if (!ids.length) return;
+    setApproving(true);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+    const { error: err } = await supabase
+      .from("transactions")
+      .update({ status: "approved" })
+      .in("id", ids);
+
+    if (err) {
+      setError(`Erro ao aprovar: ${err.message}`);
+    } else {
+      setTransactions((prev) =>
+        prev.map((t) => (ids.includes(t.id) ? { ...t, status: "approved" } : t))
+      );
+      setSelected(new Set());
+    }
+    setApproving(false);
+  }
+
+  function approveSelected() {
+    const ids = Array.from(selected).map((i) => transactions[i].id);
+    approveTransactions(ids);
+  }
+
+  function approveAll() {
+    approveTransactions(transactions.map((t) => t.id));
+  }
+
+  function approveOne(id: string) {
+    approveTransactions([id]);
+  }
+
   return (
     <AdminLayout>
       <PageHeader
@@ -140,7 +200,6 @@ function ImportarPage() {
             accept=".pdf,.csv,.xlsx,.png,.jpg,.jpeg"
             className="hidden"
             onChange={(e) => {
-              console.log("onChange disparado", e.target.files?.length, e.target.files);
               const fileList = e.target.files ? Array.from(e.target.files) : [];
               if (fileList.length) handleUpload(fileList);
             }}
@@ -176,6 +235,9 @@ function ImportarPage() {
                 className="w-full bg-white px-3 py-2.5 text-[13px]"
                 style={{ border: "1px solid var(--line)" }}
               >
+                {clients.length === 0 && (
+                  <option value="">Carregando clientes...</option>
+                )}
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -244,22 +306,26 @@ function ImportarPage() {
                 <div className="aurora-serif text-[20px]">
                   {transactions.length} lançamentos ·{" "}
                   <em className="italic" style={{ color: "var(--green)" }}>
-                    {transactions.filter((t) => t.status !== "pending").length} classificados
+                    {transactions.filter((t) => t.status === "approved").length} aprovados
                   </em>
                 </div>
               </div>
               <div className="flex gap-2">
                 <button
-                  className="text-[10px] uppercase px-4 py-2"
+                  onClick={approveSelected}
+                  disabled={approving || selected.size === 0}
+                  className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
                   style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" }}
                 >
-                  Aprovar selecionados
+                  Aprovar selecionados {selected.size > 0 ? `(${selected.size})` : ""}
                 </button>
                 <button
-                  className="text-[10px] uppercase px-4 py-2"
+                  onClick={approveAll}
+                  disabled={approving}
+                  className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
                   style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
                 >
-                  ✓ Aprovar todos
+                  {approving ? "Aprovando..." : "✓ Aprovar todos"}
                 </button>
               </div>
             </div>
@@ -267,9 +333,9 @@ function ImportarPage() {
               <thead>
                 <tr style={{ background: "var(--linen)" }}>
                   <th className="px-4 py-3">
-                    <input type="checkbox" checked={selected.size === transactions.length} onChange={toggleAll} />
+                    <input type="checkbox" checked={selected.size === transactions.length && transactions.length > 0} onChange={toggleAll} />
                   </th>
-                  {["Data", "Descrição", "Valor", "Categoria sugerida", "Ação"].map((h) => (
+                  {["Data", "Descrição", "Valor", "Categoria sugerida", "Status", "Ação"].map((h) => (
                     <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>
                       {h}
                     </th>
@@ -278,12 +344,13 @@ function ImportarPage() {
               </thead>
               <tbody>
                 {transactions.map((tx, i) => {
-                  const isClassified = tx.status !== "pending";
+                  const isApproved = tx.status === "approved";
+                  const isPending = tx.status === "pending";
                   return (
                     <tr
                       key={tx.id}
                       style={{
-                        background: !isClassified ? "rgba(184,149,106,0.07)" : i % 2 === 0 ? "#fff" : "#FAFAF8",
+                        background: isPending ? "rgba(184,149,106,0.07)" : i % 2 === 0 ? "#fff" : "#FAFAF8",
                         borderTop: "1px solid var(--line)",
                       }}
                     >
@@ -316,12 +383,31 @@ function ImportarPage() {
                       </td>
                       <td
                         className="px-5 py-3 text-[12px]"
-                        style={{ color: isClassified ? "var(--foreground)" : "var(--tan)" }}
+                        style={{ color: isPending ? "var(--tan)" : "var(--foreground)" }}
                       >
-                        {isClassified ? tx.category : "Pendente de classificação"}
+                        {isPending ? "Pendente de classificação" : tx.category}
                       </td>
                       <td className="px-5 py-3 text-[11px]">
-                        <span className="aurora-link mr-3">Aprovar</span>
+                        <span
+                          className="aurora-cap px-2 py-0.5 rounded text-[10px]"
+                          style={{
+                            background: isApproved ? "rgba(74,103,65,0.12)" : "rgba(184,149,106,0.15)",
+                            color: isApproved ? "var(--green)" : "var(--tan)",
+                          }}
+                        >
+                          {isApproved ? "Aprovado" : tx.status === "classified" ? "Classificado" : "Pendente"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-[11px]">
+                        {!isApproved && (
+                          <button
+                            onClick={() => approveOne(tx.id)}
+                            disabled={approving}
+                            className="aurora-link mr-3 disabled:opacity-40"
+                          >
+                            Aprovar
+                          </button>
+                        )}
                         <span className="aurora-link">Editar</span>
                       </td>
                     </tr>
