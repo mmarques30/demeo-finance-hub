@@ -124,19 +124,19 @@ function PendentesPage() {
 
         // 2. Se "salvar como regra", insere em classification_rules
         if (isRecurring) {
-          const keyword = tx.description
+          const pattern = tx.description
             .split(" ")
             .slice(0, 3)
             .join(" ")
             .toUpperCase();
           await supabase.from("classification_rules").upsert(
             {
-              keyword,
+              client_id: tx.client_id,
+              pattern,
               category,
-              bank: null,
-              priority: 10,
+              is_recurring: true,
             },
-            { onConflict: "keyword" }
+            { onConflict: "client_id,pattern" }
           );
         }
       }
