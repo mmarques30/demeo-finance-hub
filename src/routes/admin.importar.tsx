@@ -11,6 +11,25 @@ export const Route = createFileRoute("/admin/importar")({
 
 type Stage = "idle" | "reading" | "identifying" | "classifying" | "done";
 
+const CATEGORIAS = [
+  "Receita · Vendas",
+  "Receita · Serviços",
+  "Receita · Convênios",
+  "Receita · Honorários",
+  "Receita · Delivery",
+  "Despesa Fixa · Aluguel",
+  "Despesa Fixa · Salários",
+  "Despesa Fixa · Utilidades",
+  "Despesa Fixa · Contabilidade",
+  "Despesa Variável · Insumos",
+  "Despesa Variável · Marketing",
+  "Despesa Variável · Manutenção",
+  "Investimento · Equipamentos",
+  "Investimento · Educação",
+  "Transferência",
+  "Outros",
+];
+
 interface Transaction {
   id: string;
   date: string;
@@ -52,6 +71,18 @@ function ImportarPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
+
+  // Manual entry form
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualDate, setManualDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [manualDesc, setManualDesc] = useState("");
+  const [manualAmount, setManualAmount] = useState("");
+  const [manualType, setManualType] = useState<"despesa" | "receita">("despesa");
+  const [manualCategory, setManualCategory] = useState("");
+  const [manualSource, setManualSource] = useState("Espécie");
+  const [manualSaving, setManualSaving] = useState(false);
+  const [manualSuccess, setManualSuccess] = useState(false);
+  const [manualError, setManualError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadClients() {
@@ -173,6 +204,45 @@ function ImportarPage() {
 
   function approveOne(id: string) {
     approveTransactions([id]);
+  }
+
+  async function handleManualEntry(e: React.FormEvent) {
+    e.preventDefault();
+    setManualError(null);
+    setManualSuccess(false);
+
+    if (!clientId) { setManualError("Selecione um cliente."); return; }
+    if (!manualDesc.trim()) { setManualError("Informe a descrição."); return; }
+    if (!manualAmount || isNaN(parseFloat(manualAmount))) { setManualError("Informe um valor válido."); return; }
+    if (!manualCategory) { setManualError("Selecione uma categoria."); return; }
+
+    const rawAmount = parseFloat(manualAmount.replace(",", "."));
+    const signedAmount = manualType === "despesa" ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+
+    setManualSaving(true);
+    const { error: insertErr } = await supabase.from("transactions").insert({
+      client_id: clientId,
+      upload_id: null,
+      date: manualDate,
+      description: manualDesc.trim(),
+      raw_description: manualDesc.trim(),
+      amount: signedAmount,
+      category: manualCategory,
+      bank: manualSource,
+      status: "approved",
+      is_recurring: false,
+      confidence: 1,
+    });
+    setManualSaving(false);
+
+    if (insertErr) {
+      setManualError(`Erro ao salvar: ${insertErr.message}`);
+    } else {
+      setManualSuccess(true);
+      setManualDesc("");
+      setManualAmount("");
+      setManualCategory("");
+    }
   }
 
   return (
@@ -424,6 +494,169 @@ function ImportarPage() {
             </table>
           </div>
         )}
+        {/* Manual entry */}
+        <div className="aurora-card p-0 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => { setManualOpen((v) => !v); setManualSuccess(false); setManualError(null); }}
+            className="w-full flex items-center justify-between px-6 py-4 text-left"
+            style={{ background: "var(--linen)", borderBottom: manualOpen ? "1px solid var(--line)" : "none" }}
+          >
+            <div>
+              <div className="aurora-cap mb-0.5">Lançamento manual</div>
+              <div className="aurora-serif text-[16px]">
+                Registrar pagamento em <em className="italic" style={{ color: "var(--green)" }}>espécie</em>
+              </div>
+            </div>
+            <span className="text-[18px]" style={{ color: "var(--muted-foreground)" }}>
+              {manualOpen ? "−" : "+"}
+            </span>
+          </button>
+
+          {manualOpen && (
+            <form onSubmit={handleManualEntry} className="px-6 py-5 grid gap-4">
+              <div className="grid lg:grid-cols-2 gap-4">
+                {/* Cliente */}
+                <label className="block">
+                  <div className="aurora-cap mb-2">Cliente</div>
+                  <select
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    className="w-full bg-white px-3 py-2.5 text-[13px]"
+                    style={{ border: "1px solid var(--line)" }}
+                  >
+                    {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </label>
+
+                {/* Data */}
+                <label className="block">
+                  <div className="aurora-cap mb-2">Data</div>
+                  <input
+                    type="date"
+                    value={manualDate}
+                    onChange={(e) => setManualDate(e.target.value)}
+                    required
+                    className="w-full bg-white px-3 py-2.5 text-[13px] outline-none"
+                    style={{ border: "1px solid var(--line)" }}
+                  />
+                </label>
+              </div>
+
+              {/* Descrição */}
+              <label className="block">
+                <div className="aurora-cap mb-2">Descrição</div>
+                <input
+                  type="text"
+                  value={manualDesc}
+                  onChange={(e) => setManualDesc(e.target.value)}
+                  placeholder="Ex: Pagamento cliente João — serviço de corte"
+                  required
+                  className="w-full bg-white px-3 py-2.5 text-[13px] outline-none"
+                  style={{ border: "1px solid var(--line)" }}
+                />
+              </label>
+
+              <div className="grid lg:grid-cols-3 gap-4">
+                {/* Tipo + Valor */}
+                <label className="block lg:col-span-1">
+                  <div className="aurora-cap mb-2">Tipo</div>
+                  <div className="grid grid-cols-2" style={{ border: "1px solid var(--line)" }}>
+                    {(["despesa", "receita"] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setManualType(t)}
+                        className="text-[10px] uppercase py-2.5 transition-colors"
+                        style={{
+                          letterSpacing: "1.5px",
+                          background: manualType === t ? (t === "despesa" ? "var(--navy)" : "var(--green)") : "transparent",
+                          color: manualType === t ? "#fff" : "var(--muted-foreground)",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {t === "despesa" ? "− Despesa" : "+ Receita"}
+                      </button>
+                    ))}
+                  </div>
+                </label>
+
+                <label className="block">
+                  <div className="aurora-cap mb-2">Valor (R$)</div>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={manualAmount}
+                    onChange={(e) => setManualAmount(e.target.value)}
+                    placeholder="0,00"
+                    required
+                    className="w-full bg-white px-3 py-2.5 text-[13px] outline-none"
+                    style={{ border: "1px solid var(--line)" }}
+                  />
+                </label>
+
+                {/* Origem */}
+                <label className="block">
+                  <div className="aurora-cap mb-2">Origem</div>
+                  <select
+                    value={manualSource}
+                    onChange={(e) => setManualSource(e.target.value)}
+                    className="w-full bg-white px-3 py-2.5 text-[13px]"
+                    style={{ border: "1px solid var(--line)" }}
+                  >
+                    {["Espécie", "PIX", "Cartão", "Depósito", "Outro"].map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {/* Categoria */}
+              <label className="block">
+                <div className="aurora-cap mb-2">Categoria</div>
+                <select
+                  value={manualCategory}
+                  onChange={(e) => setManualCategory(e.target.value)}
+                  required
+                  className="w-full bg-white px-3 py-2.5 text-[13px]"
+                  style={{ border: "1px solid var(--line)" }}
+                >
+                  <option value="">Selecione...</option>
+                  {CATEGORIAS.map((c) => <option key={c}>{c}</option>)}
+                </select>
+              </label>
+
+              {manualError && (
+                <div
+                  className="flex items-center gap-3 px-4 py-3 text-[12px]"
+                  style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}
+                >
+                  <span style={{ fontSize: 16 }}>!</span> {manualError}
+                </div>
+              )}
+
+              {manualSuccess && (
+                <div
+                  className="flex items-center gap-3 px-4 py-3 text-[12px]"
+                  style={{ background: "rgba(74,103,65,0.08)", borderLeft: "3px solid var(--green)", color: "var(--green)" }}
+                >
+                  <span style={{ fontSize: 16 }}>✓</span> Lançamento registrado com sucesso.
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={manualSaving || clientsLoading}
+                  className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                >
+                  {manualSaving ? "Salvando..." : "Registrar lançamento"}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </AdminLayout>
   );
