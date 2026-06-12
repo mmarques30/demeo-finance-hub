@@ -1,0 +1,197 @@
+<svg width="800" height="1100" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+
+  <!-- Fundo -->
+  <rect width="800" height="1100" fill="#ffffff"/>
+
+  <!-- Header banco -->
+  <rect width="800" height="80" fill="#003087"/>
+  <text x="40" y="32" fill="#ffffff" font-size="11" font-weight="bold">ITAÚ UNIBANCO S.A.</text>
+  <text x="40" y="50" fill="#ffb800" font-size="20" font-weight="bold">Extrato de Conta Corrente</text>
+  <text x="40" y="68" fill="#ccddff" font-size="11">Período: 01/04/2026 a 30/04/2026</text>
+
+  <!-- Dados da conta -->
+  <rect x="0" y="80" width="800" height="70" fill="#f5f7fa"/>
+  <rect x="0" y="149" width="800" height="1" fill="#dde3ed"/>
+  <text x="40" y="105" fill="#333" font-size="12" font-weight="bold">Titular:</text>
+  <text x="110" y="105" fill="#333" font-size="12">PADARIA SÃO JORGE LTDA</text>
+  <text x="40" y="125" fill="#333" font-size="12" font-weight="bold">CNPJ:</text>
+  <text x="110" y="125" fill="#333" font-size="12">12.345.678/0001-99</text>
+  <text x="400" y="105" fill="#333" font-size="12" font-weight="bold">Agência / Conta:</text>
+  <text x="510" y="105" fill="#333" font-size="12">0892 / 12345-6</text>
+  <text x="400" y="125" fill="#333" font-size="12" font-weight="bold">Saldo inicial:</text>
+  <text x="510" y="125" fill="#333" font-size="12">R$ 8.450,00</text>
+
+  <!-- Cabeçalho tabela -->
+  <rect x="0" y="150" width="800" height="36" fill="#003087"/>
+  <text x="40" y="173" fill="#ffffff" font-size="12" font-weight="bold">Data</text>
+  <text x="130" y="173" fill="#ffffff" font-size="12" font-weight="bold">Histórico</text>
+  <text x="540" y="173" fill="#ffffff" font-size="12" font-weight="bold">Valor (R$)</text>
+  <text x="660" y="173" fill="#ffffff" font-size="12" font-weight="bold">Saldo (R$)</text>
+
+  <!-- Linha separadora cabeçalho -->
+  <rect x="0" y="186" width="800" height="1" fill="#dde3ed"/>
+
+  <!-- Transações -->
+  <!-- Linha 1 -->
+  <rect x="0" y="187" width="800" height="34" fill="#ffffff"/>
+  <text x="40" y="209" fill="#333" font-size="12">02/04/2026</text>
+  <text x="130" y="209" fill="#333" font-size="12">DEPOSITO EM CONTA - PIX</text>
+  <text x="540" y="209" fill="#1a8a1a" font-size="12" font-weight="bold">+ 3.200,00</text>
+  <text x="660" y="209" fill="#333" font-size="12">11.650,00</text>
+  <rect x="0" y="221" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 2 -->
+  <rect x="0" y="222" width="800" height="34" fill="#f9fafb"/>
+  <text x="40" y="244" fill="#333" font-size="12">03/04/2026</text>
+  <text x="130" y="244" fill="#333" font-size="12">ALUGUEL GALERIA COMERCIAL</text>
+  <text x="540" y="244" fill="#cc0000" font-size="12">- 9.200,00</text>
+  <text x="660" y="244" fill="#333" font-size="12">2.450,00</text>
+  <rect x="0" y="256" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 3 -->
+  <rect x="0" y="257" width="800" height="34" fill="#ffffff"/>
+  <text x="40" y="279" fill="#333" font-size="12">05/04/2026</text>
+  <text x="130" y="279" fill="#333" font-size="12">PAGTO FORNECEDOR MOINHO SUL</text>
+  <text x="540" y="279" fill="#cc0000" font-size="12">- 4.800,00</text>
+  <text x="660" y="279" fill="#333" font-size="12">-2.350,00</text>
+  <rect x="0" y="291" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 4 -->
+  <rect x="0" y="292" width="800" height="34" fill="#f9fafb"/>
+  <text x="40" y="314" fill="#333" font-size="12">07/04/2026</text>
+  <text x="130" y="314" fill="#333" font-size="12">VENDAS CARTAO CIELO ABRIL 1</text>
+  <text x="540" y="314" fill="#1a8a1a" font-size="12" font-weight="bold">+ 12.340,00</text>
+  <text x="660" y="314" fill="#333" font-size="12">9.990,00</text>
+  <rect x="0" y="326" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 5 -->
+  <rect x="0" y="327" width="800" height="34" fill="#ffffff"/>
+  <text x="40" y="349" fill="#333" font-size="12">08/04/2026</text>
+  <text x="130" y="349" fill="#333" font-size="12">FOLHA PAGTO SALARIOS ABRIL</text>
+  <text x="540" y="349" fill="#cc0000" font-size="12">- 8.700,00</text>
+  <text x="660" y="349" fill="#333" font-size="12">1.290,00</text>
+  <rect x="0" y="361" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 6 -->
+  <rect x="0" y="362" width="800" height="34" fill="#f9fafb"/>
+  <text x="40" y="384" fill="#333" font-size="12">10/04/2026</text>
+  <text x="130" y="384" fill="#333" font-size="12">ENERGIA ELETRICA ENEL</text>
+  <text x="540" y="384" fill="#cc0000" font-size="12">- 1.240,00</text>
+  <text x="660" y="384" fill="#333" font-size="12">50,00</text>
+  <rect x="0" y="396" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 7 -->
+  <rect x="0" y="397" width="800" height="34" fill="#ffffff"/>
+  <text x="40" y="419" fill="#333" font-size="12">11/04/2026</text>
+  <text x="130" y="419" fill="#333" font-size="12">PIX RECEBIDO CLIENTE FEST</text>
+  <text x="540" y="419" fill="#1a8a1a" font-size="12" font-weight="bold">+ 5.500,00</text>
+  <text x="660" y="419" fill="#333" font-size="12">5.550,00</text>
+  <rect x="0" y="431" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 8 -->
+  <rect x="0" y="432" width="800" height="34" fill="#f9fafb"/>
+  <text x="40" y="454" fill="#333" font-size="12">14/04/2026</text>
+  <text x="130" y="454" fill="#333" font-size="12">COMPRA EMBALAGENS FORNECEDOR</text>
+  <text x="540" y="454" fill="#cc0000" font-size="12">- 980,00</text>
+  <text x="660" y="454" fill="#333" font-size="12">4.570,00</text>
+  <rect x="0" y="466" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 9 -->
+  <rect x="0" y="467" width="800" height="34" fill="#ffffff"/>
+  <text x="40" y="489" fill="#333" font-size="12">15/04/2026</text>
+  <text x="130" y="489" fill="#333" font-size="12">IFOOD REPASSE QUINZENAL</text>
+  <text x="540" y="489" fill="#1a8a1a" font-size="12" font-weight="bold">+ 7.850,00</text>
+  <text x="660" y="489" fill="#333" font-size="12">12.420,00</text>
+  <rect x="0" y="501" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 10 -->
+  <rect x="0" y="502" width="800" height="34" fill="#f9fafb"/>
+  <text x="40" y="524" fill="#333" font-size="12">17/04/2026</text>
+  <text x="130" y="524" fill="#333" font-size="12">MANUTENCAO EQUIPAMENTOS</text>
+  <text x="540" y="524" fill="#cc0000" font-size="12">- 1.800,00</text>
+  <text x="660" y="524" fill="#333" font-size="12">10.620,00</text>
+  <rect x="0" y="536" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 11 -->
+  <rect x="0" y="537" width="800" height="34" fill="#ffffff"/>
+  <text x="40" y="559" fill="#333" font-size="12">18/04/2026</text>
+  <text x="130" y="559" fill="#333" font-size="12">TELEFONE CLARO EMPRESA</text>
+  <text x="540" y="559" fill="#cc0000" font-size="12">- 320,00</text>
+  <text x="660" y="559" fill="#333" font-size="12">10.300,00</text>
+  <rect x="0" y="571" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 12 -->
+  <rect x="0" y="572" width="800" height="34" fill="#f9fafb"/>
+  <text x="40" y="594" fill="#333" font-size="12">21/04/2026</text>
+  <text x="130" y="594" fill="#333" font-size="12">VENDAS CARTAO CIELO ABRIL 2</text>
+  <text x="540" y="594" fill="#1a8a1a" font-size="12" font-weight="bold">+ 9.760,00</text>
+  <text x="660" y="594" fill="#333" font-size="12">20.060,00</text>
+  <rect x="0" y="606" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 13 -->
+  <rect x="0" y="607" width="800" height="34" fill="#ffffff"/>
+  <text x="40" y="629" fill="#333" font-size="12">23/04/2026</text>
+  <text x="130" y="629" fill="#333" font-size="12">GOOGLE ADS CAMPANHA MAIO</text>
+  <text x="540" y="629" fill="#cc0000" font-size="12">- 1.500,00</text>
+  <text x="660" y="629" fill="#333" font-size="12">18.560,00</text>
+  <rect x="0" y="641" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 14 -->
+  <rect x="0" y="642" width="800" height="34" fill="#f9fafb"/>
+  <text x="40" y="664" fill="#333" font-size="12">25/04/2026</text>
+  <text x="130" y="664" fill="#333" font-size="12">PAGTO FORNECEDOR LACTA</text>
+  <text x="540" y="664" fill="#cc0000" font-size="12">- 3.200,00</text>
+  <text x="660" y="664" fill="#333" font-size="12">15.360,00</text>
+  <rect x="0" y="676" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 15 -->
+  <rect x="0" y="677" width="800" height="34" fill="#ffffff"/>
+  <text x="40" y="699" fill="#333" font-size="12">28/04/2026</text>
+  <text x="130" y="699" fill="#333" font-size="12">PROLABORE SOCIO ADMINISTRADOR</text>
+  <text x="540" y="699" fill="#cc0000" font-size="12">- 6.000,00</text>
+  <text x="660" y="699" fill="#333" font-size="12">9.360,00</text>
+  <rect x="0" y="711" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 16 -->
+  <rect x="0" y="712" width="800" height="34" fill="#f9fafb"/>
+  <text x="40" y="734" fill="#333" font-size="12">29/04/2026</text>
+  <text x="130" y="734" fill="#333" font-size="12">IFOOD REPASSE QUINZENAL</text>
+  <text x="540" y="734" fill="#1a8a1a" font-size="12" font-weight="bold">+ 6.920,00</text>
+  <text x="660" y="734" fill="#333" font-size="12">16.280,00</text>
+  <rect x="0" y="746" width="800" height="1" fill="#eef1f6"/>
+
+  <!-- Linha 17 -->
+  <rect x="0" y="747" width="800" height="34" fill="#ffffff"/>
+  <text x="40" y="769" fill="#333" font-size="12">30/04/2026</text>
+  <text x="130" y="769" fill="#333" font-size="12">DARF SIMPLES NACIONAL ABRIL</text>
+  <text x="540" y="769" fill="#cc0000" font-size="12">- 2.840,00</text>
+  <text x="660" y="769" fill="#333" font-size="12">13.440,00</text>
+  <rect x="0" y="781" width="800" height="1" fill="#dde3ed"/>
+
+  <!-- Rodapé saldo final -->
+  <rect x="0" y="782" width="800" height="50" fill="#003087"/>
+  <text x="400" y="800" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">Saldo Final em 30/04/2026</text>
+  <text x="400" y="822" fill="#ffb800" font-size="18" font-weight="bold" text-anchor="middle">R$ 13.440,00</text>
+
+  <!-- Resumo -->
+  <rect x="0" y="832" width="800" height="180" fill="#f5f7fa"/>
+  <rect x="0" y="832" width="800" height="1" fill="#dde3ed"/>
+
+  <text x="40" y="860" fill="#003087" font-size="13" font-weight="bold">Resumo do Período</text>
+  <rect x="40" y="868" width="720" height="1" fill="#dde3ed"/>
+
+  <text x="40" y="892" fill="#555" font-size="12">Total de Entradas:</text>
+  <text x="400" y="892" fill="#1a8a1a" font-size="12" font-weight="bold">+ R$ 45.570,00</text>
+
+  <text x="40" y="916" fill="#555" font-size="12">Total de Saídas:</text>
+  <text x="400" y="916" fill="#cc0000" font-size="12">- R$ 40.580,00</text>
+
+  <rect x="40" y="928" width="720" height="1" fill="#dde3ed"/>
+  <text x="40" y="950" fill="#003087" font-size="13" font-weight="bold">Resultado do Mês:</text>
+  <text x="400" y="950" fill="#003087" font-size="13" font-weight="bold">R$ 4.990,00</text>
+
+  <!-- Nota de rodapé -->
+  <text x="400" y="990" fill="#999" font-size="10" text-anchor="middle">Documento gerado em 30/04/2026 · Itaú Unibanco S.A. · CNPJ 60.701.190/0001-04</text>
+  <text x="400" y="1006" fill="#999" font-size="10" text-anchor="middle">Este documento é válido sem assinatura e carimbo (Circular BACEN nº 3.598/2013)</text>
+
+</svg>

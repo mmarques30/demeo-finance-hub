@@ -1,0 +1,116 @@
+{
+  "name": "Aurora · Pipeline Extrato",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aurora-extrato",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "aurora-webhook-001",
+      "name": "Webhook — Upload Processado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "aurora-extrato"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-pending-001",
+              "leftValue": "={{ $json.pending_manual }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "aurora-if-001",
+      "name": "Tem pendentes?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "aurora@iaplicada.com",
+        "toEmail": "SEU_EMAIL_CLAUDIA@dominio.com",
+        "subject": "=Aurora · {{ $('Webhook — Upload Processado').item.json.classified }} classificados · {{ $('Webhook — Upload Processado').item.json.pending_manual }} para revisar ⚠️",
+        "emailType": "html",
+        "message": "=<div style=\"font-family: sans-serif; max-width: 600px;\">\n  <h2 style=\"color: #1a1a2e;\">Extrato processado ✅</h2>\n  <p><strong>{{ $('Webhook — Upload Processado').item.json.classified }}</strong> lançamentos foram classificados automaticamente.</p>\n  <p style=\"color: #e67e22;\">⚠️ <strong>{{ $('Webhook — Upload Processado').item.json.pending_manual }}</strong> lançamento(s) precisam de revisão manual.</p>\n  <a href=\"https://demeo-finance-hub.lovable.app/admin/pendentes\" style=\"display:inline-block;background:#1a1a2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:16px;\">Revisar no Aurora →</a>\n</div>",
+        "options": {}
+      },
+      "id": "aurora-email-pendentes",
+      "name": "Email — Revisão necessária",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [680, 180]
+    },
+    {
+      "parameters": {
+        "fromEmail": "aurora@iaplicada.com",
+        "toEmail": "SEU_EMAIL_CLAUDIA@dominio.com",
+        "subject": "=Aurora · {{ $('Webhook — Upload Processado').item.json.classified }} lançamentos classificados automaticamente ✓",
+        "emailType": "html",
+        "message": "=<div style=\"font-family: sans-serif; max-width: 600px;\">\n  <h2 style=\"color: #1a1a2e;\">Extrato processado ✅</h2>\n  <p>Todos os <strong>{{ $('Webhook — Upload Processado').item.json.classified }}</strong> lançamentos foram classificados automaticamente. Nenhuma revisão necessária.</p>\n  <a href=\"https://demeo-finance-hub.lovable.app/admin/importar\" style=\"display:inline-block;background:#1a1a2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:16px;\">Ver no Aurora →</a>\n</div>",
+        "options": {}
+      },
+      "id": "aurora-email-ok",
+      "name": "Email — Tudo classificado",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [680, 420]
+    }
+  ],
+  "connections": {
+    "Webhook — Upload Processado": {
+      "main": [
+        [
+          {
+            "node": "Tem pendentes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem pendentes?": {
+      "main": [
+        [
+          {
+            "node": "Email — Revisão necessária",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email — Tudo classificado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "notes": "ATENÇÃO: Este workflow recebe a notificação do create-upload (que já chama parse-extract e classify-batch). Não há chamadas duplicadas.\n\nPayload recebido: { upload_id, client_id, tx_count, classified, pending_manual }\n\nPara ativar:\n1. Abrir o workflow TwPUbUe1PTYPrpPP em mariaiaplicada.app.n8n.cloud\n2. Substituir SEU_EMAIL_CLAUDIA@dominio.com pelo e-mail real\n3. Configurar credencial de email (Gmail ou SMTP) nos nós de email\n4. Ativar o workflow (toggle no canto superior direito)\n\nO webhook já está configurado: path = aurora-extrato\nURL que o create-upload chama: https://mariaiaplicada.app.n8n.cloud/webhook/aurora-extrato"
+  }
+}
