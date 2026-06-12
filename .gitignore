@@ -1,3 +1,9 @@
+# Test environment secrets
+.env.test
+
+# Playwright report
+tests/e2e/report/
+
 # Logs
 logs
 *.log

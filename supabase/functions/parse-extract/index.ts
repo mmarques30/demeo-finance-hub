@@ -66,10 +66,11 @@ function cleanDescription(raw: string): string {
 }
 
 function parseCSV(text: string, bankName: string): ParsedTransaction[] {
-  const key = bankName.toLowerCase().trim();
+  const normalized = bankName.toLowerCase().trim().normalize("NFD");
+  const key = normalized.replace(new RegExp("[\\u0300-\\u036f]", "g"), "");
   const config = BANK_CONFIGS[key];
   if (!config) {
-    throw new Error(`Banco "${bankName}" não configurado. Bancos suportados: ${Object.keys(BANK_CONFIGS).join(", ")}`);
+    throw new Error(`Banco "${bankName}" (normalizado: "${key}") não configurado. Bancos suportados: ${Object.keys(BANK_CONFIGS).join(", ")}`);
   }
   const clean = text.replace(/^﻿/, "").replace(/^\xFF\xFE/, "").replace(/^\xFE\xFF/, "");
   const lines = clean.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
