@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { LogoMark } from "@/components/Logo";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -10,9 +11,32 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
+  const navigate = useNavigate();
   const [role, setRole] = useState<"admin" | "client">("admin");
-  const [email, setEmail] = useState("claudia@aurora.com.br");
-  const [password, setPassword] = useState("••••••••");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (authError) {
+      setError("E-mail ou senha incorretos.");
+      return;
+    }
+
+    navigate({ to: role === "admin" ? "/admin" : "/portal" });
+  }
 
   return (
     <div
@@ -62,11 +86,12 @@ function LoginPage() {
             Use as credenciais enviadas pela Claudia.
           </p>
 
-          {/* Role tabs (mock) */}
+          {/* Role tabs */}
           <div className="grid grid-cols-2 mb-6" style={{ border: "1px solid var(--line)" }}>
             {(["admin", "client"] as const).map((r) => (
               <button
                 key={r}
+                type="button"
                 onClick={() => setRole(r)}
                 className="text-[10px] uppercase py-2.5 transition-colors"
                 style={{
@@ -81,19 +106,15 @@ function LoginPage() {
             ))}
           </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              window.location.href = role === "admin" ? "/admin" : "/portal";
-            }}
-            className="flex flex-col gap-4"
-          >
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <label className="block">
               <div className="aurora-cap mb-2">E-mail</div>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
                 className="w-full bg-white px-3.5 py-3 text-[13px] outline-none transition-colors"
                 style={{ border: "1px solid var(--line)" }}
                 onFocus={(e) => (e.currentTarget.style.borderColor = "var(--green)")}
@@ -112,6 +133,8 @@ function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
                 className="w-full bg-white px-3.5 py-3 text-[13px] outline-none transition-colors"
                 style={{ border: "1px solid var(--line)" }}
                 onFocus={(e) => (e.currentTarget.style.borderColor = "var(--green)")}
@@ -119,19 +142,29 @@ function LoginPage() {
               />
             </label>
 
+            {error && (
+              <div
+                className="text-[12px] px-3 py-2"
+                style={{ background: "rgba(184,149,106,0.12)", color: "var(--tan)", border: "1px solid var(--tan)" }}
+              >
+                {error}
+              </div>
+            )}
+
             <button
               type="submit"
-              className="mt-2 w-full text-[10px] uppercase py-3.5 transition-colors"
+              disabled={loading}
+              className="mt-2 w-full text-[10px] uppercase py-3.5 transition-colors disabled:opacity-60"
               style={{
                 background: "var(--green)",
                 color: "#fff",
                 letterSpacing: "2.5px",
                 fontWeight: 500,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--green2)")}
+              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "var(--green2)"; }}
               onMouseLeave={(e) => (e.currentTarget.style.background = "var(--green)")}
             >
-              Entrar →
+              {loading ? "Entrando..." : "Entrar →"}
             </button>
           </form>
 
