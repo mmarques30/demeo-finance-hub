@@ -40,8 +40,8 @@ async function sendNotificationEmail(payload: {
   number?: string;
 }): Promise<void> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  if (!apiKey) {
-    console.warn("RESEND_API_KEY ausente — pulando envio de e-mail");
+  if (!apiKey || apiKey.trim() === "") {
+    console.log("[lead-intake] RESEND_API_KEY vazio, notificação pulada");
     return;
   }
   const from = Deno.env.get("AURORA_NOTIFY_FROM") ?? "Aurora <noreply@aurora.com.br>";

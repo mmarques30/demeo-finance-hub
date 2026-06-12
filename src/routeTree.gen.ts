@@ -13,6 +13,7 @@ import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminSetupRouteImport } from './routes/admin.setup'
 import { Route as AdminServicosRouteImport } from './routes/admin.servicos'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
 import { Route as AdminPropostasRouteImport } from './routes/admin.propostas'
@@ -45,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSetupRoute = AdminSetupRouteImport.update({
+  id: '/admin/setup',
+  path: '/admin/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminServicosRoute = AdminServicosRouteImport.update({
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/admin/propostas': typeof AdminPropostasRouteWithChildren
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
+  '/admin/setup': typeof AdminSetupRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/admin/propostas': typeof AdminPropostasRouteWithChildren
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
+  '/admin/setup': typeof AdminSetupRoute
   '/admin': typeof AdminIndexRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/admin/propostas': typeof AdminPropostasRouteWithChildren
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
+  '/admin/setup': typeof AdminSetupRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/admin/propostas'
     | '/admin/relatorios'
     | '/admin/servicos'
+    | '/admin/setup'
     | '/admin/'
     | '/admin/contratos/novo'
     | '/admin/insights/precificacao'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/admin/propostas'
     | '/admin/relatorios'
     | '/admin/servicos'
+    | '/admin/setup'
     | '/admin'
     | '/admin/contratos/novo'
     | '/admin/insights/precificacao'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/admin/propostas'
     | '/admin/relatorios'
     | '/admin/servicos'
+    | '/admin/setup'
     | '/admin/'
     | '/admin/contratos/novo'
     | '/admin/insights/precificacao'
@@ -245,6 +257,7 @@ export interface RootRouteChildren {
   AdminPropostasRoute: typeof AdminPropostasRouteWithChildren
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminServicosRoute: typeof AdminServicosRoute
+  AdminSetupRoute: typeof AdminSetupRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminInsightsPrecificacaoRoute: typeof AdminInsightsPrecificacaoRoute
   PPropostaTokenRoute: typeof PPropostaTokenRoute
@@ -278,6 +291,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/setup': {
+      id: '/admin/setup'
+      path: '/admin/setup'
+      fullPath: '/admin/setup'
+      preLoaderRoute: typeof AdminSetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/servicos': {
@@ -411,6 +431,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPropostasRoute: AdminPropostasRouteWithChildren,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminServicosRoute: AdminServicosRoute,
+  AdminSetupRoute: AdminSetupRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminInsightsPrecificacaoRoute: AdminInsightsPrecificacaoRoute,
   PPropostaTokenRoute: PPropostaTokenRoute,
@@ -418,3 +439,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
