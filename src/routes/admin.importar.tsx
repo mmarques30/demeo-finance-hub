@@ -71,6 +71,10 @@ function ImportarPage() {
 
   async function handleUpload(fileList: File[]) {
     if (!fileList.length) return;
+    if (!clientId) {
+      setError("Selecione um cliente antes de enviar o arquivo.");
+      return;
+    }
     setFiles(fileList);
     setError(null);
     setStage("reading");
