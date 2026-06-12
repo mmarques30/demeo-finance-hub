@@ -4,4 +4,3 @@
 -- em tabelas protegidas por essas policies.
 
 GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
-GRANT EXECUTE ON FUNCTION public.tg_handle_new_user() TO authenticated;
