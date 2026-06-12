@@ -154,32 +154,40 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Camada 2: Recorrentes do mês anterior (mesma descrição + client_id + status=approved)
+    // Camada 2: Recorrentes do mês anterior — uma query buscando todas as descrições de uma vez
     const approvedByRecurrence: string[] = [];
     const remainingForAI: TxRow[] = [];
 
-    for (const tx of remainingAfterRules) {
-      const { data: prev } = await supabase
+    if (remainingAfterRules.length > 0) {
+      const uniqueDescriptions = [...new Set(remainingAfterRules.map((t) => t.description))];
+      const { data: recurringPrev } = await supabase
         .from("transactions")
-        .select("category, is_recurring")
+        .select("description, category")
         .eq("client_id", client_id)
-        .eq("description", tx.description)
         .eq("status", "approved")
         .eq("is_recurring", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .in("description", uniqueDescriptions);
 
-      if (prev) {
-        await supabase.from("transactions").update({
-          category: prev.category,
-          is_recurring: true,
-          status: "approved",
-          confidence: 95,
-        }).eq("id", tx.id);
-        approvedByRecurrence.push(tx.id);
-      } else {
-        remainingForAI.push(tx);
+      const recurringMap = new Map<string, string>();
+      for (const row of recurringPrev ?? []) {
+        if (!recurringMap.has(row.description)) {
+          recurringMap.set(row.description, row.category);
+        }
+      }
+
+      for (const tx of remainingAfterRules) {
+        const category = recurringMap.get(tx.description);
+        if (category) {
+          await supabase.from("transactions").update({
+            category,
+            is_recurring: true,
+            status: "approved",
+            confidence: 95,
+          }).eq("id", tx.id);
+          approvedByRecurrence.push(tx.id);
+        } else {
+          remainingForAI.push(tx);
+        }
       }
     }
 

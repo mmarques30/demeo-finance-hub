@@ -44,6 +44,7 @@ function ImportarPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientId, setClientId] = useState("");
+  const [clientsLoading, setClientsLoading] = useState(true);
   const [bank, setBank] = useState("Itaú");
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,25 +53,31 @@ function ImportarPage() {
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
 
-  // Carrega clientes reais do Supabase
   useEffect(() => {
     async function loadClients() {
-      const { data, error } = await supabase
+      const { data, error: clientsError } = await supabase
         .from("clients")
         .select("id, name")
         .order("name");
       if (data && data.length > 0) {
         setClients(data);
         setClientId(data[0].id);
-      } else if (error) {
-        console.error("[importar] erro ao carregar clientes:", error.message);
+      } else if (clientsError) {
+        setError(`Erro ao carregar clientes: ${clientsError.message}. Verifique se você está autenticado.`);
+      } else {
+        setError("Nenhum cliente cadastrado. Cadastre um cliente antes de importar extratos.");
       }
+      setClientsLoading(false);
     }
     loadClients();
   }, []);
 
   async function handleUpload(fileList: File[]) {
     if (!fileList.length) return;
+    if (clientsLoading) {
+      setError("Aguarde o carregamento da lista de clientes.");
+      return;
+    }
     if (!clientId) {
       setError("Selecione um cliente antes de enviar o arquivo.");
       return;
@@ -138,10 +145,6 @@ function ImportarPage() {
   async function approveTransactions(ids: string[]) {
     if (!ids.length) return;
     setApproving(true);
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
     const { error: err } = await supabase
       .from("transactions")
@@ -186,12 +189,12 @@ function ImportarPage() {
         <div
           onDragOver={(e) => {
             e.preventDefault();
-            setDragOver(true);
+            if (!clientsLoading) setDragOver(true);
           }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={onDrop}
-          onClick={() => inputRef.current?.click()}
-          className="cursor-pointer transition-colors text-center py-16"
+          onDrop={clientsLoading ? undefined : onDrop}
+          onClick={() => { if (!clientsLoading) inputRef.current?.click(); }}
+          className={`transition-colors text-center py-16 ${clientsLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
           style={{
             border: `1.5px dashed ${dragOver ? "var(--green)" : "var(--line)"}`,
             background: dragOver ? "rgba(74,103,65,0.04)" : "#fff",
