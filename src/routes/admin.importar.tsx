@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { brl } from "@/lib/mockData";
+import { brl } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useCategories } from "@/hooks/useCategories";
 
