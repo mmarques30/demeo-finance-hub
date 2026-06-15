@@ -125,6 +125,7 @@ function ClientePage() {
             </Link>
             <Link
               to={"/admin/dfc" as never}
+              search={{ clientId } as never}
               className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
               style={{ border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "2px", fontWeight: 500 }}
             >

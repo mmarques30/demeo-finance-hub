@@ -25,15 +25,16 @@ function DFCPage() {
   const [tx, setTx] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Carrega lista de clientes uma vez
+  // Carrega lista de clientes; valida preselectedId e usa fallback se inválido
   useEffect(() => {
     supabase.from("clients").select("id, name").order("name").then(({ data }) => {
       if (data && data.length > 0) {
         setClients(data);
-        if (!preselectedId) setClientId(data[0].id);
+        const exists = preselectedId && data.some((c) => c.id === preselectedId);
+        if (!exists) setClientId(data[0].id);
       }
     });
-  }, []);
+  }, [preselectedId]);
 
   // Recarrega transações ao mudar cliente ou período
   useEffect(() => {
