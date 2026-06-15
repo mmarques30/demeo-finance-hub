@@ -14,33 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          client_id: string
+          color: string | null
+          created_at: string | null
+          group_name: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          type: string
+        }
+        Insert: {
+          client_id: string
+          color?: string | null
+          created_at?: string | null
+          group_name: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          type: string
+        }
+        Update: {
+          client_id?: string
+          color?: string | null
+          created_at?: string | null
+          group_name?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classification_rules: {
         Row: {
           category: string
           client_id: string
           created_at: string | null
           hit_count: number | null
+          hits: number | null
           id: string
+          is_active: boolean | null
           is_recurring: boolean | null
+          last_used: string | null
           pattern: string
+          source: string | null
         }
         Insert: {
           category: string
           client_id: string
           created_at?: string | null
           hit_count?: number | null
+          hits?: number | null
           id?: string
+          is_active?: boolean | null
           is_recurring?: boolean | null
+          last_used?: string | null
           pattern: string
+          source?: string | null
         }
         Update: {
           category?: string
           client_id?: string
           created_at?: string | null
           hit_count?: number | null
+          hits?: number | null
           id?: string
+          is_active?: boolean | null
           is_recurring?: boolean | null
+          last_used?: string | null
           pattern?: string
+          source?: string | null
         }
         Relationships: [
           {

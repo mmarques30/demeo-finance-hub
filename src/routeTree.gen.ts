@@ -17,8 +17,10 @@ import { Route as AdminServicosRouteImport } from './routes/admin.servicos'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
 import { Route as AdminPropostasRouteImport } from './routes/admin.propostas'
 import { Route as AdminPipelineRouteImport } from './routes/admin.pipeline'
+import { Route as AdminRegrasRouteImport } from './routes/admin.regras'
 import { Route as AdminPendentesRouteImport } from './routes/admin.pendentes'
 import { Route as AdminImportarRouteImport } from './routes/admin.importar'
+import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
 import { Route as AdminDfcRouteImport } from './routes/admin.dfc'
 import { Route as AdminContratosRouteImport } from './routes/admin.contratos'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
@@ -67,9 +69,19 @@ const AdminPipelineRoute = AdminPipelineRouteImport.update({
   path: '/admin/pipeline',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRegrasRoute = AdminRegrasRouteImport.update({
+  id: '/admin/regras',
+  path: '/admin/regras',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminPendentesRoute = AdminPendentesRouteImport.update({
   id: '/admin/pendentes',
   path: '/admin/pendentes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
+  id: '/admin/categorias',
+  path: '/admin/categorias',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminImportarRoute = AdminImportarRouteImport.update({
@@ -118,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
@@ -125,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/admin/pendentes': typeof AdminPendentesRoute
   '/admin/pipeline': typeof AdminPipelineRoute
   '/admin/propostas': typeof AdminPropostasRouteWithChildren
+  '/admin/regras': typeof AdminRegrasRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
   '/admin/': typeof AdminIndexRoute
@@ -137,6 +151,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
@@ -144,6 +159,7 @@ export interface FileRoutesByTo {
   '/admin/pendentes': typeof AdminPendentesRoute
   '/admin/pipeline': typeof AdminPipelineRoute
   '/admin/propostas': typeof AdminPropostasRouteWithChildren
+  '/admin/regras': typeof AdminRegrasRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
   '/admin': typeof AdminIndexRoute
@@ -157,6 +173,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
@@ -164,6 +181,7 @@ export interface FileRoutesById {
   '/admin/pendentes': typeof AdminPendentesRoute
   '/admin/pipeline': typeof AdminPipelineRoute
   '/admin/propostas': typeof AdminPropostasRouteWithChildren
+  '/admin/regras': typeof AdminRegrasRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
   '/admin/': typeof AdminIndexRoute
@@ -178,6 +196,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/portal'
+    | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/contratos'
     | '/admin/dfc'
@@ -185,6 +204,7 @@ export interface FileRouteTypes {
     | '/admin/pendentes'
     | '/admin/pipeline'
     | '/admin/propostas'
+    | '/admin/regras'
     | '/admin/relatorios'
     | '/admin/servicos'
     | '/admin/'
@@ -197,6 +217,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/portal'
+    | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/contratos'
     | '/admin/dfc'
@@ -204,6 +225,7 @@ export interface FileRouteTypes {
     | '/admin/pendentes'
     | '/admin/pipeline'
     | '/admin/propostas'
+    | '/admin/regras'
     | '/admin/relatorios'
     | '/admin/servicos'
     | '/admin'
@@ -216,6 +238,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/portal'
+    | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/contratos'
     | '/admin/dfc'
@@ -223,6 +246,7 @@ export interface FileRouteTypes {
     | '/admin/pendentes'
     | '/admin/pipeline'
     | '/admin/propostas'
+    | '/admin/regras'
     | '/admin/relatorios'
     | '/admin/servicos'
     | '/admin/'
@@ -236,6 +260,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRoute
+  AdminCategoriasRoute: typeof AdminCategoriasRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminContratosRoute: typeof AdminContratosRouteWithChildren
   AdminDfcRoute: typeof AdminDfcRoute
@@ -243,6 +268,7 @@ export interface RootRouteChildren {
   AdminPendentesRoute: typeof AdminPendentesRoute
   AdminPipelineRoute: typeof AdminPipelineRoute
   AdminPropostasRoute: typeof AdminPropostasRouteWithChildren
+  AdminRegrasRoute: typeof AdminRegrasRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminServicosRoute: typeof AdminServicosRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -336,11 +362,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminContratosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/categorias': {
+      id: '/admin/categorias'
+      path: '/admin/categorias'
+      fullPath: '/admin/categorias'
+      preLoaderRoute: typeof AdminCategoriasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/clientes': {
       id: '/admin/clientes'
       path: '/admin/clientes'
       fullPath: '/admin/clientes'
       preLoaderRoute: typeof AdminClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/regras': {
+      id: '/admin/regras'
+      path: '/admin/regras'
+      fullPath: '/admin/regras'
+      preLoaderRoute: typeof AdminRegrasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/p/proposta/$token': {
@@ -402,6 +442,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRoute,
+  AdminCategoriasRoute: AdminCategoriasRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminContratosRoute: AdminContratosRouteWithChildren,
   AdminDfcRoute: AdminDfcRoute,
@@ -409,6 +450,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPendentesRoute: AdminPendentesRoute,
   AdminPipelineRoute: AdminPipelineRoute,
   AdminPropostasRoute: AdminPropostasRouteWithChildren,
+  AdminRegrasRoute: AdminRegrasRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminServicosRoute: AdminServicosRoute,
   AdminIndexRoute: AdminIndexRoute,
