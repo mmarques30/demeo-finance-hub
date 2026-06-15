@@ -9,25 +9,6 @@ export const Route = createFileRoute("/admin/pendentes")({
   head: () => ({ meta: [{ title: "Pendentes · Aurora" }] }),
 });
 
-const CATEGORIAS = [
-  "Receita · Vendas",
-  "Receita · Serviços",
-  "Receita · Convênios",
-  "Receita · Honorários",
-  "Receita · Delivery",
-  "Despesa Fixa · Aluguel",
-  "Despesa Fixa · Salários",
-  "Despesa Fixa · Utilidades",
-  "Despesa Fixa · Contabilidade",
-  "Despesa Variável · Insumos",
-  "Despesa Variável · Marketing",
-  "Despesa Variável · Manutenção",
-  "Investimento · Equipamentos",
-  "Investimento · Educação",
-  "Transferência",
-  "Outros",
-];
-
 interface PendingTx {
   id: string;
   client_id: string;
@@ -48,6 +29,7 @@ function PendentesPage() {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<PendingTx[]>([]);
   const [clientMap, setClientMap] = useState<Record<string, ClientInfo>>({});
+  const [categoriesMap, setCategoriesMap] = useState<Record<string, string[]>>({});
   const [cats, setCats] = useState<Record<string, string>>({});
   const [recurring, setRecurring] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState<string | null>(null); // client_id being saved
@@ -83,7 +65,7 @@ function PendentesPage() {
     }
     setCats(initCats);
 
-    // Carrega nomes dos clientes únicos
+    // Carrega nomes e categorias dos clientes únicos
     const clientIds = [...new Set(txList.map((t) => t.client_id))];
     if (clientIds.length > 0) {
       const { data: clients } = await supabase
@@ -93,6 +75,21 @@ function PendentesPage() {
       const map: Record<string, ClientInfo> = {};
       for (const c of clients ?? []) map[c.id] = c;
       setClientMap(map);
+
+      // Carrega categorias de todos os clientes presentes na fila
+      const { data: catData } = await supabase
+        .from("categories")
+        .select("client_id, name")
+        .in("client_id", clientIds)
+        .eq("is_active", true)
+        .order("sort_order");
+
+      const catsMap: Record<string, string[]> = {};
+      for (const row of catData ?? []) {
+        if (!catsMap[row.client_id]) catsMap[row.client_id] = [];
+        catsMap[row.client_id].push(row.name);
+      }
+      setCategoriesMap(catsMap);
     }
 
     setLoading(false);
@@ -268,7 +265,7 @@ function PendentesPage() {
                           style={{ border: "1px solid var(--line)" }}
                         >
                           <option value="">Selecione...</option>
-                          {CATEGORIAS.map((c) => (
+                          {(categoriesMap[cid] ?? []).map((c) => (
                             <option key={c}>{c}</option>
                           ))}
                         </select>
