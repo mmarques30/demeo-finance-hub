@@ -5,6 +5,9 @@ import { brl, monthOptions, monthRangeDates } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/dfc")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    clientId: typeof search.clientId === "string" ? search.clientId : undefined,
+  }),
   component: DFCPage,
   head: () => ({ meta: [{ title: "DFC · Aurora" }] }),
 });
@@ -15,8 +18,9 @@ interface Tx { id: string; date: string; description: string; amount: number; ca
 const PERIODS = monthOptions(12);
 
 function DFCPage() {
+  const { clientId: preselectedId } = Route.useSearch();
   const [clients, setClients] = useState<ClientOption[]>([]);
-  const [clientId, setClientId] = useState("");
+  const [clientId, setClientId] = useState(preselectedId ?? "");
   const [period, setPeriod] = useState(PERIODS[0]);
   const [tx, setTx] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,7 +30,7 @@ function DFCPage() {
     supabase.from("clients").select("id, name").order("name").then(({ data }) => {
       if (data && data.length > 0) {
         setClients(data);
-        setClientId(data[0].id);
+        if (!preselectedId) setClientId(data[0].id);
       }
     });
   }, []);
