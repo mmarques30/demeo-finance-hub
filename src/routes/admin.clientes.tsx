@@ -144,7 +144,14 @@ function ClientesPage() {
                   }}
                 >
                   <td className="px-6 py-4">
-                    <div className="text-[13px]" style={{ fontWeight: 500 }}>{c.name}</div>
+                    <Link
+                      to={"/admin/clientes/$clientId" as never}
+                      params={{ clientId: c.id } as never}
+                      className="text-[13px] aurora-link"
+                      style={{ fontWeight: 500 }}
+                    >
+                      {c.name}
+                    </Link>
                     {c.cnpj && (
                       <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)", letterSpacing: "0.5px" }}>
                         {c.cnpj}

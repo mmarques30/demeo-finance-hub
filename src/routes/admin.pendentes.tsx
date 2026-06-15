@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { brl } from "@/lib/utils";
+import { brl, formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/pendentes")({
@@ -243,7 +243,7 @@ function PendentesPage() {
                 <tbody>
                   {items.map((t, idx) => (
                     <tr key={t.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFAF8" }}>
-                      <td className="px-6 py-3 text-[12px]">{t.date}</td>
+                      <td className="px-6 py-3 text-[12px]">{formatDatePtBR(t.date)}</td>
                       <td className="px-6 py-3 text-[12px]" title={t.raw_description}>
                         {t.description}
                       </td>

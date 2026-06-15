@@ -137,8 +137,24 @@ function ImportarPage() {
         return;
       }
 
-      setTransactions(result.transactions ?? []);
+      const txList: Transaction[] = result.transactions ?? [];
+      setTransactions(txList);
       setStage("done");
+
+      // Notifica n8n para disparar e-mail à Claudia
+      const classified = txList.filter((t) => t.status !== "pending").length;
+      const pending_manual = txList.filter((t) => t.status === "pending").length;
+      fetch("https://mariaiaplicada.app.n8n.cloud/webhook/aurora-extrato", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          upload_id: result.upload_id ?? "",
+          client_id: clientId,
+          tx_count: txList.length,
+          classified,
+          pending_manual,
+        }),
+      }).catch(() => {/* notificação falhou silenciosamente — não bloqueia o fluxo */});
     } catch (err) {
       setError(String(err));
       setStage("idle");
@@ -232,7 +248,7 @@ function ImportarPage() {
   return (
     <AdminLayout>
       <PageHeader
-        cap="Pipeline de dados · Abril"
+        cap={`Pipeline de dados · ${new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`}
         title="Importar"
         emphasis="extratos"
         description="Envie extratos bancários em qualquer formato. A IA identifica e classifica os lançamentos automaticamente."
