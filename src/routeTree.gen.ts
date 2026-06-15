@@ -24,6 +24,7 @@ import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
 import { Route as AdminDfcRouteImport } from './routes/admin.dfc'
 import { Route as AdminContratosRouteImport } from './routes/admin.contratos'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
+import { Route as AdminClientesClientIdRouteImport } from './routes/admin.clientes.$clientId'
 import { Route as PPropostaTokenRouteImport } from './routes/p.proposta.$token'
 import { Route as AdminPropostasNovaRouteImport } from './routes/admin.propostas.nova'
 import { Route as AdminInsightsPrecificacaoRouteImport } from './routes/admin.insights.precificacao'
@@ -104,6 +105,11 @@ const AdminClientesRoute = AdminClientesRouteImport.update({
   path: '/admin/clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminClientesClientIdRoute = AdminClientesClientIdRouteImport.update({
+  id: '/admin/clientes/$clientId',
+  path: '/admin/clientes/$clientId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PPropostaTokenRoute = PPropostaTokenRouteImport.update({
   id: '/p/proposta/$token',
   path: '/p/proposta/$token',
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
   '/admin/importar': typeof AdminImportarRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
   '/admin/importar': typeof AdminImportarRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
+  '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
   '/admin/importar': typeof AdminImportarRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/admin/categorias'
     | '/admin/clientes'
+    | '/admin/clientes/$clientId'
     | '/admin/contratos'
     | '/admin/dfc'
     | '/admin/importar'
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/admin/categorias'
     | '/admin/clientes'
+    | '/admin/clientes/$clientId'
     | '/admin/contratos'
     | '/admin/dfc'
     | '/admin/importar'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/admin/categorias'
     | '/admin/clientes'
+    | '/admin/clientes/$clientId'
     | '/admin/contratos'
     | '/admin/dfc'
     | '/admin/importar'
@@ -262,6 +274,7 @@ export interface RootRouteChildren {
   PortalRoute: typeof PortalRoute
   AdminCategoriasRoute: typeof AdminCategoriasRoute
   AdminClientesRoute: typeof AdminClientesRoute
+  AdminClientesClientIdRoute: typeof AdminClientesClientIdRoute
   AdminContratosRoute: typeof AdminContratosRouteWithChildren
   AdminDfcRoute: typeof AdminDfcRoute
   AdminImportarRoute: typeof AdminImportarRoute
@@ -376,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/clientes/$clientId': {
+      id: '/admin/clientes/$clientId'
+      path: '/admin/clientes/$clientId'
+      fullPath: '/admin/clientes/$clientId'
+      preLoaderRoute: typeof AdminClientesClientIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/regras': {
       id: '/admin/regras'
       path: '/admin/regras'
@@ -444,6 +464,7 @@ const rootRouteChildren: RootRouteChildren = {
   PortalRoute: PortalRoute,
   AdminCategoriasRoute: AdminCategoriasRoute,
   AdminClientesRoute: AdminClientesRoute,
+  AdminClientesClientIdRoute: AdminClientesClientIdRoute,
   AdminContratosRoute: AdminContratosRouteWithChildren,
   AdminDfcRoute: AdminDfcRoute,
   AdminImportarRoute: AdminImportarRoute,

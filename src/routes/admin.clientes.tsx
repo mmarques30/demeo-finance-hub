@@ -168,8 +168,12 @@ function ClientesPage() {
                     {formatDate(c.last_upload_at)}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Link to={"/admin/importar" as never} className="aurora-link">
-                      Importar →
+                    <Link
+                      to={"/admin/clientes/$clientId" as never}
+                      params={{ clientId: c.id } as never}
+                      className="aurora-link"
+                    >
+                      Ver cliente →
                     </Link>
                   </td>
                 </tr>
