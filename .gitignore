@@ -1,5 +1,14 @@
 # Test environment secrets
 .env.test
+.env.test.local
+
+# Planos locais — nunca subir
+plano-m*.md
+
+# Ambiente de teste local — nunca subir ao repositório
+tests/local/
+*.test.local.*
+test-fixtures/
 
 # Playwright report
 tests/e2e/report/
