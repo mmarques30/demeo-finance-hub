@@ -1,0 +1,278 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { AdminLayout, PageHeader } from "@/components/AdminLayout";
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/admin/regras")({
+  component: RegrasPage,
+  head: () => ({ meta: [{ title: "Regras · Aurora" }] }),
+});
+
+interface Rule {
+  id: string;
+  client_id: string;
+  pattern: string;
+  category: string;
+  is_recurring: boolean;
+  is_active: boolean;
+  hits: number | null;
+  last_used: string | null;
+  source: "manual" | "approval" | "ai" | "import" | null;
+}
+
+interface ClientOption {
+  id: string;
+  name: string;
+}
+
+type FilterMode = "all" | "active" | "pending";
+
+const HITS_TO_ACTIVATE = 2;
+
+function RegrasPage() {
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [clientId, setClientId] = useState("");
+  const [rules, setRules] = useState<Rule[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState<FilterMode>("all");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("clients")
+      .select("id, name")
+      .order("name")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setClients(data);
+          setClientId(data[0].id);
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!clientId) return;
+    loadRules();
+  }, [clientId]);
+
+  async function loadRules() {
+    setLoading(true);
+    const { data, error: err } = await supabase
+      .from("classification_rules")
+      .select("id, client_id, pattern, category, is_recurring, is_active, hits, last_used, source")
+      .eq("client_id", clientId)
+      .order("hits", { ascending: false });
+    if (err) setError(err.message);
+    else setRules((data ?? []) as Rule[]);
+    setLoading(false);
+  }
+
+  async function toggleActive(rule: Rule) {
+    await supabase
+      .from("classification_rules")
+      .update({ is_active: !rule.is_active })
+      .eq("id", rule.id);
+    setRules((prev) =>
+      prev.map((r) => (r.id === rule.id ? { ...r, is_active: !rule.is_active } : r))
+    );
+  }
+
+  async function deleteRule(id: string) {
+    await supabase.from("classification_rules").delete().eq("id", id);
+    setRules((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  const filtered = rules.filter((r) => {
+    if (filter === "active") return r.is_active;
+    if (filter === "pending") return !r.is_active;
+    return true;
+  });
+
+  const activeCount = rules.filter((r) => r.is_active).length;
+  const pendingCount = rules.filter((r) => !r.is_active).length;
+
+  return (
+    <AdminLayout>
+      <PageHeader
+        cap="Motor de classificação"
+        title="Regras"
+        emphasis="aprendidas"
+        description="Padrões que o sistema aprendeu e usa para classificar lançamentos automaticamente."
+      />
+
+      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-6">
+        {/* Seletor + filtros */}
+        <div className="flex flex-wrap items-center gap-4 pt-2">
+          <select
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            className="px-3 py-2 text-[13px]"
+            style={{ border: "1px solid var(--line)", background: "#fff", minWidth: 220 }}
+          >
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+
+          <div className="flex gap-2 ml-auto">
+            {(["all", "active", "pending"] as FilterMode[]).map((f) => {
+              const labels: Record<FilterMode, string> = {
+                all: `Todas (${rules.length})`,
+                active: `Ativas (${activeCount})`,
+                pending: `Pendentes (${pendingCount})`,
+              };
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className="text-[10px] uppercase px-4 py-2"
+                  style={{
+                    letterSpacing: "1.5px",
+                    fontWeight: 500,
+                    background: filter === f ? "var(--navy)" : "transparent",
+                    color: filter === f ? "#fff" : "var(--foreground)",
+                    border: "1px solid var(--line)",
+                  }}
+                >
+                  {labels[f]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {error && (
+          <div
+            className="text-[12px] px-4 py-3"
+            style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Tabela */}
+        <div className="aurora-card p-0 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr style={{ background: "#FAFAF8" }}>
+                {["Padrão", "Categoria", "Origem", "Hits", "Último uso", "Status", ""].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-6 py-3 aurora-cap"
+                    style={{ fontWeight: 600, borderBottom: "1px solid var(--line)" }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                    Carregando regras...
+                  </td>
+                </tr>
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                    Nenhuma regra encontrada.
+                  </td>
+                </tr>
+              )}
+              {!loading && filtered.map((rule, idx) => {
+                const hitsToGo = HITS_TO_ACTIVATE - (rule.hits ?? 0);
+                return (
+                  <tr
+                    key={rule.id}
+                    style={{
+                      borderTop: idx > 0 ? "1px solid var(--line)" : undefined,
+                      opacity: rule.is_active ? 1 : 0.6,
+                    }}
+                  >
+                    <td className="px-6 py-3">
+                      <code
+                        className="text-[12px]"
+                        style={{
+                          background: "rgba(27,57,77,0.07)",
+                          padding: "2px 7px",
+                          color: "var(--navy)",
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {rule.pattern}
+                      </code>
+                    </td>
+                    <td className="px-6 py-3 text-[12px]">{rule.category}</td>
+                    <td className="px-6 py-3">
+                      <SourceBadge source={rule.source} />
+                    </td>
+                    <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                      {rule.hits ?? 0}
+                    </td>
+                    <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                      {rule.last_used ? rule.last_used.slice(0, 10) : "—"}
+                    </td>
+                    <td className="px-6 py-3">
+                      {rule.is_active ? (
+                        <span className="text-[10px] uppercase" style={{ color: "var(--green)", letterSpacing: "1.5px", fontWeight: 600 }}>
+                          Ativa
+                        </span>
+                      ) : (
+                        <span className="text-[10px] uppercase" style={{ color: "var(--tan)", letterSpacing: "1.5px" }}>
+                          {hitsToGo > 0 ? `+${hitsToGo} p/ ativar` : "Inativa"}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() => toggleActive(rule)}
+                          className="text-[10px] uppercase px-3 py-1"
+                          style={{
+                            border: "1px solid var(--line)",
+                            color: "var(--foreground)",
+                            letterSpacing: "1.5px",
+                          }}
+                        >
+                          {rule.is_active ? "Desativar" : "Ativar"}
+                        </button>
+                        <button
+                          onClick={() => deleteRule(rule.id)}
+                          className="text-[10px] uppercase px-3 py-1"
+                          style={{
+                            border: "1px solid rgba(184,149,106,0.4)",
+                            color: "var(--tan)",
+                            letterSpacing: "1.5px",
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}
+
+function SourceBadge({ source }: { source: string | null }) {
+  const map: Record<string, { label: string; color: string }> = {
+    manual:   { label: "Manual",   color: "var(--navy)" },
+    approval: { label: "Aprendida", color: "var(--green)" },
+    ai:       { label: "IA",       color: "var(--tan)" },
+    import:   { label: "Importada", color: "var(--muted-foreground)" },
+  };
+  const { label, color } = map[source ?? ""] ?? { label: source ?? "—", color: "var(--muted-foreground)" };
+  return (
+    <span className="text-[10px] uppercase" style={{ color, letterSpacing: "1.5px", fontWeight: 600 }}>
+      {label}
+    </span>
+  );
+}

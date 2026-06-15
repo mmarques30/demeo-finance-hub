@@ -1,0 +1,291 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { AdminLayout, PageHeader } from "@/components/AdminLayout";
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/admin/categorias")({
+  component: CategoriasPage,
+  head: () => ({ meta: [{ title: "Categorias · Aurora" }] }),
+});
+
+interface Category {
+  id: string;
+  client_id: string;
+  name: string;
+  group_name: string;
+  type: "receita" | "despesa" | "transferencia";
+  is_active: boolean;
+  sort_order: number;
+}
+
+interface ClientOption {
+  id: string;
+  name: string;
+}
+
+const GRUPOS = ["Receita", "Despesa Fixa", "Despesa Variável", "Investimento", "Outros"];
+const TIPOS = [
+  { value: "receita", label: "Receita" },
+  { value: "despesa", label: "Despesa" },
+  { value: "transferencia", label: "Transferência" },
+] as const;
+
+function CategoriasPage() {
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [clientId, setClientId] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [newName, setNewName] = useState("");
+  const [newGroup, setNewGroup] = useState(GRUPOS[0]);
+  const [newType, setNewType] = useState<"receita" | "despesa" | "transferencia">("despesa");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("clients")
+      .select("id, name")
+      .order("name")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setClients(data);
+          setClientId(data[0].id);
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!clientId) return;
+    loadCategories();
+  }, [clientId]);
+
+  async function loadCategories() {
+    setLoading(true);
+    const { data, error: err } = await supabase
+      .from("categories")
+      .select("id, client_id, name, group_name, type, is_active, sort_order")
+      .eq("client_id", clientId)
+      .order("sort_order");
+    if (err) setError(err.message);
+    else setCategories((data ?? []) as Category[]);
+    setLoading(false);
+  }
+
+  async function addCategory(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newName.trim() || !clientId || saving) return;
+    setSaving(true);
+    const maxOrder = Math.max(0, ...categories.map((c) => c.sort_order));
+    const { error: err } = await supabase.from("categories").insert({
+      client_id: clientId,
+      name: newName.trim(),
+      group_name: newGroup,
+      type: newType,
+      sort_order: maxOrder + 1,
+    });
+    if (err) setError(err.message);
+    else {
+      setNewName("");
+      await loadCategories();
+    }
+    setSaving(false);
+  }
+
+  async function toggleActive(cat: Category) {
+    await supabase.from("categories").update({ is_active: !cat.is_active }).eq("id", cat.id);
+    setCategories((prev) =>
+      prev.map((c) => (c.id === cat.id ? { ...c, is_active: !cat.is_active } : c))
+    );
+  }
+
+  async function deleteCategory(id: string) {
+    await supabase.from("categories").delete().eq("id", id);
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  const grouped = categories.reduce<Record<string, Category[]>>((acc, c) => {
+    (acc[c.group_name] ||= []).push(c);
+    return acc;
+  }, {});
+
+  return (
+    <AdminLayout>
+      <PageHeader
+        cap="Motor de classificação"
+        title="Categorias"
+        emphasis="por cliente"
+        description="Gerencie as categorias disponíveis para classificação automática e manual."
+      />
+
+      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-8">
+        {/* Seletor de cliente */}
+        <div className="flex items-center gap-4 pt-2">
+          <label className="aurora-cap">Cliente</label>
+          <select
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            className="px-3 py-2 text-[13px]"
+            style={{ border: "1px solid var(--line)", background: "#fff", minWidth: 220 }}
+          >
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {error && (
+          <div
+            className="text-[12px] px-4 py-3"
+            style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Formulário nova categoria */}
+        <form
+          onSubmit={addCategory}
+          className="flex flex-wrap items-end gap-3 p-5"
+          style={{ background: "var(--linen)", border: "1px solid var(--line)" }}
+        >
+          <div className="flex flex-col gap-1.5">
+            <label className="aurora-cap">Nome</label>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Ex: Receita · Consultoria"
+              required
+              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid var(--line)", background: "#fff", minWidth: 220 }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="aurora-cap">Grupo</label>
+            <select
+              value={newGroup}
+              onChange={(e) => setNewGroup(e.target.value)}
+              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid var(--line)", background: "#fff" }}
+            >
+              {GRUPOS.map((g) => <option key={g}>{g}</option>)}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="aurora-cap">Tipo</label>
+            <select
+              value={newType}
+              onChange={(e) => setNewType(e.target.value as typeof newType)}
+              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid var(--line)", background: "#fff" }}
+            >
+              {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            disabled={saving || !newName.trim()}
+            className="px-5 py-2 text-[11px] uppercase"
+            style={{
+              background: "var(--green)",
+              color: "#fff",
+              letterSpacing: "2px",
+              fontWeight: 500,
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            {saving ? "Salvando..." : "+ Adicionar"}
+          </button>
+        </form>
+
+        {/* Lista agrupada */}
+        {loading ? (
+          <div className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>Carregando categorias...</div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-12" style={{ color: "var(--muted-foreground)" }}>
+            <div className="text-[13px]">Nenhuma categoria cadastrada para este cliente.</div>
+          </div>
+        ) : (
+          Object.entries(grouped).map(([group, items]) => (
+            <section key={group}>
+              <div className="aurora-cap mb-2 px-1" style={{ color: "var(--green)", letterSpacing: "2.5px" }}>
+                {group}
+              </div>
+              <div className="aurora-card p-0 overflow-hidden">
+                <table className="w-full">
+                  <tbody>
+                    {items.map((cat, idx) => (
+                      <tr
+                        key={cat.id}
+                        style={{
+                          borderTop: idx > 0 ? "1px solid var(--line)" : undefined,
+                          opacity: cat.is_active ? 1 : 0.45,
+                        }}
+                      >
+                        <td className="px-6 py-3">
+                          <span className="text-[13px]" style={{ fontWeight: 500 }}>{cat.name}</span>
+                        </td>
+                        <td className="px-6 py-3">
+                          <TypeBadge type={cat.type} />
+                        </td>
+                        <td className="px-6 py-3 text-right">
+                          <div className="inline-flex items-center gap-3">
+                            <button
+                              onClick={() => toggleActive(cat)}
+                              className="text-[10px] uppercase px-3 py-1"
+                              style={{
+                                border: "1px solid var(--line)",
+                                color: cat.is_active ? "var(--green)" : "var(--muted-foreground)",
+                                letterSpacing: "1.5px",
+                              }}
+                            >
+                              {cat.is_active ? "Ativa" : "Inativa"}
+                            </button>
+                            <button
+                              onClick={() => deleteCategory(cat.id)}
+                              className="text-[10px] uppercase px-3 py-1"
+                              style={{
+                                border: "1px solid rgba(184,149,106,0.4)",
+                                color: "var(--tan)",
+                                letterSpacing: "1.5px",
+                              }}
+                            >
+                              Excluir
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))
+        )}
+      </div>
+    </AdminLayout>
+  );
+}
+
+function TypeBadge({ type }: { type: string }) {
+  const map: Record<string, { label: string; color: string }> = {
+    receita:       { label: "Receita",       color: "var(--green)" },
+    despesa:       { label: "Despesa",       color: "var(--navy)" },
+    transferencia: { label: "Transferência", color: "var(--tan)" },
+  };
+  const { label, color } = map[type] ?? { label: type, color: "var(--muted-foreground)" };
+  return (
+    <span
+      className="text-[10px] uppercase px-2.5 py-1"
+      style={{
+        background: `rgba(0,0,0,0.05)`,
+        color,
+        letterSpacing: "1.5px",
+        fontWeight: 600,
+      }}
+    >
+      {label}
+    </span>
+  );
+}

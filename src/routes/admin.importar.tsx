@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl } from "@/lib/mockData";
 import { supabase } from "@/integrations/supabase/client";
+import { useCategories } from "@/hooks/useCategories";
 
 export const Route = createFileRoute("/admin/importar")({
   component: ImportarPage,
@@ -10,25 +11,6 @@ export const Route = createFileRoute("/admin/importar")({
 });
 
 type Stage = "idle" | "reading" | "identifying" | "classifying" | "done";
-
-const CATEGORIAS = [
-  "Receita · Vendas",
-  "Receita · Serviços",
-  "Receita · Convênios",
-  "Receita · Honorários",
-  "Receita · Delivery",
-  "Despesa Fixa · Aluguel",
-  "Despesa Fixa · Salários",
-  "Despesa Fixa · Utilidades",
-  "Despesa Fixa · Contabilidade",
-  "Despesa Variável · Insumos",
-  "Despesa Variável · Marketing",
-  "Despesa Variável · Manutenção",
-  "Investimento · Equipamentos",
-  "Investimento · Educação",
-  "Transferência",
-  "Outros",
-];
 
 interface Transaction {
   id: string;
@@ -71,6 +53,8 @@ function ImportarPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
+
+  const CATEGORIAS = useCategories(clientId);
 
   // Manual entry form
   const [manualOpen, setManualOpen] = useState(false);

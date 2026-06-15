@@ -9,25 +9,6 @@ export const Route = createFileRoute("/admin/pendentes")({
   head: () => ({ meta: [{ title: "Pendentes · Aurora" }] }),
 });
 
-const CATEGORIAS = [
-  "Receita · Vendas",
-  "Receita · Serviços",
-  "Receita · Convênios",
-  "Receita · Honorários",
-  "Receita · Delivery",
-  "Despesa Fixa · Aluguel",
-  "Despesa Fixa · Salários",
-  "Despesa Fixa · Utilidades",
-  "Despesa Fixa · Contabilidade",
-  "Despesa Variável · Insumos",
-  "Despesa Variável · Marketing",
-  "Despesa Variável · Manutenção",
-  "Investimento · Equipamentos",
-  "Investimento · Educação",
-  "Transferência",
-  "Outros",
-];
-
 interface PendingTx {
   id: string;
   client_id: string;
@@ -48,9 +29,10 @@ function PendentesPage() {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<PendingTx[]>([]);
   const [clientMap, setClientMap] = useState<Record<string, ClientInfo>>({});
+  const [categoriesMap, setCategoriesMap] = useState<Record<string, string[]>>({});
   const [cats, setCats] = useState<Record<string, string>>({});
   const [recurring, setRecurring] = useState<Record<string, boolean>>({});
-  const [saving, setSaving] = useState<string | null>(null); // client_id being saved
+  const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -83,16 +65,28 @@ function PendentesPage() {
     }
     setCats(initCats);
 
-    // Carrega nomes dos clientes únicos
+    // Carrega nomes dos clientes únicos + categorias por cliente
     const clientIds = [...new Set(txList.map((t) => t.client_id))];
     if (clientIds.length > 0) {
-      const { data: clients } = await supabase
-        .from("clients")
-        .select("id, name")
-        .in("id", clientIds);
+      const [{ data: clientsData }, { data: catsData }] = await Promise.all([
+        supabase.from("clients").select("id, name").in("id", clientIds),
+        supabase
+          .from("categories")
+          .select("client_id, name")
+          .in("client_id", clientIds)
+          .eq("is_active", true)
+          .order("sort_order"),
+      ]);
+
       const map: Record<string, ClientInfo> = {};
-      for (const c of clients ?? []) map[c.id] = c;
+      for (const c of clientsData ?? []) map[c.id] = c;
       setClientMap(map);
+
+      const cmap: Record<string, string[]> = {};
+      for (const cat of catsData ?? []) {
+        (cmap[cat.client_id] ||= []).push(cat.name);
+      }
+      setCategoriesMap(cmap);
     }
 
     setLoading(false);
@@ -268,7 +262,7 @@ function PendentesPage() {
                           style={{ border: "1px solid var(--line)" }}
                         >
                           <option value="">Selecione...</option>
-                          {CATEGORIAS.map((c) => (
+                          {(categoriesMap[cid] ?? []).map((c) => (
                             <option key={c}>{c}</option>
                           ))}
                         </select>
