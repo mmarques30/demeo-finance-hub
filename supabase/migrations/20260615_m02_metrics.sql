@@ -31,14 +31,14 @@ SELECT
   c.name                                                   AS client_name,
   DATE_TRUNC('month', t.date)::date                       AS month,
   COUNT(*)                                                 AS total,
-  COUNT(*) FILTER (WHERE t.confidence >= 0.85)            AS auto_high,
-  COUNT(*) FILTER (WHERE t.confidence >= 0.70
-                     AND t.confidence <  0.85)            AS auto_medium,
+  COUNT(*) FILTER (WHERE t.confidence >= 85)              AS auto_high,
+  COUNT(*) FILTER (WHERE t.confidence >= 70
+                     AND t.confidence <  85)              AS auto_medium,
   COUNT(*) FILTER (WHERE t.status = 'pending'
                      AND t.upload_id IS NOT NULL)         AS manual_queue,
   COALESCE(
     ROUND(
-      COUNT(*) FILTER (WHERE t.confidence >= 0.70)::numeric
+      COUNT(*) FILTER (WHERE t.confidence >= 70)::numeric
       / NULLIF(COUNT(*), 0) * 100, 1
     ), 0
   )                                                        AS accuracy_pct
