@@ -169,11 +169,11 @@ function ClientesPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Link
-                      to={"/admin/clientes/$clientId" as never}
-                      params={{ clientId: c.id } as never}
+                      to={"/admin/dfc" as never}
+                      search={{ clientId: c.id } as never}
                       className="aurora-link"
                     >
-                      Ver cliente →
+                      Ver Painel →
                     </Link>
                   </td>
                 </tr>
