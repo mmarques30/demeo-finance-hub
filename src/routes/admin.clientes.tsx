@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { StatusBadge } from "./admin.index";
+import { formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -30,11 +31,6 @@ interface ClientRow {
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
-}
 
 const BANCOS_SUGERIDOS = [
   "Itaú",
@@ -165,7 +161,7 @@ function ClientesPage() {
                     <StatusBadge status={c.status} />
                   </td>
                   <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                    {formatDate(c.last_upload_at)}
+                    {formatDatePtBR(c.last_upload_at)}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Link

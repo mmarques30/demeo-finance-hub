@@ -58,10 +58,15 @@ function AdminDashboard() {
       (banksMap[b.client_id] ||= []).push(b.bank_name);
     }
 
-    // Agrupa transações por cliente
+    // Indexa transações por cliente (O(n) em vez de O(n*m))
+    const txByClient: Record<string, typeof txList> = {};
+    for (const t of txList) {
+      (txByClient[t.client_id] ||= []).push(t);
+    }
+
     let totalPend = 0;
     const summaries: ClientSummary[] = clients.map((c) => {
-      const clientTx = txList.filter((t) => t.client_id === c.id);
+      const clientTx = txByClient[c.id] ?? [];
       const receita = clientTx
         .filter((t) => t.status === "approved" && t.amount > 0 && t.date >= start && t.date <= end)
         .reduce((s, t) => s + t.amount, 0);
