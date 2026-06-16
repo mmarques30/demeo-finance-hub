@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl, monthOptions, monthRangeDates } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
+import { useDFCForecast } from "@/hooks/useDFCForecast";
 
 export const Route = createFileRoute("/admin/dfc")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -27,10 +28,10 @@ function DFCPage() {
 
   // Carrega lista de clientes; valida preselectedId e usa fallback se inválido
   useEffect(() => {
-    supabase.from("clients").select("id, name").order("name").then(({ data }) => {
+    supabase().from("clients").select("id, name").order("name").then(({ data }) => {
       if (data && data.length > 0) {
-        setClients(data);
-        const exists = preselectedId && data.some((c) => c.id === preselectedId);
+        setClients(data as ClientOption[]);
+        const exists = preselectedId && data.some((c: ClientOption) => c.id === preselectedId);
         if (!exists) setClientId(data[0].id);
       }
     });
@@ -41,7 +42,7 @@ function DFCPage() {
     if (!clientId) return;
     const { start, end } = monthRangeDates(period);
     setLoading(true);
-    supabase
+    supabase()
       .from("transactions")
       .select("id, date, description, amount, category")
       .eq("client_id", clientId)
@@ -89,18 +90,7 @@ function DFCPage() {
   }, [tx]);
   const maxBar = Math.max(...semanas.map((s) => Math.max(s.rec, s.des)), 1);
 
-  // Projeção simples: aplica tendência dos últimos 3 meses (sem Math.random)
-  const projecao = useMemo(() => {
-    const [mm, yyyy] = period.split("/").map(Number);
-    return [1, 2, 3].map((offset) => {
-      const d = new Date(yyyy, mm - 1 + offset, 1);
-      const mes = d.toLocaleDateString("pt-BR", { month: "long" });
-      const fatorRec = 1 + offset * 0.03;
-      const fatorDes = 1 + offset * 0.02;
-      return { mes, rec: receitas * fatorRec, des: despesas * fatorDes };
-    });
-  }, [receitas, despesas, period]);
-
+  const projecao = useDFCForecast(clientId, period);
   const clienteName = clients.find((c) => c.id === clientId)?.name ?? "Cliente";
 
   return (

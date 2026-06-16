@@ -144,14 +144,14 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: 'Space Grotesk', 'Jost', ui-sans-serif, system-ui, sans-serif;
-    font-weight: 300;
+    font-weight: 400;
     -webkit-font-smoothing: antialiased;
     font-feature-settings: "ss01";
   }
 
   body {
-    font-size: 13px;
-    line-height: 1.75;
+    font-size: 15px;
+    line-height: 1.7;
   }
 
   h1, h2, h3, h4 {
