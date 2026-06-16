@@ -13,7 +13,7 @@ export function supabase(): SupabaseClient {
     );
   }
   _client = createClient(url, anonKey, {
-    auth: { persistSession: true, autoRefreshToken: true, storageKey: "aurora.auth" },
+    auth: { persistSession: true, autoRefreshToken: true },
   });
   return _client;
 }
