@@ -88,13 +88,13 @@ function ImportarPage() {
     loadClients();
   }, []);
 
-  async function handleUpload(fileList: File[]) {
+  async function handleUpload(fileList: File[], uploadClientId = clientId) {
     if (!fileList.length) return;
     if (clientsLoading) {
       setError("Aguarde o carregamento da lista de clientes.");
       return;
     }
-    if (!clientId) {
+    if (!uploadClientId) {
       setError("Selecione um cliente antes de enviar o arquivo.");
       return;
     }
@@ -125,7 +125,7 @@ function ImportarPage() {
         body: JSON.stringify({
           file_base64,
           filename: file.name,
-          client_id: clientId,
+          client_id: uploadClientId,
           bank_name: bank,
         }),
       });
@@ -150,7 +150,7 @@ function ImportarPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           upload_id: result.upload_id ?? "",
-          client_id: clientId,
+          client_id: uploadClientId,
           tx_count: txList.length,
           classified,
           pending_manual,
@@ -161,14 +161,6 @@ function ImportarPage() {
       setStage("idle");
     }
   }
-
-  // Auto-dispara upload quando cliente é selecionado após estagiar arquivo
-  useEffect(() => {
-    if (files.length > 0 && clientId && stage === "idle") {
-      handleUpload(files);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientId]);
 
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
@@ -331,7 +323,11 @@ function ImportarPage() {
               <div className="aurora-cap mb-3">Cliente vinculado</div>
               <select
                 value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setClientId(id);
+                  if (id && files.length > 0 && stage === "idle") handleUpload(files, id);
+                }}
                 className="w-full bg-white px-3 py-2.5 text-[13px]"
                 style={{ border: "1px solid var(--line)" }}
               >
