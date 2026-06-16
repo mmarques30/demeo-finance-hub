@@ -133,6 +133,8 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
     let classifyData: { classified?: number; pending_manual?: number; approved?: number } = {};
+    const classifyController = new AbortController();
+    const classifyTimeout = setTimeout(() => classifyController.abort(), 25000);
     try {
       const classifyRes = await fetch(`${supabaseUrl}/functions/v1/classify-batch`, {
         method: "POST",
@@ -142,11 +144,15 @@ Deno.serve(async (req) => {
           "apikey": serviceKey,
         },
         body: JSON.stringify({ upload_id: upload.id }),
+        signal: classifyController.signal,
       });
       classifyData = await classifyRes.json().catch(() => ({}));
       console.log("[create-upload] classify-batch concluído", classifyData);
     } catch (e) {
-      console.error("[create-upload] classify-batch error:", e);
+      // Timeout (25s) ou erro de rede — retorna transações sem classificação (todas pending)
+      console.warn("[create-upload] classify-batch timeout/error — prosseguindo sem classificação:", e);
+    } finally {
+      clearTimeout(classifyTimeout);
     }
 
     // N8N em background — não bloqueia a resposta

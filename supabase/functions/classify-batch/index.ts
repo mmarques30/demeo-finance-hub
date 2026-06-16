@@ -255,7 +255,6 @@ Deno.serve(async (req) => {
       .limit(10);
 
     const BATCH_SIZE = 50;
-    let aiClassified = 0;
     let aiPending = 0;
 
     for (let i = 0; i < remainingForAI.length; i += BATCH_SIZE) {
@@ -271,17 +270,14 @@ Deno.serve(async (req) => {
       for (const r of results) {
         const isKnownCategory = categoryNames.includes(r.cat);
         // Camada 3 (AI) apenas sugere categoria — status sempre "pending" para revisão manual
-        const status = "pending";
-
         await supabase.from("transactions").update({
           category: isKnownCategory ? r.cat : null,
           is_recurring: r.rec ?? false,
           confidence: r.conf ?? 0,
-          status,
+          status: "pending",
         }).eq("id", r.id);
 
-        if (status === "classified") aiClassified++;
-        else aiPending++;
+        aiPending++;
       }
 
       // Transações sem resultado da IA ficam como pending
@@ -295,7 +291,7 @@ Deno.serve(async (req) => {
     const totalApproved = approvedByRule.length + approvedByRecurrence.length;
     await supabase.from("uploads").update({
       status: "done",
-      tx_classified: aiClassified,
+      tx_classified: 0,
       tx_pending: aiPending,
     }).eq("id", upload_id);
 
@@ -304,7 +300,6 @@ Deno.serve(async (req) => {
       client_id,
       byRule: approvedByRule.length,
       byRecurrence: approvedByRecurrence.length,
-      aiClassified,
       aiPending,
     });
 
@@ -312,7 +307,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         approved: totalApproved,
-        classified: aiClassified,
+        classified: 0,
         pending_manual: aiPending,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
