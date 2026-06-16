@@ -64,39 +64,39 @@ export type Database = {
           client_id: string
           created_at: string | null
           hit_count: number | null
-          hits: number | null
+          hits: number
           id: string
-          is_active: boolean | null
+          is_active: boolean
           is_recurring: boolean | null
-          last_used: string | null
+          last_used: string
           pattern: string
-          source: string | null
+          source: string
         }
         Insert: {
           category: string
           client_id: string
           created_at?: string | null
           hit_count?: number | null
-          hits?: number | null
+          hits?: number
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           is_recurring?: boolean | null
-          last_used?: string | null
+          last_used?: string
           pattern: string
-          source?: string | null
+          source?: string
         }
         Update: {
           category?: string
           client_id?: string
           created_at?: string | null
           hit_count?: number | null
-          hits?: number | null
+          hits?: number
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           is_recurring?: boolean | null
-          last_used?: string | null
+          last_used?: string
           pattern?: string
-          source?: string | null
+          source?: string
         }
         Relationships: [
           {
@@ -146,6 +146,7 @@ export type Database = {
           name: string
           owner_name: string
           portal_features: Json | null
+          segment: string | null
           status: string
         }
         Insert: {
@@ -156,6 +157,7 @@ export type Database = {
           name: string
           owner_name: string
           portal_features?: Json | null
+          segment?: string | null
           status?: string
         }
         Update: {
@@ -166,6 +168,7 @@ export type Database = {
           name?: string
           owner_name?: string
           portal_features?: Json | null
+          segment?: string | null
           status?: string
         }
         Relationships: []
@@ -975,6 +978,45 @@ export type Database = {
       }
     }
     Views: {
+      accuracy_report: {
+        Row: {
+          accuracy_pct: number | null
+          auto_high: number | null
+          auto_medium: number | null
+          client_id: string | null
+          client_name: string | null
+          manual_queue: number | null
+          month: string | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurrence_patterns: {
+        Row: {
+          client_id: string | null
+          last_seen: string | null
+          modal_category: string | null
+          occurrences: number | null
+          pattern: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_pipeline_kpis: {
         Row: {
           active_deals: number | null
@@ -1000,10 +1042,13 @@ export type Database = {
       }
     }
     Functions: {
+      build_pattern: { Args: { raw: string }; Returns: string }
       current_client_id: { Args: never; Returns: string }
+      expire_stale_rules: { Args: never; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
       next_contract_number: { Args: never; Returns: string }
       next_proposal_number: { Args: never; Returns: string }
+      normalize_description: { Args: { raw: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
