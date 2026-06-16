@@ -1,3 +1,6 @@
+# Documentos reais de clientes — NUNCA subir ao repositório
+docs/
+
 # Test environment secrets
 .env.test
 .env.test.local

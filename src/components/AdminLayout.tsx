@@ -1,14 +1,15 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { LogoMark } from "./Logo";
-import { currentAdmin, pendingTransactions } from "@/lib/mockData";
+import { supabase } from "@/lib/supabase";
+import { useSession } from "@/lib/auth";
 import { useClickOutside, useLocalStorage } from "@/hooks/useClickOutside";
 
 type SidebarItem = {
   to: string;
   label: string;
   icon: string;
-  badge?: () => number;
 };
 type SidebarGroup = { id: string; label: string; items: SidebarItem[] };
 
@@ -28,7 +29,7 @@ const GROUPS: SidebarGroup[] = [
     label: "Operação",
     items: [
       { to: "/admin/importar", label: "Importar Extratos", icon: "↓" },
-      { to: "/admin/pendentes", label: "Pendentes", icon: "⊙", badge: () => pendingTransactions().length },
+      { to: "/admin/pendentes", label: "Pendentes", icon: "⊙" },
     ],
   },
   {
@@ -67,6 +68,23 @@ function activeGroupId(pathname: string): string {
 export function AdminLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const path = location.pathname;
+
+  const { data: session } = useSession();
+  const adminName = session?.user?.user_metadata?.display_name ?? session?.user?.email ?? "Admin";
+  const adminRole = "Gestora";
+  const adminInitials = adminName.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
+
+  const { data: pendentesCount = 0 } = useQuery({
+    queryKey: ["pendentes", "count"],
+    queryFn: async () => {
+      const { count } = await supabase()
+        .from("transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count ?? 0;
+    },
+    refetchInterval: 60_000,
+  });
 
   const [getCollapsed, setCollapsed] = useLocalStorage<boolean>("aurora.admin.collapsed", false);
   const [getExpanded, setExpanded] = useLocalStorage<Record<string, boolean>>("aurora.admin.groups", {
@@ -131,6 +149,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           expanded={expanded}
           onToggleCollapsed={toggleCollapsed}
           onToggleGroup={toggleGroup}
+          pendentesCount={pendentesCount}
         />
       </aside>
 
@@ -158,6 +177,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               expanded={expanded}
               onToggleCollapsed={() => setDrawerOpen(false)}
               onToggleGroup={toggleGroup}
+              pendentesCount={pendentesCount}
               mobile
             />
           </aside>
@@ -213,10 +233,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               >
                 <div className="hidden md:block text-right">
                   <div className="text-[9px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>
-                    {currentAdmin.role}
+                    {adminRole}
                   </div>
                   <div className="aurora-serif text-[13px]" style={{ lineHeight: 1 }}>
-                    {currentAdmin.name}
+                    {adminName}
                   </div>
                 </div>
                 <div
@@ -228,7 +248,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                     boxShadow: "0 4px 12px -4px rgba(74,103,65,0.45)",
                   }}
                 >
-                  {currentAdmin.initials}
+                  {adminInitials}
                 </div>
                 <span
                   className="hidden md:inline transition-transform"
@@ -259,9 +279,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                     <div className="aurora-cap mb-0.5" style={{ color: "var(--sage)" }}>
                       Conta
                     </div>
-                    <div className="aurora-serif text-[15px]">{currentAdmin.name}</div>
+                    <div className="aurora-serif text-[15px]">{adminName}</div>
                     <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
-                      {currentAdmin.role}
+                      {adminRole}
                     </div>
                   </div>
                   <div className="py-2">
@@ -310,6 +330,7 @@ function SidebarContent({
   expanded,
   onToggleCollapsed,
   onToggleGroup,
+  pendentesCount = 0,
   mobile = false,
 }: {
   path: string;
@@ -317,6 +338,7 @@ function SidebarContent({
   expanded: Record<string, boolean>;
   onToggleCollapsed: () => void;
   onToggleGroup: (id: string) => void;
+  pendentesCount?: number;
   mobile?: boolean;
 }) {
   return (
@@ -438,7 +460,7 @@ function SidebarContent({
               >
                 {group.items.map((item) => {
                   const active = isActive(path, item.to);
-                  const badge = item.badge ? item.badge() : 0;
+                  const badge = item.to === "/admin/pendentes" ? pendentesCount : 0;
                   return (
                     <Link
                       key={item.to}
