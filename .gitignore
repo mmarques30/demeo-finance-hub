@@ -5,8 +5,14 @@ docs/
 .env.test
 .env.test.local
 
-# Planos locais — nunca subir
+# Planos e arquivos de planejamento — nunca subir
 plano-m*.md
+M[0-9][0-9]_*.md
+*_PLAN.md
+*_IMPLEMENTATION_PLAN.md
+
+# Claude Code — contexto local, nunca subir
+.claude/
 
 # Ambiente de teste local — nunca subir ao repositório
 tests/local/

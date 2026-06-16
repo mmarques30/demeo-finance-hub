@@ -128,48 +128,49 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Busca transações parseadas (status=pending) para retornar imediatamente
+    // 4. classify-batch síncrono — garante que o frontend recebe dados pós-classificação
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+
+    let classifyData: { classified?: number; pending_manual?: number; approved?: number } = {};
+    try {
+      const classifyRes = await fetch(`${supabaseUrl}/functions/v1/classify-batch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${serviceKey}`,
+          "apikey": serviceKey,
+        },
+        body: JSON.stringify({ upload_id: upload.id }),
+      });
+      classifyData = await classifyRes.json().catch(() => ({}));
+      console.log("[create-upload] classify-batch concluído", classifyData);
+    } catch (e) {
+      console.error("[create-upload] classify-batch error:", e);
+    }
+
+    // N8N em background — não bloqueia a resposta
+    const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL");
+    if (n8nUrl) {
+      fetch(n8nUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          upload_id: upload.id,
+          client_id,
+          tx_count: parseResult.tx_count ?? 0,
+          classified: classifyData.classified ?? 0,
+          pending_manual: classifyData.pending_manual ?? 0,
+        }),
+      }).catch(() => {});
+    }
+
+    // 5. Busca transações pós-classificação (statuses atualizados)
     const { data: transactions } = await supabase
       .from("transactions")
       .select("id, date, description, amount, category, status, is_recurring, confidence")
       .eq("upload_id", upload.id)
       .order("date");
-
-    // 5. classify-batch + n8n em background (fire and forget — não bloqueia resposta)
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-
-    Promise.resolve().then(async () => {
-      try {
-        const classifyRes = await fetch(`${supabaseUrl}/functions/v1/classify-batch`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${serviceKey}`,
-            "apikey": serviceKey,
-          },
-          body: JSON.stringify({ upload_id: upload.id }),
-        });
-        const classifyData = await classifyRes.json().catch(() => ({}));
-
-        const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL");
-        if (n8nUrl) {
-          fetch(n8nUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              upload_id: upload.id,
-              client_id,
-              tx_count: parseResult.tx_count ?? 0,
-              classified: classifyData.classified ?? 0,
-              pending_manual: classifyData.pending_manual ?? 0,
-            }),
-          }).catch(() => {});
-        }
-      } catch (e) {
-        console.error("[create-upload] background classify error:", e);
-      }
-    });
 
     return new Response(
       JSON.stringify({
