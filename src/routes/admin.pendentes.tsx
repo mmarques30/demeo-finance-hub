@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl, formatDatePtBR } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/pendentes")({
   component: PendentesPage,
@@ -43,7 +43,7 @@ function PendentesPage() {
     setLoading(true);
     setError(null);
 
-    const { data: txData, error: txErr } = await supabase
+    const { data: txData, error: txErr } = await supabase()
       .from("transactions")
       .select("id, client_id, date, description, raw_description, amount, category, status")
       .eq("status", "pending")
@@ -69,8 +69,8 @@ function PendentesPage() {
     const clientIds = [...new Set(txList.map((t) => t.client_id))];
     if (clientIds.length > 0) {
       const [{ data: clientsData }, { data: catsData }] = await Promise.all([
-        supabase.from("clients").select("id, name").in("id", clientIds),
-        supabase
+        supabase().from("clients").select("id, name").in("id", clientIds),
+        supabase()
           .from("categories")
           .select("client_id, name")
           .in("client_id", clientIds)
@@ -105,7 +105,7 @@ function PendentesPage() {
         const isRecurring = !!recurring[tx.id];
 
         // 1. Atualiza a transação
-        const { error: updateErr } = await supabase
+        const { error: updateErr } = await supabase()
           .from("transactions")
           .update({
             category,
@@ -123,7 +123,7 @@ function PendentesPage() {
             .slice(0, 3)
             .join(" ")
             .toUpperCase();
-          await supabase.from("classification_rules").upsert(
+          await supabase().from("classification_rules").upsert(
             {
               client_id: tx.client_id,
               pattern,
