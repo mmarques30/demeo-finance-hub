@@ -27,6 +27,7 @@ import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
 import { Route as PPropostaTokenRouteImport } from './routes/p.proposta.$token'
 import { Route as AdminPropostasNovaRouteImport } from './routes/admin.propostas.nova'
 import { Route as AdminInsightsPrecificacaoRouteImport } from './routes/admin.insights.precificacao'
+import { Route as AdminInsightsAnaliseRouteImport } from './routes/admin.insights.analise'
 import { Route as AdminContratosNovoRouteImport } from './routes/admin.contratos.novo'
 import { Route as AdminClientesClientIdRouteImport } from './routes/admin.clientes.$clientId'
 
@@ -121,6 +122,11 @@ const AdminInsightsPrecificacaoRoute =
     path: '/admin/insights/precificacao',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminInsightsAnaliseRoute = AdminInsightsAnaliseRouteImport.update({
+  id: '/admin/insights/analise',
+  path: '/admin/insights/analise',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminContratosNovoRoute = AdminContratosNovoRouteImport.update({
   id: '/novo',
   path: '/novo',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
+  '/admin/insights/analise': typeof AdminInsightsAnaliseRoute
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
+  '/admin/insights/analise': typeof AdminInsightsAnaliseRoute
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
+  '/admin/insights/analise': typeof AdminInsightsAnaliseRoute
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
@@ -219,6 +228,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/clientes/$clientId'
     | '/admin/contratos/novo'
+    | '/admin/insights/analise'
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/clientes/$clientId'
     | '/admin/contratos/novo'
+    | '/admin/insights/analise'
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/clientes/$clientId'
     | '/admin/contratos/novo'
+    | '/admin/insights/analise'
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
@@ -284,6 +296,7 @@ export interface RootRouteChildren {
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminServicosRoute: typeof AdminServicosRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminInsightsAnaliseRoute: typeof AdminInsightsAnaliseRoute
   AdminInsightsPrecificacaoRoute: typeof AdminInsightsPrecificacaoRoute
   PPropostaTokenRoute: typeof PPropostaTokenRoute
 }
@@ -409,6 +422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPropostasNovaRouteImport
       parentRoute: typeof AdminPropostasRoute
     }
+    '/admin/insights/analise': {
+      id: '/admin/insights/analise'
+      path: '/admin/insights/analise'
+      fullPath: '/admin/insights/analise'
+      preLoaderRoute: typeof AdminInsightsAnaliseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/insights/precificacao': {
       id: '/admin/insights/precificacao'
       path: '/admin/insights/precificacao'
@@ -485,6 +505,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminServicosRoute: AdminServicosRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminInsightsAnaliseRoute: AdminInsightsAnaliseRoute,
   AdminInsightsPrecificacaoRoute: AdminInsightsPrecificacaoRoute,
   PPropostaTokenRoute: PPropostaTokenRoute,
 }
