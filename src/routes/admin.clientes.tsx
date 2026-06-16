@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { StatusBadge } from "./admin.index";
 import { formatDatePtBR } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/clientes")({
@@ -31,7 +31,6 @@ interface ClientRow {
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-
 const BANCOS_SUGERIDOS = [
   "Itaú",
   "Bradesco",
@@ -45,7 +44,8 @@ const BANCOS_SUGERIDOS = [
   "XP",
 ];
 
-const FILTROS = ["Todos", "Em andamento", "Pendente", "Fechado"] as const;
+const STATUS_OPTIONS = ["Em andamento", "Pendente", "Fechado"] as const;
+const FILTROS = ["Todos", ...STATUS_OPTIONS] as const;
 type Filtro = typeof FILTROS[number];
 
 // ─── página principal ─────────────────────────────────────────────────────────
@@ -53,12 +53,12 @@ type Filtro = typeof FILTROS[number];
 function ClientesPage() {
   const [filtro, setFiltro] = useState<Filtro>("Todos");
   const [novoOpen, setNovoOpen] = useState(false);
+  const [editClient, setEditClient] = useState<ClientRow | null>(null);
 
-  // ── query ──────────────────────────────────────────────────────────────────
   const { data: clientes = [], isLoading, error } = useQuery({
     queryKey: ["clients"],
     queryFn: async (): Promise<ClientRow[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await supabase()
         .from("clients")
         .select("*, client_banks(bank_name)")
         .order("created_at", { ascending: false });
@@ -131,7 +131,7 @@ function ClientesPage() {
               {!isLoading && error && (
                 <tr>
                   <td colSpan={6} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--tan)" }}>
-                    Erro ao carregar clientes. Verifique sua conexão com o Supabase.
+                    Erro ao carregar clientes. Verifique sua conexão.
                   </td>
                 </tr>
               )}
@@ -171,13 +171,21 @@ function ClientesPage() {
                     {formatDatePtBR(c.last_upload_at)}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Link
-                      to={"/admin/dfc" as never}
-                      search={{ clientId: c.id } as never}
-                      className="aurora-link"
-                    >
-                      Ver Painel →
-                    </Link>
+                    <div className="flex items-center gap-4 justify-end">
+                      <button
+                        onClick={() => setEditClient(c)}
+                        className="aurora-link text-[11px]"
+                      >
+                        Editar
+                      </button>
+                      <Link
+                        to={"/admin/dfc" as never}
+                        search={{ clientId: c.id } as never}
+                        className="aurora-link text-[11px]"
+                      >
+                        Ver Painel →
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -205,8 +213,8 @@ function ClientesPage() {
         )}
       </div>
 
-      {/* Modal de novo cliente */}
       {novoOpen && <NovoClienteModal onClose={() => setNovoOpen(false)} />}
+      {editClient && <EditarClienteModal client={editClient} onClose={() => setEditClient(null)} />}
     </AdminLayout>
   );
 }
@@ -224,8 +232,7 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      // 1. Cria o cliente
-      const { data: client, error: clientErr } = await supabase
+      const { data: client, error: clientErr } = await supabase()
         .from("clients")
         .insert({ name: nome.trim(), owner_name: responsavel.trim(), cnpj: cnpj.trim() || null })
         .select("id")
@@ -233,9 +240,8 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
 
       if (clientErr || !client) throw clientErr ?? new Error("Erro ao criar cliente");
 
-      // 2. Insere os bancos (se houver)
       if (bancos.length > 0) {
-        const { error: banksErr } = await supabase
+        const { error: banksErr } = await supabase()
           .from("client_banks")
           .insert(bancos.map((b) => ({ client_id: client.id, bank_name: b })));
         if (banksErr) throw banksErr;
@@ -271,15 +277,166 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
+    <ClienteModal
+      title="Adicionar cliente"
+      cap="Novo cadastro"
+      submitLabel={mutation.isPending ? "Salvando…" : "Cadastrar cliente"}
+      isPending={mutation.isPending}
+      canSubmit={!!nome.trim() && !!responsavel.trim()}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+    >
+      <NomeField value={nome} onChange={setNome} />
+      <ResponsavelField value={responsavel} onChange={setResponsavel} />
+      <CnpjField value={cnpj} onChange={setCnpj} />
+      <BancosField
+        bancos={bancos}
+        bancosInput={bancosInput}
+        setBancosInput={setBancosInput}
+        addBanco={addBanco}
+        removeBanco={removeBanco}
+      />
+    </ClienteModal>
+  );
+}
+
+// ─── modal editar cliente ─────────────────────────────────────────────────────
+
+function EditarClienteModal({ client, onClose }: { client: { id: string; name: string; owner_name: string; cnpj: string | null; status: string; client_banks: { bank_name: string }[] }; onClose: () => void }) {
+  const qc = useQueryClient();
+
+  const [nome, setNome] = useState(client.name);
+  const [responsavel, setResponsavel] = useState(client.owner_name);
+  const [cnpj, setCnpj] = useState(client.cnpj ?? "");
+  const [status, setStatus] = useState(client.status);
+  const [bancos, setBancos] = useState<string[]>(client.client_banks.map((b) => b.bank_name));
+  const [bancosInput, setBancosInput] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const { error: updateErr } = await supabase()
+        .from("clients")
+        .update({ name: nome.trim(), owner_name: responsavel.trim(), cnpj: cnpj.trim() || null, status })
+        .eq("id", client.id);
+      if (updateErr) throw updateErr;
+
+      // Substitui bancos: apaga todos e insere a lista nova
+      const { error: deleteErr } = await supabase()
+        .from("client_banks")
+        .delete()
+        .eq("client_id", client.id);
+      if (deleteErr) throw deleteErr;
+
+      if (bancos.length > 0) {
+        const { error: insertErr } = await supabase()
+          .from("client_banks")
+          .insert(bancos.map((b) => ({ client_id: client.id, bank_name: b })));
+        if (insertErr) throw insertErr;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Cliente atualizado.");
+      onClose();
+    },
+    onError: (err) => {
+      toast.error("Erro ao atualizar: " + (err as Error).message);
+    },
+  });
+
+  function addBanco(banco: string) {
+    const b = banco.trim();
+    if (!b || bancos.includes(b)) return;
+    setBancos((prev) => [...prev, b]);
+    setBancosInput("");
+  }
+
+  function removeBanco(b: string) {
+    setBancos((prev) => prev.filter((x) => x !== b));
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nome.trim() || !responsavel.trim()) return;
+    mutation.mutate();
+  }
+
+  return (
+    <ClienteModal
+      title={client.name}
+      cap="Editar cadastro"
+      submitLabel={mutation.isPending ? "Salvando…" : "Salvar alterações"}
+      isPending={mutation.isPending}
+      canSubmit={!!nome.trim() && !!responsavel.trim()}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+    >
+      <NomeField value={nome} onChange={setNome} />
+      <ResponsavelField value={responsavel} onChange={setResponsavel} />
+      <CnpjField value={cnpj} onChange={setCnpj} />
+
+      {/* Status */}
+      <Field label="Status">
+        <div className="flex gap-2 flex-wrap">
+          {STATUS_OPTIONS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatus(s)}
+              className="text-[10px] uppercase px-4 py-2 transition-colors"
+              style={{
+                letterSpacing: "1.5px",
+                fontWeight: 500,
+                background: status === s ? "var(--green)" : "transparent",
+                color: status === s ? "#fff" : "var(--muted-foreground)",
+                border: "1px solid " + (status === s ? "var(--green)" : "var(--line)"),
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <BancosField
+        bancos={bancos}
+        bancosInput={bancosInput}
+        setBancosInput={setBancosInput}
+        addBanco={addBanco}
+        removeBanco={removeBanco}
+      />
+    </ClienteModal>
+  );
+}
+
+// ─── shell compartilhado dos modais ──────────────────────────────────────────
+
+function ClienteModal({
+  title,
+  cap,
+  submitLabel,
+  isPending,
+  canSubmit,
+  onClose,
+  onSubmit,
+  children,
+}: {
+  title: string;
+  cap: string;
+  submitLabel: string;
+  isPending: boolean;
+  canSubmit: boolean;
+  onClose: () => void;
+  onSubmit: (e: React.FormEvent) => void;
+  children: React.ReactNode;
+}) {
+  return (
     <>
-      {/* Overlay */}
       <div
         className="fixed inset-0 z-50"
         style={{ background: "rgba(28,45,69,0.55)", backdropFilter: "blur(4px)" }}
         onClick={onClose}
       />
-
-      {/* Painel */}
       <div
         className="fixed inset-y-0 right-0 z-50 flex flex-col overflow-y-auto"
         style={{
@@ -296,176 +453,46 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
           }
         `}</style>
 
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-8 py-6"
-          style={{ borderBottom: "1px solid var(--line)" }}
-        >
+        <div className="flex items-center justify-between px-8 py-6" style={{ borderBottom: "1px solid var(--line)" }}>
           <div>
-            <div className="aurora-cap mb-1" style={{ color: "var(--sage)" }}>Novo cadastro</div>
+            <div className="aurora-cap mb-1" style={{ color: "var(--sage)" }}>{cap}</div>
             <h2 className="aurora-serif" style={{ fontSize: 22, fontWeight: 300, letterSpacing: "-0.5px" }}>
-              Adicionar cliente
+              {title}
             </h2>
           </div>
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center"
-            style={{
-              border: "1px solid var(--line)",
-              color: "var(--muted-foreground)",
-              fontSize: 16,
-              borderRadius: 8,
-            }}
+            style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", fontSize: 16, borderRadius: 8 }}
             aria-label="Fechar"
           >
             ×
           </button>
         </div>
 
-        {/* Formulário */}
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col px-8 py-8 gap-6">
-          {/* Nome da empresa */}
-          <Field label="Nome da empresa" required>
-            <input
-              type="text"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Ex: Padaria São Jorge"
-              required
-              style={inputStyle}
-            />
-          </Field>
+        <form onSubmit={onSubmit} className="flex-1 flex flex-col px-8 py-8 gap-6">
+          {children}
 
-          {/* Responsável */}
-          <Field label="Responsável / Sócio" required>
-            <input
-              type="text"
-              value={responsavel}
-              onChange={(e) => setResponsavel(e.target.value)}
-              placeholder="Ex: Marcos Pereira"
-              required
-              style={inputStyle}
-            />
-          </Field>
-
-          {/* CNPJ */}
-          <Field label="CNPJ" hint="opcional">
-            <input
-              type="text"
-              value={cnpj}
-              onChange={(e) => setCnpj(e.target.value)}
-              placeholder="00.000.000/0001-00"
-              style={inputStyle}
-            />
-          </Field>
-
-          {/* Bancos */}
-          <Field label="Bancos" hint="adicione um ou mais">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={bancosInput}
-                onChange={(e) => setBancosInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); addBanco(bancosInput); }
-                }}
-                placeholder="Digite ou selecione"
-                list="bancos-list"
-                style={{ ...inputStyle, flex: 1 }}
-              />
-              <datalist id="bancos-list">
-                {BANCOS_SUGERIDOS.map((b) => <option key={b} value={b} />)}
-              </datalist>
-              <button
-                type="button"
-                onClick={() => addBanco(bancosInput)}
-                className="px-4 text-[11px] uppercase"
-                style={{
-                  background: "var(--linen)",
-                  border: "1px solid var(--line)",
-                  color: "var(--foreground)",
-                  letterSpacing: "1.5px",
-                  fontWeight: 500,
-                  flexShrink: 0,
-                }}
-              >
-                + Add
-              </button>
-            </div>
-
-            {/* Sugestões rápidas */}
-            <div className="flex gap-1.5 flex-wrap mt-2">
-              {BANCOS_SUGERIDOS.filter((b) => !bancos.includes(b)).slice(0, 6).map((b) => (
-                <button
-                  key={b}
-                  type="button"
-                  onClick={() => addBanco(b)}
-                  className="text-[10px] px-2.5 py-1 transition-colors hover:opacity-70"
-                  style={{
-                    border: "1px dashed var(--line)",
-                    color: "var(--muted-foreground)",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  {b}
-                </button>
-              ))}
-            </div>
-
-            {/* Tags adicionadas */}
-            {bancos.length > 0 && (
-              <div className="flex gap-2 flex-wrap mt-3">
-                {bancos.map((b) => (
-                  <span
-                    key={b}
-                    className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1"
-                    style={{
-                      background: "rgba(143,166,136,0.12)",
-                      color: "var(--green)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {b}
-                    <button
-                      type="button"
-                      onClick={() => removeBanco(b)}
-                      style={{ fontSize: 12, opacity: 0.6, lineHeight: 1 }}
-                      aria-label={`Remover ${b}`}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </Field>
-
-          {/* Ações */}
           <div className="mt-auto flex gap-3 pt-4" style={{ borderTop: "1px solid var(--line)" }}>
             <button
               type="submit"
-              disabled={mutation.isPending || !nome.trim() || !responsavel.trim()}
+              disabled={isPending || !canSubmit}
               className="flex-1 py-3.5 text-[11px] uppercase transition-opacity"
               style={{
                 background: "var(--green)",
                 color: "#fff",
                 letterSpacing: "2.5px",
                 fontWeight: 500,
-                opacity: mutation.isPending ? 0.6 : 1,
+                opacity: isPending ? 0.6 : 1,
               }}
             >
-              {mutation.isPending ? "Salvando…" : "Cadastrar cliente"}
+              {submitLabel}
             </button>
             <button
               type="button"
               onClick={onClose}
               className="px-5 py-3.5 text-[11px] uppercase"
-              style={{
-                border: "1px solid var(--line)",
-                color: "var(--muted-foreground)",
-                letterSpacing: "2px",
-                fontWeight: 500,
-              }}
+              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px", fontWeight: 500 }}
             >
               Cancelar
             </button>
@@ -476,7 +503,103 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── componentes auxiliares ───────────────────────────────────────────────────
+// ─── campos reutilizáveis ─────────────────────────────────────────────────────
+
+function NomeField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Field label="Nome da empresa" required>
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Ex: Padaria São Jorge" required style={inputStyle} />
+    </Field>
+  );
+}
+
+function ResponsavelField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Field label="Responsável / Sócio" required>
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Ex: Marcos Pereira" required style={inputStyle} />
+    </Field>
+  );
+}
+
+function CnpjField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Field label="CNPJ" hint="opcional">
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder="00.000.000/0001-00" style={inputStyle} />
+    </Field>
+  );
+}
+
+function BancosField({
+  bancos,
+  bancosInput,
+  setBancosInput,
+  addBanco,
+  removeBanco,
+}: {
+  bancos: string[];
+  bancosInput: string;
+  setBancosInput: (v: string) => void;
+  addBanco: (b: string) => void;
+  removeBanco: (b: string) => void;
+}) {
+  return (
+    <Field label="Bancos" hint="adicione um ou mais">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={bancosInput}
+          onChange={(e) => setBancosInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addBanco(bancosInput); } }}
+          placeholder="Digite ou selecione"
+          list="bancos-list"
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <datalist id="bancos-list">
+          {BANCOS_SUGERIDOS.map((b) => <option key={b} value={b} />)}
+        </datalist>
+        <button
+          type="button"
+          onClick={() => addBanco(bancosInput)}
+          className="px-4 text-[11px] uppercase"
+          style={{ background: "var(--linen)", border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px", fontWeight: 500, flexShrink: 0 }}
+        >
+          + Add
+        </button>
+      </div>
+
+      <div className="flex gap-1.5 flex-wrap mt-2">
+        {BANCOS_SUGERIDOS.filter((b) => !bancos.includes(b)).slice(0, 6).map((b) => (
+          <button
+            key={b}
+            type="button"
+            onClick={() => addBanco(b)}
+            className="text-[10px] px-2.5 py-1 transition-colors hover:opacity-70"
+            style={{ border: "1px dashed var(--line)", color: "var(--muted-foreground)", letterSpacing: "0.5px" }}
+          >
+            {b}
+          </button>
+        ))}
+      </div>
+
+      {bancos.length > 0 && (
+        <div className="flex gap-2 flex-wrap mt-3">
+          {bancos.map((b) => (
+            <span
+              key={b}
+              className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1"
+              style={{ background: "rgba(143,166,136,0.12)", color: "var(--green)", fontWeight: 500 }}
+            >
+              {b}
+              <button type="button" onClick={() => removeBanco(b)} style={{ fontSize: 12, opacity: 0.6, lineHeight: 1 }} aria-label={`Remover ${b}`}>×</button>
+            </span>
+          ))}
+        </div>
+      )}
+    </Field>
+  );
+}
+
+// ─── componentes base ─────────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -489,17 +612,7 @@ const inputStyle: React.CSSProperties = {
   lineHeight: 1.4,
 };
 
-function Field({
-  label,
-  hint,
-  required,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
+function Field({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-2">
@@ -507,11 +620,7 @@ function Field({
           {label}
           {required && <span style={{ color: "var(--tan)", marginLeft: 2 }}>*</span>}
         </label>
-        {hint && (
-          <span className="text-[9px] uppercase" style={{ color: "var(--muted-foreground)", letterSpacing: "1.5px" }}>
-            {hint}
-          </span>
-        )}
+        {hint && <span className="text-[9px] uppercase" style={{ color: "var(--muted-foreground)", letterSpacing: "1.5px" }}>{hint}</span>}
       </div>
       {children}
     </div>
