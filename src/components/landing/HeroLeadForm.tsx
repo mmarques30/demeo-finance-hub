@@ -1,5 +1,6 @@
 // Form do hero — Nome + Telefone + E-mail + 2 perguntas qualificação.
 import { useState } from "react";
+import { FUNCTIONS_URL } from "@/lib/supabase";
 
 const INK = "#1C2D45";
 const STEEL = "#6D92A6";
@@ -34,14 +35,37 @@ export function HeroLeadForm() {
   const [email, setEmail] = useState("");
   const [fat, setFat] = useState("");
   const [dor, setDor] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "ok">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
+  const [errMsg, setErrMsg] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!name || !phone || !email || !fat || !dor) return;
     setStatus("loading");
-    // TODO integrar com /functions/v1/lead-intake real
-    setTimeout(() => setStatus("ok"), 700);
+    setErrMsg(null);
+    try {
+      const res = await fetch(`${FUNCTIONS_URL}/lead-intake`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          phone,
+          email,
+          monthly_revenue_range: fat,
+          pain_point: dor,
+          consent_lgpd: true,
+          source_slug: "landing_page",
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error ?? "Falha ao enviar");
+      }
+      setStatus("ok");
+    } catch (e) {
+      setStatus("error");
+      setErrMsg(e instanceof Error ? e.message : "Falha desconhecida");
+    }
   }
 
   if (status === "ok") {
@@ -282,6 +306,11 @@ export function HeroLeadForm() {
           </span>
         </button>
 
+        {status === "error" && errMsg && (
+          <p className="mt-2 text-center" style={{ fontSize: 11, color: "#c0392b", lineHeight: 1.5 }}>
+            {errMsg}
+          </p>
+        )}
         <p className="mt-3 text-center" style={{ fontSize: 11, color: "rgba(28,45,69,0.6)", lineHeight: 1.5 }}>
           Resposta em até 1 dia útil. Sem pressão, sem cobrança.
         </p>
