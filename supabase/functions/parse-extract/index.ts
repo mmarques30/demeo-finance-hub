@@ -161,20 +161,26 @@ function parseCSV(text: string, bankName: string): ParsedTransaction[] {
 function parseXLSX(buffer: ArrayBuffer, bankName: string): ParsedTransaction[] {
   const workbook = XLSX.read(buffer, { type: "array" });
   const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return [];
   const sheet = workbook.Sheets[sheetName];
-  const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+  if (!sheet) return [];
+  // defval:"" preenche células vazias com string vazia — evita arrays esparsos
+  // que causam undefined.includes() no findIndex
+  const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
   const transactions: ParsedTransaction[] = [];
 
   let headerRow = 0;
   for (let i = 0; i < Math.min(10, rows.length); i++) {
-    const row = rows[i] as string[];
-    if (row.some((c) => String(c).toLowerCase().includes("data"))) {
+    const row = rows[i];
+    if (!Array.isArray(row)) continue;
+    if (row.some((c) => c !== "" && String(c).toLowerCase().includes("data"))) {
       headerRow = i;
       break;
     }
   }
 
-  const header = (rows[headerRow] as string[]).map((h) => String(h).toLowerCase().trim());
+  const rawHeader = Array.isArray(rows[headerRow]) ? rows[headerRow] as unknown[] : [];
+  const header = rawHeader.map((h) => h != null && h !== "" ? String(h).toLowerCase().trim() : "");
   const colDate = header.findIndex((h) => h.includes("data"));
   const colDesc = header.findIndex((h) => h.includes("descri") || h.includes("hist") || h.includes("lança"));
   const colAmount = header.findIndex((h) => h.includes("valor") || h.includes("quantia") || h.includes("amount"));
