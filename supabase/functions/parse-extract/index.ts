@@ -117,6 +117,11 @@ function cleanDescription(raw: string): string {
   return raw.trim().replace(/\s+/g, " ").toUpperCase();
 }
 
+function cellText(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
 function parseCSV(text: string, bankName: string): ParsedTransaction[] {
   const normalized = bankName.toLowerCase().trim().normalize("NFD");
   const key = normalized.replace(new RegExp("[\\u0300-\\u036f]", "g"), "");
@@ -173,14 +178,14 @@ function parseXLSX(buffer: ArrayBuffer, bankName: string): ParsedTransaction[] {
   for (let i = 0; i < Math.min(10, rows.length); i++) {
     const row = rows[i];
     if (!Array.isArray(row)) continue;
-    if (row.some((c) => c !== "" && String(c).toLowerCase().includes("data"))) {
+    if (row.some((c) => cellText(c).toLowerCase().includes("data"))) {
       headerRow = i;
       break;
     }
   }
 
   const rawHeader = Array.isArray(rows[headerRow]) ? rows[headerRow] as unknown[] : [];
-  const header = rawHeader.map((h) => h != null && h !== "" ? String(h).toLowerCase().trim() : "");
+  const header = Array.from(rawHeader, (h) => cellText(h).toLowerCase());
   const colDate = header.findIndex((h) => h.includes("data"));
   const colDesc = header.findIndex((h) => h.includes("descri") || h.includes("hist") || h.includes("lança"));
   const colAmount = header.findIndex((h) => h.includes("valor") || h.includes("quantia") || h.includes("amount"));
@@ -189,9 +194,9 @@ function parseXLSX(buffer: ArrayBuffer, bankName: string): ParsedTransaction[] {
     for (let i = headerRow + 1; i < rows.length; i++) {
       const row = rows[i] as unknown[];
       if (!row[0] || !row[1] || !row[2]) continue;
-      const rawDate = String(row[0]);
-      const rawDesc = String(row[1]);
-      const amount = typeof row[2] === "number" ? row[2] : parseAmount(String(row[2]));
+      const rawDate = cellText(row[0]);
+      const rawDesc = cellText(row[1]);
+      const amount = typeof row[2] === "number" ? row[2] : parseAmount(cellText(row[2]));
       if (amount === 0) continue;
       transactions.push({
         date: rawDate.includes("/") ? parseDate(rawDate, "DD/MM/YYYY") : rawDate,
@@ -207,10 +212,10 @@ function parseXLSX(buffer: ArrayBuffer, bankName: string): ParsedTransaction[] {
   for (let i = headerRow + 1; i < rows.length; i++) {
     const row = rows[i] as unknown[];
     if (!row[colDate] || !row[colDesc]) continue;
-    const rawDate = String(row[colDate]);
-    const rawDesc = String(row[colDesc]);
+    const rawDate = cellText(row[colDate]);
+    const rawDesc = cellText(row[colDesc]);
     const rawAmount = row[colAmount];
-    const amount = typeof rawAmount === "number" ? rawAmount : parseAmount(String(rawAmount));
+    const amount = typeof rawAmount === "number" ? rawAmount : parseAmount(cellText(rawAmount));
     if (amount === 0) continue;
 
     let dateStr = rawDate;
