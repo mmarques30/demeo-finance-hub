@@ -323,25 +323,15 @@ function EditarClienteModal({ client, onClose }: { client: { id: string; name: s
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const { error: updateErr } = await supabase()
-        .from("clients")
-        .update({ name: nome.trim(), owner_name: responsavel.trim(), cnpj: cnpj.trim() || null, status })
-        .eq("id", client.id);
-      if (updateErr) throw updateErr;
-
-      // Substitui bancos: apaga todos e insere a lista nova
-      const { error: deleteErr } = await supabase()
-        .from("client_banks")
-        .delete()
-        .eq("client_id", client.id);
-      if (deleteErr) throw deleteErr;
-
-      if (bancos.length > 0) {
-        const { error: insertErr } = await supabase()
-          .from("client_banks")
-          .insert(bancos.map((b) => ({ client_id: client.id, bank_name: b })));
-        if (insertErr) throw insertErr;
-      }
+      const { error } = await supabase().rpc("update_client_with_banks", {
+        p_client_id:  client.id,
+        p_name:       nome.trim(),
+        p_owner_name: responsavel.trim(),
+        p_cnpj:       cnpj.trim() || null,
+        p_status:     status,
+        p_banks:      bancos,
+      });
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -643,8 +633,7 @@ function ExcluirClienteModal({ client, onClose }: { client: ClientRow; onClose: 
 
   const mutation = useMutation({
     mutationFn: async () => {
-      // Remove bancos primeiro (sem CASCADE garantido)
-      await supabase().from("client_banks").delete().eq("client_id", client.id);
+      // client_banks removidos automaticamente pelo ON DELETE CASCADE
       const { error } = await supabase().from("clients").delete().eq("id", client.id);
       if (error) throw error;
     },
