@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useCategories } from "@/hooks/useCategories";
 
 export const Route = createFileRoute("/admin/importar")({
@@ -70,7 +70,7 @@ function ImportarPage() {
 
   useEffect(() => {
     async function loadClients() {
-      const { data, error: clientsError } = await supabase
+      const { data, error: clientsError } = await supabase()
         .from("clients")
         .select("id, name")
         .order("name");
@@ -109,7 +109,7 @@ function ImportarPage() {
 
       const {
         data: { session },
-      } = await supabase.auth.getSession();
+      } = await supabase().auth.getSession();
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
       setStage("classifying");
@@ -177,7 +177,7 @@ function ImportarPage() {
     if (!ids.length) return;
     setApproving(true);
 
-    const { error: err } = await supabase
+    const { error: err } = await supabase()
       .from("transactions")
       .update({ status: "approved" })
       .in("id", ids);
@@ -220,7 +220,7 @@ function ImportarPage() {
     const signedAmount = manualType === "despesa" ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
     setManualSaving(true);
-    const { error: insertErr } = await supabase.from("transactions").insert({
+    const { error: insertErr } = await supabase().from("transactions").insert({
       client_id: clientId,
       upload_id: null,
       date: manualDate,
