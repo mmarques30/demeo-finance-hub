@@ -422,18 +422,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPropostasNovaRouteImport
       parentRoute: typeof AdminPropostasRoute
     }
-    '/admin/insights/analise': {
-      id: '/admin/insights/analise'
-      path: '/admin/insights/analise'
-      fullPath: '/admin/insights/analise'
-      preLoaderRoute: typeof AdminInsightsAnaliseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/insights/precificacao': {
       id: '/admin/insights/precificacao'
       path: '/admin/insights/precificacao'
       fullPath: '/admin/insights/precificacao'
       preLoaderRoute: typeof AdminInsightsPrecificacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/insights/analise': {
+      id: '/admin/insights/analise'
+      path: '/admin/insights/analise'
+      fullPath: '/admin/insights/analise'
+      preLoaderRoute: typeof AdminInsightsAnaliseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/contratos/novo': {
