@@ -270,8 +270,8 @@ Deno.serve(async (req) => {
 
       for (const r of results) {
         const isKnownCategory = categoryNames.includes(r.cat);
-        // conf vem de 0-100; threshold: >= 70 → approved, < 70 → pending
-        const status = isKnownCategory && r.conf >= 70 ? "approved" : "pending";
+        // Camada 3 (AI) apenas sugere categoria — status sempre "pending" para revisão manual
+        const status = "pending";
 
         await supabase.from("transactions").update({
           category: isKnownCategory ? r.cat : null,

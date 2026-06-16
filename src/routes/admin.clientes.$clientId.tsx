@@ -200,7 +200,7 @@ function ClientePage() {
             </div>
           ) : tx.length === 0 ? (
             <div className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-              Nenhum lançamento neste período.
+              Nenhum lançamento em {period}. Tente selecionar outro mês no seletor acima.
             </div>
           ) : (
             <table className="w-full">
