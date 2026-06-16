@@ -1049,6 +1049,17 @@ export type Database = {
       next_contract_number: { Args: never; Returns: string }
       next_proposal_number: { Args: never; Returns: string }
       normalize_description: { Args: { raw: string }; Returns: string }
+      update_client_with_banks: {
+        Args: {
+          p_banks: string[]
+          p_client_id: string
+          p_cnpj: string
+          p_name: string
+          p_owner_name: string
+          p_status: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
