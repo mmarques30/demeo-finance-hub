@@ -122,9 +122,10 @@ Deno.serve(async (req) => {
     });
 
     if (!parseRes.ok) {
+      const status = parseRes.status === 422 ? 422 : 500;
       return new Response(
-        JSON.stringify({ error: `parse-extract falhou: ${parseResult.error}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: parseResult.error ?? "Nenhum lançamento encontrado" }),
+        { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
