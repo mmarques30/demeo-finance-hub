@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl, currentMonthLabel, currentMonthStr, monthRangeDates } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
@@ -40,12 +40,12 @@ function AdminDashboard() {
       { data: txData },
       { data: banksData },
     ] = await Promise.all([
-      supabase.from("clients").select("id, name, status, last_upload_at").order("name"),
-      supabase
+      supabase().from("clients").select("id, name, status, last_upload_at").order("name"),
+      supabase()
         .from("transactions")
         .select("client_id, amount, status, date")
         .in("status", ["approved", "pending"]),
-      supabase.from("client_banks").select("client_id, bank_name"),
+      supabase().from("client_banks").select("client_id, bank_name"),
     ]);
 
     const clients = (clientsData ?? []) as ClientRow[];

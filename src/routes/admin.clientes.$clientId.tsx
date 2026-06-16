@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { StatusBadge } from "./admin.index";
 import { brl, formatDatePtBR, monthOptions, monthRangeDates } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/clientes/$clientId")({
   component: ClientePage,
@@ -44,7 +44,7 @@ function ClientePage() {
 
   // Carrega dados do cliente uma vez
   useEffect(() => {
-    supabase
+    supabase()
       .from("clients")
       .select("*, client_banks(bank_name)")
       .eq("id", clientId)
@@ -61,10 +61,11 @@ function ClientePage() {
     if (!clientId) return;
     const { start, end } = monthRangeDates(period);
     setTxLoading(true);
-    supabase
+    supabase()
       .from("transactions")
       .select("id, date, description, amount, category, status")
       .eq("client_id", clientId)
+      .in("status", ["approved", "pending"])
       .gte("date", start)
       .lte("date", end)
       .order("date", { ascending: false })
