@@ -162,11 +162,27 @@ function ImportarPage() {
     }
   }
 
+  // Auto-dispara upload quando cliente é selecionado após estagiar arquivo
+  useEffect(() => {
+    if (files.length > 0 && clientId && stage === "idle") {
+      handleUpload(files);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId]);
+
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragOver(false);
     const dropped = Array.from(e.dataTransfer.files);
-    if (dropped.length) handleUpload(dropped);
+    if (!dropped.length) return;
+    if (clientId) {
+      // Cliente já selecionado: upload imediato
+      handleUpload(dropped);
+    } else {
+      // Sem cliente: estagia o arquivo e aguarda seleção
+      setFiles(dropped);
+      setError(null);
+    }
   }
 
   function toggleAll() {
@@ -279,7 +295,13 @@ function ImportarPage() {
             className="hidden"
             onChange={(e) => {
               const fileList = e.target.files ? Array.from(e.target.files) : [];
-              if (fileList.length) handleUpload(fileList);
+              if (!fileList.length) return;
+              if (clientId) {
+                handleUpload(fileList);
+              } else {
+                setFiles(fileList);
+                setError(null);
+              }
             }}
           />
           <div className="aurora-serif text-[32px]" style={{ color: "var(--green)", letterSpacing: "-1px" }}>
