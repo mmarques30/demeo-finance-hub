@@ -54,6 +54,7 @@ function ClientesPage() {
   const [filtro, setFiltro] = useState<Filtro>("Todos");
   const [novoOpen, setNovoOpen] = useState(false);
   const [editClient, setEditClient] = useState<ClientRow | null>(null);
+  const [deleteClient, setDeleteClient] = useState<ClientRow | null>(null);
 
   const { data: clientes = [], isLoading, error } = useQuery({
     queryKey: ["clients"],
@@ -178,6 +179,13 @@ function ClientesPage() {
                       >
                         Editar
                       </button>
+                      <button
+                        onClick={() => setDeleteClient(c)}
+                        className="text-[11px] transition-opacity hover:opacity-70"
+                        style={{ color: "var(--tan)" }}
+                      >
+                        Excluir
+                      </button>
                       <Link
                         to={"/admin/dfc" as never}
                         search={{ clientId: c.id } as never}
@@ -215,6 +223,7 @@ function ClientesPage() {
 
       {novoOpen && <NovoClienteModal onClose={() => setNovoOpen(false)} />}
       {editClient && <EditarClienteModal client={editClient} onClose={() => setEditClient(null)} />}
+      {deleteClient && <ExcluirClienteModal client={deleteClient} onClose={() => setDeleteClient(null)} />}
     </AdminLayout>
   );
 }
@@ -623,6 +632,82 @@ function Field({ label, hint, required, children }: { label: string; hint?: stri
         {hint && <span className="text-[9px] uppercase" style={{ color: "var(--muted-foreground)", letterSpacing: "1.5px" }}>{hint}</span>}
       </div>
       {children}
+    </div>
+  );
+}
+
+// ─── modal excluir cliente ────────────────────────────────────────────────────
+
+function ExcluirClienteModal({ client, onClose }: { client: ClientRow; onClose: () => void }) {
+  const qc = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      // Remove bancos primeiro (sem CASCADE garantido)
+      await supabase().from("client_banks").delete().eq("client_id", client.id);
+      const { error } = await supabase().from("clients").delete().eq("id", client.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success(`Cliente "${client.name}" excluído.`);
+      onClose();
+    },
+    onError: (err: Error) => {
+      const msg = err.message ?? "";
+      if (msg.includes("foreign key") || msg.includes("violates") || msg.includes("constraint")) {
+        toast.error(
+          `Não é possível excluir — o cliente possui lançamentos vinculados. Use "Editar" e altere o status para "Fechado" para arquivá-lo.`
+        );
+      } else {
+        toast.error("Erro ao excluir: " + msg);
+      }
+    },
+  });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-md bg-white" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+          <div>
+            <div className="aurora-cap mb-0.5">Confirmar exclusão</div>
+            <div className="aurora-serif text-[20px]">{client.name}</div>
+          </div>
+          <button onClick={onClose} className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100">×</button>
+        </div>
+
+        <div className="px-6 py-6 flex flex-col gap-5">
+          <p className="text-[13px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.6 }}>
+            Esta ação é permanente e não pode ser desfeita. Bancos vinculados serão removidos.
+            Se o cliente possuir lançamentos, a exclusão será bloqueada — use{" "}
+            <strong>status "Fechado"</strong> para arquivá-lo.
+          </p>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-[10px] uppercase px-5 py-3 transition-opacity"
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={mutation.isPending}
+              onClick={() => mutation.mutate()}
+              className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
+              style={{ background: "var(--tan)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+            >
+              {mutation.isPending ? "Excluindo..." : "Confirmar exclusão"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
