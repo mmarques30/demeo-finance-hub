@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminServicosRouteImport } from './routes/admin.servicos'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
+import { Route as AdminRecorrenciasRouteImport } from './routes/admin.recorrencias'
 import { Route as AdminRegrasRouteImport } from './routes/admin.regras'
 import { Route as AdminPropostasRouteImport } from './routes/admin.propostas'
 import { Route as AdminPipelineRouteImport } from './routes/admin.pipeline'
@@ -58,6 +59,11 @@ const AdminServicosRoute = AdminServicosRouteImport.update({
 const AdminRelatoriosRoute = AdminRelatoriosRouteImport.update({
   id: '/admin/relatorios',
   path: '/admin/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRecorrenciasRoute = AdminRecorrenciasRouteImport.update({
+  id: '/admin/recorrencias',
+  path: '/admin/recorrencias',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRegrasRoute = AdminRegrasRouteImport.update({
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/admin/pendentes': typeof AdminPendentesRoute
   '/admin/pipeline': typeof AdminPipelineRoute
   '/admin/propostas': typeof AdminPropostasRouteWithChildren
+  '/admin/recorrencias': typeof AdminRecorrenciasRoute
   '/admin/regras': typeof AdminRegrasRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/admin/pendentes': typeof AdminPendentesRoute
   '/admin/pipeline': typeof AdminPipelineRoute
   '/admin/propostas': typeof AdminPropostasRouteWithChildren
+  '/admin/recorrencias': typeof AdminRecorrenciasRoute
   '/admin/regras': typeof AdminRegrasRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/admin/pendentes': typeof AdminPendentesRoute
   '/admin/pipeline': typeof AdminPipelineRoute
   '/admin/propostas': typeof AdminPropostasRouteWithChildren
+  '/admin/recorrencias': typeof AdminRecorrenciasRoute
   '/admin/regras': typeof AdminRegrasRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/admin/pendentes'
     | '/admin/pipeline'
     | '/admin/propostas'
+    | '/admin/recorrencias'
     | '/admin/regras'
     | '/admin/relatorios'
     | '/admin/servicos'
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/admin/pendentes'
     | '/admin/pipeline'
     | '/admin/propostas'
+    | '/admin/recorrencias'
     | '/admin/regras'
     | '/admin/relatorios'
     | '/admin/servicos'
@@ -257,6 +268,7 @@ export interface FileRouteTypes {
     | '/admin/pendentes'
     | '/admin/pipeline'
     | '/admin/propostas'
+    | '/admin/recorrencias'
     | '/admin/regras'
     | '/admin/relatorios'
     | '/admin/servicos'
@@ -280,6 +292,7 @@ export interface RootRouteChildren {
   AdminPendentesRoute: typeof AdminPendentesRoute
   AdminPipelineRoute: typeof AdminPipelineRoute
   AdminPropostasRoute: typeof AdminPropostasRouteWithChildren
+  AdminRecorrenciasRoute: typeof AdminRecorrenciasRoute
   AdminRegrasRoute: typeof AdminRegrasRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminServicosRoute: typeof AdminServicosRoute
@@ -416,11 +429,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInsightsPrecificacaoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/insights/analise': {
-      id: '/admin/insights/analise'
-      path: '/admin/insights/analise'
-      fullPath: '/admin/insights/analise'
-      preLoaderRoute: typeof AdminInsightsAnaliseRouteImport
+    '/admin/recorrencias': {
+      id: '/admin/recorrencias'
+      path: '/admin/recorrencias'
+      fullPath: '/admin/recorrencias'
+      preLoaderRoute: typeof AdminRecorrenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/contratos/novo': {
@@ -488,6 +501,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPendentesRoute: AdminPendentesRoute,
   AdminPipelineRoute: AdminPipelineRoute,
   AdminPropostasRoute: AdminPropostasRouteWithChildren,
+  AdminRecorrenciasRoute: AdminRecorrenciasRoute,
   AdminRegrasRoute: AdminRegrasRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminServicosRoute: AdminServicosRoute,
