@@ -177,29 +177,45 @@ Deno.serve(async (req) => {
     const approvedByRule: string[] = [];
     const remainingAfterRules: TxRow[] = [];
 
+    // Decisão em memória — sem queries dentro do loop
+    const ruleMatches: { tx: TxRow; match: Rule }[] = [];
     for (const tx of pending as TxRow[]) {
       const normalized = buildPattern(tx.description);
       const match = rules.find((r) => normalized.startsWith(r.pattern));
-
       if (match) {
-        await supabase.from("transactions").update({
-          category: match.category,
-          is_recurring: match.is_recurring ?? false,
-          status: "approved",
-          confidence: 100,
-        }).eq("id", tx.id);
-
-        // Atualiza hits e last_used da regra
-        await supabase
-          .from("classification_rules")
-          .update({ last_used: new Date().toISOString() })
-          .eq("client_id", client_id)
-          .eq("pattern", match.pattern);
-
+        ruleMatches.push({ tx, match });
         approvedByRule.push(tx.id);
       } else {
         remainingAfterRules.push(tx);
       }
+    }
+
+    // Batch-update transactions agrupadas pela mesma classificação (1 query por grupo)
+    if (ruleMatches.length > 0) {
+      const txGroups = new Map<string, { ids: string[]; category: string; is_recurring: boolean }>();
+      for (const { tx, match } of ruleMatches) {
+        const key = `${match.category}||${match.is_recurring ?? false}`;
+        if (!txGroups.has(key)) {
+          txGroups.set(key, { ids: [], category: match.category, is_recurring: match.is_recurring ?? false });
+        }
+        txGroups.get(key)!.ids.push(tx.id);
+      }
+      for (const { ids, category, is_recurring } of txGroups.values()) {
+        await supabase.from("transactions").update({
+          category,
+          is_recurring,
+          status: "approved",
+          confidence: 100,
+        }).in("id", ids);
+      }
+
+      // Uma query para atualizar last_used em todas as regras usadas
+      const usedPatterns = [...new Set(ruleMatches.map(({ match }) => match.pattern))];
+      await supabase
+        .from("classification_rules")
+        .update({ last_used: new Date().toISOString() })
+        .eq("client_id", client_id)
+        .in("pattern", usedPatterns);
     }
 
     // ── CAMADA 2: Recorrência (view recurrence_patterns) ──────────────────────
@@ -217,21 +233,28 @@ Deno.serve(async (req) => {
         recurrenceMap.set(r.pattern, r.modal_category);
       }
 
+      // Decisão em memória — sem queries dentro do loop
+      const recurrenceMatches = new Map<string, string[]>(); // category → ids
       for (const tx of remainingAfterRules) {
         const pattern = buildPattern(tx.description);
         const category = recurrenceMap.get(pattern);
-
         if (category) {
-          await supabase.from("transactions").update({
-            category,
-            is_recurring: true,
-            status: "approved",
-            confidence: 90,
-          }).eq("id", tx.id);
+          if (!recurrenceMatches.has(category)) recurrenceMatches.set(category, []);
+          recurrenceMatches.get(category)!.push(tx.id);
           approvedByRecurrence.push(tx.id);
         } else {
           remainingForAI.push(tx);
         }
+      }
+
+      // Batch-update por categoria (1 query por categoria única)
+      for (const [category, ids] of recurrenceMatches.entries()) {
+        await supabase.from("transactions").update({
+          category,
+          is_recurring: true,
+          status: "approved",
+          confidence: 90,
+        }).in("id", ids);
       }
     }
 
