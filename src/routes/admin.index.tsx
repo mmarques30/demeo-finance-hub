@@ -152,13 +152,22 @@ function AdminDashboard() {
         emphasis="da carteira"
         description="Acompanhe o status do período, lançamentos pendentes e a evolução de cada cliente em um único lugar."
         right={
-          <Link
-            to={"/admin/importar" as never}
-            className="focus-ring inline-flex items-center gap-2 text-[11px] uppercase"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500, padding: "14px 22px" }}
-          >
-            + Importar extrato
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to={"/admin/clientes" as never}
+              className="focus-ring inline-flex items-center gap-2 text-[11px] uppercase"
+              style={{ background: "transparent", color: "var(--green)", letterSpacing: "2.5px", fontWeight: 500, padding: "14px 22px", border: "1px solid var(--green)" }}
+            >
+              + Cliente
+            </Link>
+            <Link
+              to={"/admin/importar" as never}
+              className="focus-ring inline-flex items-center gap-2 text-[11px] uppercase"
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500, padding: "14px 22px" }}
+            >
+              + Importar extrato
+            </Link>
+          </div>
         }
       />
 
