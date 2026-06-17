@@ -37,6 +37,12 @@ interface ReportData {
   byCategory: { cat: string; total: number; isReceita: boolean }[];
 }
 
+interface CatInfo { group_name: string; type: string }
+interface DREGroup { name: string; lines: { cat: string; total: number }[]; subtotal: number }
+interface DREData { groups: DREGroup[]; resultado: number }
+
+const DRE_GROUP_ORDER = ["Receita", "Despesa Fixa", "Despesa Variável", "Investimento", "Outros"];
+
 function computeReport(txs: Tx[]): ReportData {
   const receitas = txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const despesas = txs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
@@ -60,10 +66,45 @@ function computeReport(txs: Tx[]): ReportData {
   return { receitas, despesas, resultado: receitas - despesas, fixos, variaveis, byCategory };
 }
 
-function openPrintReport(clientName: string, period: string, txs: Tx[], forecast: ForecastMonth[]) {
+async function fetchCategories(clientId: string): Promise<Map<string, CatInfo>> {
+  const { data } = await supabase()
+    .from("categories")
+    .select("name, group_name, type")
+    .eq("client_id", clientId)
+    .eq("is_active", true);
+  const map = new Map<string, CatInfo>();
+  for (const cat of data ?? []) map.set(cat.name, { group_name: cat.group_name, type: cat.type });
+  return map;
+}
+
+function computeDRE(txs: Tx[], catMap: Map<string, CatInfo>): DREData {
+  const groupMap = new Map<string, Map<string, number>>();
+  for (const tx of txs) {
+    const info = catMap.get(tx.category ?? "");
+    const groupName = info?.group_name ?? "Outros";
+    if (!groupMap.has(groupName)) groupMap.set(groupName, new Map());
+    const cats = groupMap.get(groupName)!;
+    const cat = tx.category ?? "Sem categoria";
+    cats.set(cat, (cats.get(cat) ?? 0) + tx.amount);
+  }
+  const groups: DREGroup[] = [];
+  for (const groupName of DRE_GROUP_ORDER) {
+    const cats = groupMap.get(groupName);
+    if (!cats) continue;
+    const lines = Array.from(cats.entries())
+      .map(([cat, total]) => ({ cat, total }))
+      .sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
+    const subtotal = lines.reduce((s, l) => s + l.total, 0);
+    groups.push({ name: groupName, lines, subtotal });
+  }
+  const resultado = groups.reduce((s, g) => s + g.subtotal, 0);
+  return { groups, resultado };
+}
+
+function openPrintReport(clientName: string, period: string, txs: Tx[], forecast: ForecastMonth[], catMap: Map<string, CatInfo>) {
   const d = computeReport(txs);
+  const dre = computeDRE(txs, catMap);
   const today = new Date().toLocaleDateString("pt-BR");
-  const totalVol = (d.receitas + d.despesas) || 1;
 
   const projRows = forecast
     .map((p) => {
@@ -77,25 +118,26 @@ function openPrintReport(clientName: string, period: string, txs: Tx[], forecast
     })
     .join("");
 
-  const catRows = d.byCategory
-    .slice(0, 15)
-    .map((row) => {
-      const pct = ((row.total / totalVol) * 100).toFixed(1);
-      return `<tr>
-        <td>${row.cat}</td>
-        <td style="color:${row.isReceita ? "#8FA688" : "#B8956A"}">${row.isReceita ? "Receita" : "Despesa"}</td>
-        <td>${brl(row.total)}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:11px;min-width:36px">${pct}%</span>
-            <div style="flex:1;height:6px;background:#F0EDE7">
-              <div style="width:${pct}%;height:6px;background:${row.isReceita ? "#8FA688" : "#B8956A"}"></div>
-            </div>
-          </div>
-        </td>
-      </tr>`;
-    })
-    .join("");
+  const dreRows = dre.groups.map((g) => {
+    const isReceita = g.name === "Receita";
+    const color = isReceita ? "#8FA688" : "#B8956A";
+    const lineRows = g.lines.map((l) =>
+      `<tr>
+        <td style="padding-left:24px;color:#555">${l.cat}</td>
+        <td style="text-align:right;color:${l.total >= 0 ? "#8FA688" : "#B8956A"}">${brl(l.total)}</td>
+      </tr>`
+    ).join("");
+    return `<tr style="background:#F8F6F1">
+        <td style="font-weight:600;padding:8px 10px;letter-spacing:1px;font-size:11px;text-transform:uppercase;font-family:sans-serif;color:#555">${g.name}</td>
+        <td></td>
+      </tr>
+      ${lineRows}
+      <tr style="border-top:1px solid #E8E3D9">
+        <td style="font-weight:500;font-family:sans-serif;font-size:12px;padding-left:8px">Total ${g.name}</td>
+        <td style="text-align:right;font-weight:600;color:${color}">${brl(g.subtotal)}</td>
+      </tr>
+      <tr><td colspan="2" style="padding:4px"></td></tr>`;
+  }).join("");
 
   const fixosPct = d.despesas > 0 ? ((d.fixos / d.despesas) * 100).toFixed(1) : "0";
   const varPct = d.despesas > 0 ? ((d.variaveis / d.despesas) * 100).toFixed(1) : "0";
@@ -154,10 +196,16 @@ function openPrintReport(clientName: string, period: string, txs: Tx[], forecast
   }
 
   <div class="sec">
-    <div class="sec-title">Demonstrativo de Resultado por Categoria</div>
+    <div class="sec-title">Demonstrativo de Resultado do Exercício (DRE)</div>
     <table>
-      <thead><tr><th>Categoria</th><th>Tipo</th><th>Total</th><th style="width:32%">Representatividade</th></tr></thead>
-      <tbody>${catRows}</tbody>
+      <thead><tr><th>Conta</th><th style="text-align:right">Valor</th></tr></thead>
+      <tbody>
+        ${dreRows}
+        <tr style="border-top:2px solid #1B3950">
+          <td style="font-weight:700;font-size:13px;padding:10px">Resultado Líquido</td>
+          <td style="text-align:right;font-weight:700;font-size:15px;color:${dre.resultado >= 0 ? "#8FA688" : "#B8956A"};padding:10px">${brl(dre.resultado)}</td>
+        </tr>
+      </tbody>
     </table>
   </div>
 
@@ -185,8 +233,9 @@ function openPrintReport(clientName: string, period: string, txs: Tx[], forecast
   win.onload = () => win.print();
 }
 
-function exportExcel(clientName: string, period: string, txs: Tx[], forecast: ForecastMonth[]) {
+function exportExcel(clientName: string, period: string, txs: Tx[], forecast: ForecastMonth[], catMap: Map<string, CatInfo>) {
   const d = computeReport(txs);
+  const dre = computeDRE(txs, catMap);
   const wb = XLSX.utils.book_new();
 
   // Aba 1: Lançamentos
@@ -213,15 +262,17 @@ function exportExcel(clientName: string, period: string, txs: Tx[], forecast: Fo
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dfcRows), "DFC");
 
-  // Aba 3: DRE por Categoria
-  const totalVol = (d.receitas + d.despesas) || 1;
-  const dreRows = d.byCategory.map((row) => ({
-    Categoria: row.cat,
-    Tipo: row.isReceita ? "Receita" : "Despesa",
-    Total: row.total,
-    "% do Total": ((row.total / totalVol) * 100).toFixed(2) + "%",
-  }));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dreRows), "DRE");
+  // Aba 3: DRE estruturada por grupo
+  const dreXlsx: { Grupo: string; Categoria: string; Valor: number }[] = [];
+  for (const g of dre.groups) {
+    for (const l of g.lines) {
+      dreXlsx.push({ Grupo: g.name, Categoria: l.cat, Valor: l.total });
+    }
+    dreXlsx.push({ Grupo: `Total ${g.name}`, Categoria: "", Valor: g.subtotal });
+    dreXlsx.push({ Grupo: "", Categoria: "", Valor: 0 });
+  }
+  dreXlsx.push({ Grupo: "RESULTADO LÍQUIDO", Categoria: "", Valor: dre.resultado });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dreXlsx), "DRE");
 
   // Aba 4: Parcelamentos
   const instTxs = txs.filter((t) => t.installment_group_id);
@@ -366,19 +417,27 @@ function RelatoriosPage() {
     const period = selectedPeriod[clientId];
     if (!period) return;
     setExporting((e) => ({ ...e, [clientId]: "pdf" }));
-    const [txs, forecast] = await Promise.all([fetchTxs(clientId, period), fetchForecast(clientId, period)]);
+    const [txs, forecast, catMap] = await Promise.all([
+      fetchTxs(clientId, period),
+      fetchForecast(clientId, period),
+      fetchCategories(clientId),
+    ]);
     const client = clients.find((c) => c.id === clientId)!;
     setExporting((e) => ({ ...e, [clientId]: null }));
-    openPrintReport(client.name, period, txs, forecast);
+    openPrintReport(client.name, period, txs, forecast, catMap);
   }
 
   async function handleExcel(clientId: string) {
     const period = selectedPeriod[clientId];
     if (!period) return;
     setExporting((e) => ({ ...e, [clientId]: "excel" }));
-    const [txs, forecast] = await Promise.all([fetchTxs(clientId, period), fetchForecast(clientId, period)]);
+    const [txs, forecast, catMap] = await Promise.all([
+      fetchTxs(clientId, period),
+      fetchForecast(clientId, period),
+      fetchCategories(clientId),
+    ]);
     const client = clients.find((c) => c.id === clientId)!;
-    exportExcel(client.name, period, txs, forecast);
+    exportExcel(client.name, period, txs, forecast, catMap);
     setExporting((e) => ({ ...e, [clientId]: null }));
   }
 
