@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { currentMonthLabel, formatDatePtBR } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { brl, formatDatePtBR, monthRangeDates } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import * as XLSX from "xlsx";
 
 export const Route = createFileRoute("/admin/relatorios")({
   component: RelatoriosPage,
@@ -13,24 +14,346 @@ interface ClientRow {
   id: string;
   name: string;
   last_upload_at: string | null;
-  status: string;
+}
+
+interface Tx {
+  date: string;
+  description: string;
+  amount: number;
+  category: string | null;
+  is_recurring: boolean;
+  installment_number: number | null;
+  installment_total: number | null;
+  installment_group_id: string | null;
+}
+
+interface ReportData {
+  receitas: number;
+  despesas: number;
+  resultado: number;
+  fixos: number;
+  variaveis: number;
+  byCategory: { cat: string; total: number; isReceita: boolean }[];
+  projection: { offset: number; rec: number; des: number }[];
+}
+
+function computeReport(txs: Tx[]): ReportData {
+  const receitas = txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const despesas = txs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const fixos = txs
+    .filter((t) => t.amount < 0 && t.is_recurring)
+    .reduce((s, t) => s + Math.abs(t.amount), 0);
+  const variaveis = txs
+    .filter((t) => t.amount < 0 && !t.is_recurring)
+    .reduce((s, t) => s + Math.abs(t.amount), 0);
+
+  const catMap = new Map<string, { total: number; isReceita: boolean }>();
+  for (const tx of txs) {
+    const cat = tx.category || "Sem categoria";
+    const cur = catMap.get(cat) ?? { total: 0, isReceita: tx.amount > 0 };
+    catMap.set(cat, { total: cur.total + Math.abs(tx.amount), isReceita: cur.isReceita });
+  }
+  const byCategory = Array.from(catMap.entries())
+    .map(([cat, v]) => ({ cat, total: v.total, isReceita: v.isReceita }))
+    .sort((a, b) => b.total - a.total);
+
+  const projection = [1, 2, 3].map((offset) => ({
+    offset,
+    rec: receitas * (1 + 0.03 * offset),
+    des: despesas * (1 + 0.02 * offset),
+  }));
+
+  return { receitas, despesas, resultado: receitas - despesas, fixos, variaveis, byCategory, projection };
+}
+
+function openPrintReport(clientName: string, period: string, txs: Tx[]) {
+  const d = computeReport(txs);
+  const today = new Date().toLocaleDateString("pt-BR");
+  const [mm, yyyy] = period.split("/").map(Number);
+  const totalVol = (d.receitas + d.despesas) || 1;
+
+  const projRows = d.projection
+    .map((p) => {
+      const dt = new Date(yyyy, mm - 1 + p.offset, 1);
+      const mes = dt.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      const r = p.rec - p.des;
+      return `<tr>
+        <td>${mes}</td>
+        <td style="color:#8FA688">${brl(p.rec)}</td>
+        <td style="color:#B8956A">${brl(p.des)}</td>
+        <td style="color:${r >= 0 ? "#8FA688" : "#B8956A"};font-weight:bold">${brl(r)}</td>
+      </tr>`;
+    })
+    .join("");
+
+  const catRows = d.byCategory
+    .slice(0, 15)
+    .map((row) => {
+      const pct = ((row.total / totalVol) * 100).toFixed(1);
+      return `<tr>
+        <td>${row.cat}</td>
+        <td style="color:${row.isReceita ? "#8FA688" : "#B8956A"}">${row.isReceita ? "Receita" : "Despesa"}</td>
+        <td>${brl(row.total)}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;min-width:36px">${pct}%</span>
+            <div style="flex:1;height:6px;background:#F0EDE7">
+              <div style="width:${pct}%;height:6px;background:${row.isReceita ? "#8FA688" : "#B8956A"}"></div>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    })
+    .join("");
+
+  const fixosPct = d.despesas > 0 ? ((d.fixos / d.despesas) * 100).toFixed(1) : "0";
+  const varPct = d.despesas > 0 ? ((d.variaveis / d.despesas) * 100).toFixed(1) : "0";
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório — ${clientName} — ${period}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Georgia,'Times New Roman',serif;color:#1B3950;background:#fff;padding:48px}
+  .cap{font-family:sans-serif;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8FA688}
+  h1{font-size:36px;font-weight:normal;margin:6px 0 4px}
+  .sub{font-size:13px;color:#888;margin-bottom:40px;font-family:sans-serif}
+  .sec{margin-bottom:36px}
+  .sec-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#8FA688;margin-bottom:12px;font-family:sans-serif}
+  .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .card{border:1px solid #E8E3D9;padding:16px}
+  .card-lbl{font-family:sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:8px}
+  .card-val{font-size:24px;font-weight:bold}
+  .card-sub{font-size:11px;color:#888;margin-top:4px;font-family:sans-serif}
+  table{width:100%;border-collapse:collapse;font-size:12px;font-family:sans-serif}
+  th{text-align:left;padding:8px 10px;background:#F8F6F1;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#888}
+  td{padding:8px 10px;border-bottom:1px solid #E8E3D9}
+  @page{size:A4;margin:16mm}
+  @media print{body{padding:0}}
+</style>
+</head>
+<body>
+  <div class="cap">Aurora · Relatório Financeiro</div>
+  <h1>${clientName}</h1>
+  <div class="sub">Período: ${period} &nbsp;·&nbsp; Gerado em ${today}</div>
+
+  <div class="sec">
+    <div class="sec-title">Demonstrativo de Fluxo de Caixa</div>
+    <div class="g4">
+      <div class="card"><div class="card-lbl">Receitas</div><div class="card-val" style="color:#8FA688">${brl(d.receitas)}</div></div>
+      <div class="card"><div class="card-lbl">Despesas</div><div class="card-val" style="color:#B8956A">${brl(d.despesas)}</div></div>
+      <div class="card"><div class="card-lbl">Resultado</div><div class="card-val" style="color:${d.resultado >= 0 ? "#8FA688" : "#B8956A"}">${brl(d.resultado)}</div></div>
+      <div class="card"><div class="card-lbl">Lançamentos</div><div class="card-val" style="color:#1B3950">${txs.length}</div></div>
+    </div>
+  </div>
+
+  ${
+    d.despesas > 0
+      ? `<div class="sec">
+    <div class="sec-title">Composição das Despesas</div>
+    <div class="g2">
+      <div class="card"><div class="card-lbl">Despesas Fixas</div><div class="card-val" style="color:#1B3950">${brl(d.fixos)}</div><div class="card-sub">${fixosPct}% das despesas</div></div>
+      <div class="card"><div class="card-lbl">Despesas Variáveis</div><div class="card-val" style="color:#B8956A">${brl(d.variaveis)}</div><div class="card-sub">${varPct}% das despesas</div></div>
+    </div>
+  </div>`
+      : ""
+  }
+
+  <div class="sec">
+    <div class="sec-title">Demonstrativo de Resultado por Categoria</div>
+    <table>
+      <thead><tr><th>Categoria</th><th>Tipo</th><th>Total</th><th style="width:32%">Representatividade</th></tr></thead>
+      <tbody>${catRows}</tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Projeção — Próximos 90 dias</div>
+    <table>
+      <thead><tr><th>Mês</th><th>Receitas Previstas</th><th>Despesas Previstas</th><th>Resultado Previsto</th></tr></thead>
+      <tbody>${projRows}</tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:48px;padding-top:16px;border-top:1px solid #E8E3D9;font-size:11px;color:#aaa;font-family:sans-serif">
+    Aurora · ${today}
+  </div>
+</body>
+</html>`;
+
+  const win = window.open("", "_blank", "width=900,height=1100");
+  if (!win) {
+    alert("Habilite popups para gerar o PDF.");
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => win.print();
+}
+
+function exportExcel(clientName: string, period: string, txs: Tx[]) {
+  const d = computeReport(txs);
+  const [mm, yyyy] = period.split("/").map(Number);
+  const wb = XLSX.utils.book_new();
+
+  // Aba 1: Lançamentos
+  const lancamentos = txs.map((t) => ({
+    Data: t.date,
+    Descrição: t.description,
+    Valor: t.amount,
+    Categoria: t.category ?? "",
+    Tipo: t.amount >= 0 ? "Receita" : "Despesa",
+    Recorrente: t.is_recurring ? "Sim" : "Não",
+    "Parcela Nº": t.installment_number ?? "",
+    "Total Parcelas": t.installment_total ?? "",
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lancamentos), "Lançamentos");
+
+  // Aba 2: DFC Resumo
+  const dfcRows = [
+    { Indicador: "Receitas", Valor: d.receitas },
+    { Indicador: "Despesas", Valor: d.despesas },
+    { Indicador: "Resultado", Valor: d.resultado },
+    { Indicador: "Despesas Fixas", Valor: d.fixos },
+    { Indicador: "Despesas Variáveis", Valor: d.variaveis },
+    { Indicador: "Nº de Lançamentos", Valor: txs.length },
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dfcRows), "DFC");
+
+  // Aba 3: DRE por Categoria
+  const totalVol = (d.receitas + d.despesas) || 1;
+  const dreRows = d.byCategory.map((row) => ({
+    Categoria: row.cat,
+    Tipo: row.isReceita ? "Receita" : "Despesa",
+    Total: row.total,
+    "% do Total": ((row.total / totalVol) * 100).toFixed(2) + "%",
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dreRows), "DRE");
+
+  // Aba 4: Parcelamentos
+  const instTxs = txs.filter((t) => t.installment_group_id);
+  const instRows =
+    instTxs.length > 0
+      ? instTxs.map((t) => ({
+          Data: t.date,
+          Descrição: t.description,
+          "Valor Parcela": Math.abs(t.amount),
+          "Parcela Nº": t.installment_number ?? "",
+          "Total Parcelas": t.installment_total ?? "",
+          "Parcelas Restantes": (t.installment_total ?? 0) - (t.installment_number ?? 0),
+          Grupo: t.installment_group_id ?? "",
+        }))
+      : [{ Data: "", Descrição: "Nenhum parcelamento neste período", "Valor Parcela": "", "Parcela Nº": "", "Total Parcelas": "", "Parcelas Restantes": "", Grupo: "" }];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(instRows), "Parcelamentos");
+
+  // Aba 5: Projeção
+  const projRows = d.projection.map((p) => {
+    const dt = new Date(yyyy, mm - 1 + p.offset, 1);
+    const mes = dt.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    return {
+      Mês: mes,
+      "Receitas Previstas": Math.round(p.rec * 100) / 100,
+      "Despesas Previstas": Math.round(p.des * 100) / 100,
+      "Resultado Previsto": Math.round((p.rec - p.des) * 100) / 100,
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projRows), "Projeção");
+
+  XLSX.writeFile(wb, `Relatorio_${clientName.replace(/\s+/g, "_")}_${period.replace("/", "-")}.xlsx`);
 }
 
 function RelatoriosPage() {
   const [clients, setClients] = useState<ClientRow[]>([]);
+  const [availablePeriods, setAvailablePeriods] = useState<Record<string, string[]>>({});
+  const [selectedPeriod, setSelectedPeriod] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const mesLabel = currentMonthLabel();
+  const [exporting, setExporting] = useState<Record<string, "pdf" | "excel" | null>>({});
 
   useEffect(() => {
-    supabase
-      .from("clients")
-      .select("id, name, last_upload_at, status")
-      .order("name")
-      .then(({ data }) => {
-        setClients((data ?? []) as ClientRow[]);
+    async function load() {
+      setLoading(true);
+
+      const { data: clientsData } = await supabase()
+        .from("clients")
+        .select("id, name, last_upload_at")
+        .order("name");
+
+      const cls = (clientsData ?? []) as ClientRow[];
+      setClients(cls);
+
+      if (cls.length === 0) {
         setLoading(false);
-      });
+        return;
+      }
+
+      const { data: txDates } = await supabase()
+        .from("transactions")
+        .select("client_id, date")
+        .in("client_id", cls.map((c) => c.id))
+        .eq("status", "approved")
+        .order("date", { ascending: false });
+
+      const periodsMap: Record<string, string[]> = {};
+      const seen: Record<string, Set<string>> = {};
+      for (const row of txDates ?? []) {
+        const [yyyy, mm] = (row.date as string).split("-");
+        const p = `${mm}/${yyyy}`;
+        if (!seen[row.client_id]) seen[row.client_id] = new Set();
+        if (!seen[row.client_id].has(p)) {
+          seen[row.client_id].add(p);
+          if (!periodsMap[row.client_id]) periodsMap[row.client_id] = [];
+          periodsMap[row.client_id].push(p);
+        }
+      }
+      setAvailablePeriods(periodsMap);
+
+      const defaults: Record<string, string> = {};
+      for (const [cid, periods] of Object.entries(periodsMap)) {
+        if (periods.length > 0) defaults[cid] = periods[0];
+      }
+      setSelectedPeriod(defaults);
+      setLoading(false);
+    }
+    load();
   }, []);
+
+  async function fetchTxs(clientId: string, period: string): Promise<Tx[]> {
+    const { start, end } = monthRangeDates(period);
+    const { data } = await supabase()
+      .from("transactions")
+      .select(
+        "date, description, amount, category, is_recurring, installment_number, installment_total, installment_group_id"
+      )
+      .eq("client_id", clientId)
+      .eq("status", "approved")
+      .gte("date", start)
+      .lte("date", end)
+      .order("date");
+    return (data ?? []) as Tx[];
+  }
+
+  async function handlePDF(clientId: string) {
+    const period = selectedPeriod[clientId];
+    if (!period) return;
+    setExporting((e) => ({ ...e, [clientId]: "pdf" }));
+    const txs = await fetchTxs(clientId, period);
+    const client = clients.find((c) => c.id === clientId)!;
+    setExporting((e) => ({ ...e, [clientId]: null }));
+    openPrintReport(client.name, period, txs);
+  }
+
+  async function handleExcel(clientId: string) {
+    const period = selectedPeriod[clientId];
+    if (!period) return;
+    setExporting((e) => ({ ...e, [clientId]: "excel" }));
+    const txs = await fetchTxs(clientId, period);
+    const client = clients.find((c) => c.id === clientId)!;
+    exportExcel(client.name, period, txs);
+    setExporting((e) => ({ ...e, [clientId]: null }));
+  }
 
   return (
     <AdminLayout>
@@ -46,41 +369,135 @@ function RelatoriosPage() {
             <thead>
               <tr style={{ background: "var(--linen)" }}>
                 {["Cliente", "Período", "Último extrato", "Tipo", "Ações"].map((h) => (
-                  <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
+                  <th
+                    key={h}
+                    className="text-left px-6 py-3 aurora-cap"
+                    style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-10 text-center text-[12px]"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
                     Carregando clientes...
                   </td>
                 </tr>
               )}
               {!loading && clients.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-10 text-center text-[12px]"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
                     Nenhum cliente cadastrado.
                   </td>
                 </tr>
               )}
-              {!loading && clients.map((c, i) => (
-                <tr key={c.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
-                  <td className="px-6 py-4 text-[13px]" style={{ fontWeight: 500 }}>{c.name}</td>
-                  <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{mesLabel}</td>
-                  <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                    {formatDatePtBR(c.last_upload_at)}
-                  </td>
-                  <td className="px-6 py-4 text-[11px]">
-                    <span className="aurora-badge aurora-badge--ok">DFC + DRE</span>
-                  </td>
-                  <td className="px-6 py-4 text-[11px]">
-                    <span className="aurora-link mr-3">PDF ↓</span>
-                    <span className="aurora-link">Excel ↓</span>
-                  </td>
-                </tr>
-              ))}
+              {!loading &&
+                clients.map((c, i) => {
+                  const periods = availablePeriods[c.id] ?? [];
+                  const period = selectedPeriod[c.id];
+                  const hasData = periods.length > 0;
+                  const isExp = exporting[c.id];
+
+                  return (
+                    <tr
+                      key={c.id}
+                      style={{
+                        background: i % 2 === 0 ? "#fff" : "#FAFAF8",
+                        borderTop: "1px solid var(--line)",
+                      }}
+                    >
+                      <td className="px-6 py-4 text-[13px]" style={{ fontWeight: 500 }}>
+                        {c.name}
+                      </td>
+                      <td className="px-6 py-4">
+                        {hasData ? (
+                          <select
+                            value={period ?? ""}
+                            onChange={(e) =>
+                              setSelectedPeriod((sp) => ({ ...sp, [c.id]: e.target.value }))
+                            }
+                            className="text-[12px] px-2 py-1"
+                            style={{ border: "1px solid var(--line)", background: "#fff" }}
+                          >
+                            {periods.map((p) => (
+                              <option key={p} value={p}>
+                                {p}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            className="text-[12px]"
+                            style={{ color: "var(--muted-foreground)" }}
+                          >
+                            —
+                          </span>
+                        )}
+                      </td>
+                      <td
+                        className="px-6 py-4 text-[12px]"
+                        style={{ color: "var(--muted-foreground)" }}
+                      >
+                        {c.last_upload_at
+                          ? `Importado em ${formatDatePtBR(c.last_upload_at)}`
+                          : "—"}
+                      </td>
+                      <td className="px-6 py-4">
+                        {hasData ? (
+                          <span className="aurora-badge aurora-badge--ok text-[11px]">
+                            DFC + DRE
+                          </span>
+                        ) : (
+                          <span
+                            className="text-[11px]"
+                            style={{ color: "var(--muted-foreground)" }}
+                          >
+                            Sem dados
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handlePDF(c.id)}
+                            disabled={!hasData || !!isExp}
+                            className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40 transition-opacity"
+                            style={{
+                              border: "1px solid var(--navy)",
+                              color: "var(--navy)",
+                              letterSpacing: "1.5px",
+                            }}
+                          >
+                            {isExp === "pdf" ? "..." : "PDF ↓"}
+                          </button>
+                          <button
+                            onClick={() => handleExcel(c.id)}
+                            disabled={!hasData || !!isExp}
+                            className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40 transition-opacity"
+                            style={{
+                              border: "1px solid var(--green)",
+                              color: "var(--green)",
+                              letterSpacing: "1.5px",
+                            }}
+                          >
+                            {isExp === "excel" ? "..." : "Excel ↓"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
