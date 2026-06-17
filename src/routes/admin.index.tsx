@@ -38,18 +38,28 @@ function AdminDashboard() {
     const [
       { data: clientsData },
       { data: txData },
+      { data: pendingData },
       { data: banksData },
     ] = await Promise.all([
       supabase().from("clients").select("id, name, status, last_upload_at").order("name"),
+      // Somente o mês atual — evita carregar todo o histórico
       supabase()
         .from("transactions")
-        .select("client_id, amount, status, date")
-        .in("status", ["approved", "pending"]),
+        .select("client_id, amount, status")
+        .eq("status", "approved")
+        .gte("date", start)
+        .lte("date", end),
+      // Pendentes de todos os meses — Claudia precisa ver tudo que falta classificar
+      supabase()
+        .from("transactions")
+        .select("client_id")
+        .eq("status", "pending"),
       supabase().from("client_banks").select("client_id, bank_name"),
     ]);
 
     const clients = (clientsData ?? []) as ClientRow[];
     const txList = txData ?? [];
+    const pendingList = pendingData ?? [];
     const banksList = banksData ?? [];
 
     // Agrupa bancos por cliente
@@ -58,22 +68,26 @@ function AdminDashboard() {
       (banksMap[b.client_id] ||= []).push(b.bank_name);
     }
 
-    // Indexa transações por cliente (O(n) em vez de O(n*m))
+    // Indexa transações aprovadas do mês por cliente
     const txByClient: Record<string, typeof txList> = {};
     for (const t of txList) {
       (txByClient[t.client_id] ||= []).push(t);
+    }
+
+    // Indexa contagem de pendentes por cliente
+    const pendingByClient: Record<string, number> = {};
+    for (const t of pendingList) {
+      pendingByClient[t.client_id] = (pendingByClient[t.client_id] ?? 0) + 1;
     }
 
     let totalPend = 0;
     const summaries: ClientSummary[] = clients.map((c) => {
       const clientTx = txByClient[c.id] ?? [];
       const receita = clientTx
-        .filter((t) => t.status === "approved" && t.amount > 0 && t.date >= start && t.date <= end)
+        .filter((t) => t.amount > 0)
         .reduce((s, t) => s + t.amount, 0);
-      const saldo = clientTx
-        .filter((t) => t.status === "approved")
-        .reduce((s, t) => s + t.amount, 0);
-      const pendentes = clientTx.filter((t) => t.status === "pending").length;
+      const saldo = clientTx.reduce((s, t) => s + t.amount, 0);
+      const pendentes = pendingByClient[c.id] ?? 0;
       totalPend += pendentes;
       return { ...c, receita, saldo, pendentes, banks: banksMap[c.id] ?? [] };
     });
@@ -117,7 +131,7 @@ function AdminDashboard() {
             value={loading ? "—" : String(ativos)}
             sub="empresas sob gestão na carteira"
             tone="sage"
-            footer={loading ? "" : `${brl(totalSaldo).replace(",00", "")} em saldo consolidado`}
+            footer={loading ? "" : `${brl(totalSaldo).replace(",00", "")} resultado consolidado do mês`}
           />
           <KpiCard
             icon="⊙"
