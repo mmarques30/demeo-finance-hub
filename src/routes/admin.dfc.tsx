@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { brl, exportToCSV, monthOptions, monthRangeDates } from "@/lib/utils";
+import { brl, monthOptions, monthRangeDates } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useDFCForecast } from "@/hooks/useDFCForecast";
 
@@ -148,31 +148,6 @@ function DFCPage() {
             >
               {PERIODS.map((p) => <option key={p}>{p}</option>)}
             </select>
-            <button
-              onClick={() =>
-                exportToCSV(
-                  tx.map((t) => ({
-                    Data: t.date,
-                    Descrição: t.description,
-                    Valor: t.amount,
-                    Categoria: t.category ?? "",
-                    Recorrente: t.is_recurring ? "Sim" : "Não",
-                  })),
-                  `DFC_${clienteName.replace(/\s/g, "_")}_${period.replace("/", "-")}.csv`
-                )
-              }
-              className="text-[10px] uppercase px-3 py-2.5"
-              style={{ border: "1px solid var(--line)", letterSpacing: "1.5px", color: "var(--foreground)" }}
-            >
-              ↓ CSV
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="text-[10px] uppercase px-3 py-2.5"
-              style={{ border: "1px solid var(--line)", letterSpacing: "1.5px", color: "var(--foreground)" }}
-            >
-              ⎙ PDF
-            </button>
           </div>
         }
       />
