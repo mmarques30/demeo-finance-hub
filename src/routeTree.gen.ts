@@ -15,8 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminServicosRouteImport } from './routes/admin.servicos'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
-import { Route as AdminRecorrenciasRouteImport } from './routes/admin.recorrencias'
 import { Route as AdminRegrasRouteImport } from './routes/admin.regras'
+import { Route as AdminRecorrenciasRouteImport } from './routes/admin.recorrencias'
 import { Route as AdminPropostasRouteImport } from './routes/admin.propostas'
 import { Route as AdminPipelineRouteImport } from './routes/admin.pipeline'
 import { Route as AdminPendentesRouteImport } from './routes/admin.pendentes'
@@ -61,14 +61,14 @@ const AdminRelatoriosRoute = AdminRelatoriosRouteImport.update({
   path: '/admin/relatorios',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRecorrenciasRoute = AdminRecorrenciasRouteImport.update({
-  id: '/admin/recorrencias',
-  path: '/admin/recorrencias',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRegrasRoute = AdminRegrasRouteImport.update({
   id: '/admin/regras',
   path: '/admin/regras',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRecorrenciasRoute = AdminRecorrenciasRouteImport.update({
+  id: '/admin/recorrencias',
+  path: '/admin/recorrencias',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPropostasRoute = AdminPropostasRouteImport.update({
@@ -352,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRegrasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/recorrencias': {
+      id: '/admin/recorrencias'
+      path: '/admin/recorrencias'
+      fullPath: '/admin/recorrencias'
+      preLoaderRoute: typeof AdminRecorrenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/propostas': {
       id: '/admin/propostas'
       path: '/admin/propostas'
@@ -427,13 +434,6 @@ declare module '@tanstack/react-router' {
       path: '/admin/insights/precificacao'
       fullPath: '/admin/insights/precificacao'
       preLoaderRoute: typeof AdminInsightsPrecificacaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/recorrencias': {
-      id: '/admin/recorrencias'
-      path: '/admin/recorrencias'
-      fullPath: '/admin/recorrencias'
-      preLoaderRoute: typeof AdminRecorrenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/contratos/novo': {
@@ -512,3 +512,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
