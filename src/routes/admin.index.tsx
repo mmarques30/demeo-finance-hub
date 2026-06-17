@@ -225,7 +225,7 @@ function AdminDashboard() {
             value={loading ? "—" : String(ativos)}
             sub="empresas sob gestão na carteira"
             tone="sage"
-            footer={loading ? "" : `${brl(totalSaldo).replace(",00", "")} resultado consolidado do período`}
+            footer={loading ? "" : `${brl(totalSaldo).replace(",00", "")} saldo de caixa do período`}
           />
           <KpiCard
             icon="⊙"
@@ -318,7 +318,7 @@ function AdminDashboard() {
           <table className="w-full">
             <thead>
               <tr style={{ background: "#FAFAF8" }}>
-                {["Cliente", "Bancos", "Resultado do mês", "Pendentes", "Status"].map((h) => (
+                {["Cliente", "Bancos", "Saldo de Caixa", "Pendentes", "Status"].map((h) => (
                   <th key={h} className="text-left px-7 lg:px-9 py-4 text-[11px] uppercase" style={{ fontWeight: 600, letterSpacing: "2px", color: "var(--muted-foreground)" }}>
                     {h}
                   </th>
