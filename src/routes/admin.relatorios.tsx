@@ -341,7 +341,6 @@ function RelatoriosPage() {
       .then(({ data }) => {
         const cls = (data ?? []) as ClientRow[];
         setClients(cls);
-        // Padrão: mês anterior completo para cada cliente
         const defaults: Record<string, ClientPeriod> = {};
         for (const c of cls) defaults[c.id] = { start: firstOfMonthISO(-1), end: lastOfMonthISO(-1) };
         setPeriods(defaults);
@@ -433,7 +432,9 @@ function RelatoriosPage() {
         emphasis="financeiros"
         description="Defina o período por cliente e exporte DFC + DFC Gerencial."
       />
-      <div className="px-8 lg:px-12 pb-12">
+      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-6">
+
+        {/* Tabela de clientes */}
         <div className="aurora-card p-0 overflow-hidden">
           <table className="w-full">
             <thead>
