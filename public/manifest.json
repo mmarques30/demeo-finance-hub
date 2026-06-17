@@ -1,0 +1,20 @@
+{
+  "name": "Aurora · Gestão Financeira",
+  "short_name": "Aurora",
+  "description": "Plataforma de análise financeira inteligente",
+  "start_url": "/admin/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#1B3950",
+  "background_color": "#FAFAF8",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/brand/aurora-favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}
