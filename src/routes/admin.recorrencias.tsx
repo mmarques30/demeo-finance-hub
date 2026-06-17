@@ -92,7 +92,7 @@ function RecorrenciasPage() {
         {
           client_id: clientId,
           pattern,
-          category: "",
+          category: null,
           is_recurring: false,
           hits: 0,
           source: "rejected",
