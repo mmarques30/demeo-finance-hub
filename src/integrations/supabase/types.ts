@@ -572,6 +572,53 @@ export type Database = {
           },
         ]
       }
+      payables: {
+        Row: {
+          amount: number
+          category: string | null
+          client_id: string
+          created_at: string | null
+          description: string
+          due_date: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          client_id: string
+          created_at?: string | null
+          description: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          client_id?: string
+          created_at?: string | null
+          description?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payables_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
