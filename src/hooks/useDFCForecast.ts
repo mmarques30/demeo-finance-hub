@@ -4,12 +4,30 @@ import { supabase } from "@/lib/supabase";
 
 export interface ForecastMonth {
   mes: string;
+  /** Receitas totais projetadas: tendência histórica + contas a receber confirmadas */
   rec: number;
+  /** Despesas totais projetadas: tendência histórica + parcelas + contas a pagar confirmadas */
   des: number;
+  /** Parcela proveniente de payables type='receber' com due_date neste mês */
+  confirmedRec: number;
+  /** Parcela proveniente de payables type='pagar' com due_date neste mês */
+  confirmedDes: number;
+}
+
+/** Lançamento de conta a pagar/receber usado na projeção. */
+export interface PayableProjection {
+  type: "pagar" | "receber";
+  amount: number;
+  due_date: string; // YYYY-MM-DD
 }
 
 function clampGrowth(rate: number) {
   return Math.max(-0.15, Math.min(0.20, rate));
+}
+
+/** Converte uma data JS para chave YYYY-MM sem dependência de timezone. */
+function toMonthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 interface HistTx {
@@ -26,12 +44,19 @@ interface InstallmentRow {
   installment_group_id: string;
 }
 
-// Função pura exportada para que admin.relatorios.tsx use a mesma lógica sem duplicação.
+/**
+ * Função pura exportada para que admin.relatorios.tsx reutilize sem duplicação.
+ *
+ * O parâmetro `payables` é opcional (default []): lançamentos confirmados de contas
+ * a pagar/receber que injetam valores determinísticos sobre a tendência histórica
+ * para os meses projetados.
+ */
 export function computeForecastMonths(
   txs: HistTx[],
   installments: Omit<InstallmentRow, "installment_group_id">[],
   mm: number,
-  yyyy: number
+  yyyy: number,
+  payables: PayableProjection[] = []
 ): ForecastMonth[] {
   // 1. Tendência histórica por mês
   const monthMap = new Map<string, { rec: number; des: number }>();
@@ -56,7 +81,6 @@ export function computeForecastMonths(
   }
 
   // 2. Âncora de custo fixo: média mensal real das despesas recorrentes no histórico.
-  //    Substitui o proxy "count * R$50" pelo valor efetivo das transações is_recurring.
   const monthlyFixedMap = new Map<string, number>();
   for (const tx of txs) {
     if (tx.is_recurring && tx.amount < 0) {
@@ -82,18 +106,36 @@ export function computeForecastMonths(
     }
   }
 
+  // 4. Payables: agrupa por mês de vencimento para lookup O(1) por offset.
+  //    Apenas lançamentos pendentes são relevantes; paid_at já foi filtrado na query.
+  const payByMonth = new Map<string, { rec: number; des: number }>();
+  for (const p of payables) {
+    const key = p.due_date.slice(0, 7);
+    if (!payByMonth.has(key)) payByMonth.set(key, { rec: 0, des: 0 });
+    const m = payByMonth.get(key)!;
+    if (p.type === "receber") m.rec += p.amount;
+    else m.des += p.amount;
+  }
+
   return [1, 2, 3].map((offset) => {
     const d = new Date(yyyy, mm - 1 + offset, 1);
+    const monthKey = toMonthKey(d);
     const mes = d.toLocaleDateString("pt-BR", { month: "long" });
+
     const baseRec = last.rec * (1 + growthRec * offset);
     const baseDes = Math.max(
       last.des * (1 + growthDes * offset),
       last.des * 0.85 + recurrenceAnchor
     );
+
+    const pay = payByMonth.get(monthKey) ?? { rec: 0, des: 0 };
+
     return {
       mes,
-      rec: baseRec,
-      des: baseDes + (installmentsByOffset[offset] ?? 0),
+      rec: baseRec + pay.rec,
+      des: baseDes + (installmentsByOffset[offset] ?? 0) + pay.des,
+      confirmedRec: pay.rec,
+      confirmedDes: pay.des,
     };
   });
 }
@@ -122,7 +164,6 @@ export function useDFCForecast(clientId: string, currentPeriod: string): Forecas
   });
 
   // Deduplica por installment_group_id mantendo apenas a parcela mais recente de cada grupo.
-  // Isso evita contagem múltipla quando várias parcelas do mesmo grupo estão no banco.
   const { data: installments = [] } = useQuery<Omit<InstallmentRow, "installment_group_id">[]>({
     queryKey: ["dfc-installments", clientId],
     enabled: !!clientId,
@@ -147,8 +188,25 @@ export function useDFCForecast(clientId: string, currentPeriod: string): Forecas
     },
   });
 
+  // Contas a pagar/receber pendentes: apenas paid_at IS NULL.
+  // Filtro de data não é necessário no banco — computeForecastMonths seleciona
+  // apenas os meses projetados via lookup por chave YYYY-MM.
+  const { data: payables = [] } = useQuery<PayableProjection[]>({
+    queryKey: ["dfc-payables", clientId],
+    enabled: !!clientId,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data } = await supabase()
+        .from("payables")
+        .select("type, amount, due_date")
+        .eq("client_id", clientId)
+        .is("paid_at", null);
+      return (data ?? []) as PayableProjection[];
+    },
+  });
+
   return useMemo(
-    () => computeForecastMonths(txs, installments, mm, yyyy),
-    [txs, installments, mm, yyyy]
+    () => computeForecastMonths(txs, installments, mm, yyyy, payables),
+    [txs, installments, mm, yyyy, payables]
   );
 }
