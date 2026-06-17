@@ -11,11 +11,7 @@ export const Route = createFileRoute("/admin/relatorios")({
   head: () => ({ meta: [{ title: "Relatórios · Aurora" }] }),
 });
 
-// ─── helpers de data (mesmos do dashboard) ───────────────────────────────────
-function todayISO() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
+// ─── helpers de data ──────────────────────────────────────────────────────────
 function firstOfMonthISO(offsetMonths = 0) {
   const d = new Date(new Date().getFullYear(), new Date().getMonth() + offsetMonths, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
@@ -24,17 +20,13 @@ function lastOfMonthISO(offsetMonths = 0) {
   const d = new Date(new Date().getFullYear(), new Date().getMonth() + offsetMonths + 1, 0);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-function firstOfYearISO() {
-  return `${new Date().getFullYear()}-01-01`;
+function todayISO() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
 }
-
-const PRESETS = [
-  { label: "Este mês",     start: () => firstOfMonthISO(0),  end: () => lastOfMonthISO(0) },
-  { label: "Mês anterior", start: () => firstOfMonthISO(-1), end: () => lastOfMonthISO(-1) },
-  { label: "Últ. 3 meses", start: () => firstOfMonthISO(-2), end: () => lastOfMonthISO(0) },
-  { label: "Últ. 6 meses", start: () => firstOfMonthISO(-5), end: () => lastOfMonthISO(0) },
-  { label: "Este ano",     start: () => firstOfYearISO(),    end: () => lastOfMonthISO(0) },
-] as const;
+function fmtLabel(iso: string) {
+  return new Date(iso + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+}
 
 // ─── tipos ────────────────────────────────────────────────────────────────────
 interface ClientRow {
@@ -42,6 +34,8 @@ interface ClientRow {
   name: string;
   last_upload_at: string | null;
 }
+
+interface ClientPeriod { start: string; end: string }
 
 interface Tx {
   date: string;
@@ -79,7 +73,6 @@ function computeReport(txs: Tx[]): ReportData {
   const variaveis = txs
     .filter((t) => t.amount < 0 && !t.is_recurring)
     .reduce((s, t) => s + Math.abs(t.amount), 0);
-
   const catMap = new Map<string, { total: number; isReceita: boolean }>();
   for (const tx of txs) {
     const cat = tx.category || "Sem categoria";
@@ -89,7 +82,6 @@ function computeReport(txs: Tx[]): ReportData {
   const byCategory = Array.from(catMap.entries())
     .map(([cat, v]) => ({ cat, total: v.total, isReceita: v.isReceita }))
     .sort((a, b) => b.total - a.total);
-
   return { receitas, despesas, resultado: receitas - despesas, fixos, variaveis, byCategory };
 }
 
@@ -258,10 +250,7 @@ function openPrintReport(
 </html>`;
 
   const win = window.open("", "_blank", "width=900,height=1100");
-  if (!win) {
-    alert("Habilite popups para gerar o PDF.");
-    return;
-  }
+  if (!win) { alert("Habilite popups para gerar o PDF."); return; }
   win.document.write(html);
   win.document.close();
   win.onload = () => win.print();
@@ -280,7 +269,6 @@ function exportExcel(
   const dre = computeDRE(txs, catMap);
   const wb = XLSX.utils.book_new();
 
-  // Aba 1: Lançamentos
   const lancamentos = txs.map((t) => ({
     Data: t.date,
     Descrição: t.description,
@@ -293,7 +281,6 @@ function exportExcel(
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lancamentos), "Lançamentos");
 
-  // Aba 2: DFC Resumo
   const dfcRows = [
     { Indicador: "Período", Valor: periodoLabel },
     { Indicador: "Receitas", Valor: d.receitas },
@@ -305,35 +292,29 @@ function exportExcel(
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dfcRows), "DFC");
 
-  // Aba 3: DFC Gerencial por grupo
   const dreXlsx: { Grupo: string; Categoria: string; Valor: number }[] = [];
   for (const g of dre.groups) {
-    for (const l of g.lines) {
-      dreXlsx.push({ Grupo: g.name, Categoria: l.cat, Valor: l.total });
-    }
+    for (const l of g.lines) dreXlsx.push({ Grupo: g.name, Categoria: l.cat, Valor: l.total });
     dreXlsx.push({ Grupo: `Total ${g.name}`, Categoria: "", Valor: g.subtotal });
     dreXlsx.push({ Grupo: "", Categoria: "", Valor: 0 });
   }
   dreXlsx.push({ Grupo: "SALDO DO PERÍODO", Categoria: "", Valor: dre.resultado });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dreXlsx), "DFC Gerencial");
 
-  // Aba 4: Parcelamentos
   const instTxs = txs.filter((t) => t.installment_group_id);
-  const instRows =
-    instTxs.length > 0
-      ? instTxs.map((t) => ({
-          Data: t.date,
-          Descrição: t.description,
-          "Valor Parcela": Math.abs(t.amount),
-          "Parcela Nº": t.installment_number ?? "",
-          "Total Parcelas": t.installment_total ?? "",
-          "Parcelas Restantes": (t.installment_total ?? 0) - (t.installment_number ?? 0),
-          Grupo: t.installment_group_id ?? "",
-        }))
-      : [{ Data: "", Descrição: "Nenhum parcelamento neste período", "Valor Parcela": "", "Parcela Nº": "", "Total Parcelas": "", "Parcelas Restantes": "", Grupo: "" }];
+  const instRows = instTxs.length > 0
+    ? instTxs.map((t) => ({
+        Data: t.date,
+        Descrição: t.description,
+        "Valor Parcela": Math.abs(t.amount),
+        "Parcela Nº": t.installment_number ?? "",
+        "Total Parcelas": t.installment_total ?? "",
+        "Parcelas Restantes": (t.installment_total ?? 0) - (t.installment_number ?? 0),
+        Grupo: t.installment_group_id ?? "",
+      }))
+    : [{ Data: "", Descrição: "Nenhum parcelamento neste período", "Valor Parcela": "", "Parcela Nº": "", "Total Parcelas": "", "Parcelas Restantes": "", Grupo: "" }];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(instRows), "Parcelamentos");
 
-  // Aba 5: Projeção
   const projRows = forecast.map((p) => ({
     Mês: p.mes,
     "Receitas Previstas": Math.round(p.rec * 100) / 100,
@@ -342,19 +323,15 @@ function exportExcel(
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projRows), "Projeção");
 
-  const slug = `${startDate}_${endDate}`;
-  XLSX.writeFile(wb, `Relatorio_${clientName.replace(/\s+/g, "_")}_${slug}.xlsx`);
+  XLSX.writeFile(wb, `Relatorio_${clientName.replace(/\s+/g, "_")}_${startDate}_${endDate}.xlsx`);
 }
 
 // ─── componente principal ─────────────────────────────────────────────────────
 function RelatoriosPage() {
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [periods, setPeriods] = useState<Record<string, ClientPeriod>>({});
   const [exporting, setExporting] = useState<Record<string, "pdf" | "excel" | null>>({});
-
-  const [startDate, setStartDate] = useState(firstOfMonthISO(-1));
-  const [endDate, setEndDate] = useState(lastOfMonthISO(-1));
-  const [activePreset, setActivePreset] = useState("Mês anterior");
 
   useEffect(() => {
     supabase()
@@ -362,42 +339,35 @@ function RelatoriosPage() {
       .select("id, name, last_upload_at")
       .order("name")
       .then(({ data }) => {
-        setClients((data ?? []) as ClientRow[]);
+        const cls = (data ?? []) as ClientRow[];
+        setClients(cls);
+        const defaults: Record<string, ClientPeriod> = {};
+        for (const c of cls) defaults[c.id] = { start: firstOfMonthISO(-1), end: lastOfMonthISO(-1) };
+        setPeriods(defaults);
         setLoading(false);
       });
   }, []);
 
-  function applyPreset(preset: typeof PRESETS[number]) {
-    setActivePreset(preset.label);
-    setStartDate(preset.start());
-    setEndDate(preset.end());
+  function setPeriod(clientId: string, field: "start" | "end", value: string) {
+    setPeriods((prev) => ({ ...prev, [clientId]: { ...prev[clientId], [field]: value } }));
   }
 
-  const periodoLabel =
-    startDate === endDate
-      ? new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR")
-      : `${new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} – ${new Date(endDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}`;
-
-  async function fetchTxs(clientId: string): Promise<Tx[]> {
+  async function fetchTxs(clientId: string, p: ClientPeriod): Promise<Tx[]> {
     const { data } = await supabase()
       .from("transactions")
-      .select(
-        "date, description, amount, category, is_recurring, installment_number, installment_total, installment_group_id"
-      )
+      .select("date, description, amount, category, is_recurring, installment_number, installment_total, installment_group_id")
       .eq("client_id", clientId)
       .eq("status", "approved")
-      .gte("date", startDate)
-      .lte("date", endDate)
+      .gte("date", p.start)
+      .lte("date", p.end)
       .order("date");
     return (data ?? []) as Tx[];
   }
 
-  // Projeta a partir do último mês do intervalo selecionado.
-  async function fetchForecast(clientId: string): Promise<ForecastMonth[]> {
-    const endDt = new Date(endDate + "T12:00:00");
+  async function fetchForecast(clientId: string, p: ClientPeriod): Promise<ForecastMonth[]> {
+    const endDt = new Date(p.end + "T12:00:00");
     const mm = endDt.getMonth() + 1;
     const yyyy = endDt.getFullYear();
-    // Janela histórica: 6 meses antes do fim do intervalo
     const histStart = new Date(yyyy, mm - 1 - 5, 1);
     const histStartStr = `${histStart.getFullYear()}-${String(histStart.getMonth() + 1).padStart(2, "0")}-01`;
 
@@ -408,7 +378,7 @@ function RelatoriosPage() {
         .eq("client_id", clientId)
         .eq("status", "approved")
         .gte("date", histStartStr)
-        .lte("date", endDate),
+        .lte("date", p.end),
       supabase()
         .from("transactions")
         .select("amount, installment_number, installment_total, date, installment_group_id")
@@ -435,26 +405,22 @@ function RelatoriosPage() {
   }
 
   async function handlePDF(clientId: string) {
+    const p = periods[clientId];
+    if (!p) return;
     setExporting((e) => ({ ...e, [clientId]: "pdf" }));
-    const [txs, forecast, catMap] = await Promise.all([
-      fetchTxs(clientId),
-      fetchForecast(clientId),
-      fetchCategories(clientId),
-    ]);
+    const [txs, forecast, catMap] = await Promise.all([fetchTxs(clientId, p), fetchForecast(clientId, p), fetchCategories(clientId)]);
     const client = clients.find((c) => c.id === clientId)!;
     setExporting((e) => ({ ...e, [clientId]: null }));
-    openPrintReport(client.name, periodoLabel, txs, forecast, catMap);
+    openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, catMap);
   }
 
   async function handleExcel(clientId: string) {
+    const p = periods[clientId];
+    if (!p) return;
     setExporting((e) => ({ ...e, [clientId]: "excel" }));
-    const [txs, forecast, catMap] = await Promise.all([
-      fetchTxs(clientId),
-      fetchForecast(clientId),
-      fetchCategories(clientId),
-    ]);
+    const [txs, forecast, catMap] = await Promise.all([fetchTxs(clientId, p), fetchForecast(clientId, p), fetchCategories(clientId)]);
     const client = clients.find((c) => c.id === clientId)!;
-    exportExcel(client.name, periodoLabel, startDate, endDate, txs, forecast, catMap);
+    exportExcel(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, p.start, p.end, txs, forecast, catMap);
     setExporting((e) => ({ ...e, [clientId]: null }));
   }
 
@@ -464,70 +430,17 @@ function RelatoriosPage() {
         cap="Entregas aos clientes"
         title="Relatórios"
         emphasis="financeiros"
-        description="Selecione o período e exporte DFC + DFC Gerencial para cada cliente."
+        description="Defina o período por cliente e exporte DFC + DFC Gerencial."
       />
       <div className="px-8 lg:px-12 pb-12 flex flex-col gap-6">
-
-        {/* Filtro de período */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap gap-2">
-            {PRESETS.map((p) => (
-              <button
-                key={p.label}
-                onClick={() => applyPreset(p)}
-                className="text-[10px] uppercase px-3 py-2 transition-colors"
-                style={{
-                  letterSpacing: "1.5px",
-                  fontWeight: 600,
-                  background: activePreset === p.label ? "var(--green)" : "transparent",
-                  color: activePreset === p.label ? "#fff" : "var(--muted-foreground)",
-                  border: "1px solid",
-                  borderColor: activePreset === p.label ? "var(--green)" : "var(--line)",
-                }}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>De</span>
-            <input
-              type="date"
-              value={startDate}
-              max={endDate}
-              onChange={(e) => { setActivePreset(""); setStartDate(e.target.value); }}
-              className="text-[12px] px-3 py-2 outline-none"
-              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff" }}
-            />
-            <span className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>Até</span>
-            <input
-              type="date"
-              value={endDate}
-              min={startDate}
-              max={todayISO()}
-              onChange={(e) => { setActivePreset(""); setEndDate(e.target.value); }}
-              className="text-[12px] px-3 py-2 outline-none"
-              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff" }}
-            />
-          </div>
-        </div>
-
-        {/* Período ativo */}
-        <div className="text-[11px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)", fontWeight: 500 }}>
-          Período selecionado: <span style={{ color: "var(--green)" }}>{periodoLabel}</span>
-        </div>
 
         {/* Tabela de clientes */}
         <div className="aurora-card p-0 overflow-hidden">
           <table className="w-full">
             <thead>
               <tr style={{ background: "var(--linen)" }}>
-                {["Cliente", "Último extrato", "Formato", "Exportar"].map((h) => (
-                  <th
-                    key={h}
-                    className="text-left px-6 py-3 aurora-cap"
-                    style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}
-                  >
+                {["Cliente", "Período", "Último extrato", "Formato", "Exportar"].map((h) => (
+                  <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
                     {h}
                   </th>
                 ))}
@@ -536,68 +449,85 @@ function RelatoriosPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                  <td colSpan={5} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     Carregando clientes...
                   </td>
                 </tr>
               )}
               {!loading && clients.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                  <td colSpan={5} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     Nenhum cliente cadastrado.
                   </td>
                 </tr>
               )}
-              {!loading &&
-                clients.map((c, i) => {
-                  const hasData = !!c.last_upload_at;
-                  const isExp = exporting[c.id];
+              {!loading && clients.map((c, i) => {
+                const p = periods[c.id] ?? { start: firstOfMonthISO(-1), end: lastOfMonthISO(-1) };
+                const hasData = !!c.last_upload_at;
+                const isExp = exporting[c.id];
 
-                  return (
-                    <tr
-                      key={c.id}
-                      style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}
-                    >
-                      <td className="px-6 py-4 text-[13px]" style={{ fontWeight: 500 }}>
-                        {c.name}
-                      </td>
-                      <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                        {c.last_upload_at ? `Importado em ${formatDatePtBR(c.last_upload_at)}` : "—"}
-                      </td>
-                      <td className="px-6 py-4">
-                        {hasData ? (
-                          <span className="aurora-badge aurora-badge--ok text-[11px]">
-                            DFC + Gerencial
-                          </span>
-                        ) : (
-                          <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-                            Sem dados
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handlePDF(c.id)}
-                            disabled={!hasData || !!isExp}
-                            className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40 transition-opacity"
-                            style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" }}
-                          >
-                            {isExp === "pdf" ? "..." : "PDF ↓"}
-                          </button>
-                          <button
-                            onClick={() => handleExcel(c.id)}
-                            disabled={!hasData || !!isExp}
-                            className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40 transition-opacity"
-                            style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "1.5px" }}
-                          >
-                            {isExp === "excel" ? "..." : "Excel ↓"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                return (
+                  <tr key={c.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                    <td className="px-6 py-4 text-[13px]" style={{ fontWeight: 500 }}>{c.name}</td>
+
+                    {/* Seletor de período: De / Até por cliente */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>De</span>
+                        <input
+                          type="date"
+                          value={p.start}
+                          max={p.end}
+                          onChange={(e) => setPeriod(c.id, "start", e.target.value)}
+                          className="text-[11px] px-2 py-1 outline-none"
+                          style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff", minWidth: 120 }}
+                        />
+                        <span className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>Até</span>
+                        <input
+                          type="date"
+                          value={p.end}
+                          min={p.start}
+                          max={todayISO()}
+                          onChange={(e) => setPeriod(c.id, "end", e.target.value)}
+                          className="text-[11px] px-2 py-1 outline-none"
+                          style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff", minWidth: 120 }}
+                        />
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                      {c.last_upload_at ? `Importado em ${formatDatePtBR(c.last_upload_at)}` : "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      {hasData ? (
+                        <span className="aurora-badge aurora-badge--ok text-[11px]">DFC + Gerencial</span>
+                      ) : (
+                        <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Sem dados</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handlePDF(c.id)}
+                          disabled={!hasData || !!isExp}
+                          className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40 transition-opacity"
+                          style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" }}
+                        >
+                          {isExp === "pdf" ? "..." : "PDF ↓"}
+                        </button>
+                        <button
+                          onClick={() => handleExcel(c.id)}
+                          disabled={!hasData || !!isExp}
+                          className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40 transition-opacity"
+                          style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "1.5px" }}
+                        >
+                          {isExp === "excel" ? "..." : "Excel ↓"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
