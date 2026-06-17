@@ -740,6 +740,33 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_email: string | null
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_email?: string | null
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_email?: string | null
+        }
+        Relationships: []
+      }
       rate_limit_hits: {
         Row: {
           bucket: string
@@ -853,6 +880,9 @@ export type Database = {
           date: string
           description: string
           id: string
+          installment_group_id: string | null
+          installment_number: number | null
+          installment_total: number | null
           is_recurring: boolean | null
           raw_description: string | null
           status: string
@@ -868,6 +898,9 @@ export type Database = {
           date: string
           description: string
           id?: string
+          installment_group_id?: string | null
+          installment_number?: number | null
+          installment_total?: number | null
           is_recurring?: boolean | null
           raw_description?: string | null
           status?: string
@@ -883,6 +916,9 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          installment_group_id?: string | null
+          installment_number?: number | null
+          installment_total?: number | null
           is_recurring?: boolean | null
           raw_description?: string | null
           status?: string
@@ -1049,6 +1085,16 @@ export type Database = {
       next_contract_number: { Args: never; Returns: string }
       next_proposal_number: { Args: never; Returns: string }
       normalize_description: { Args: { raw: string }; Returns: string }
+      pending_recurrences: {
+        Args: { p_client_id: string }
+        Returns: {
+          last_seen: string
+          modal_category: string
+          occurrences: number
+          pattern: string
+        }[]
+      }
+      pending_recurrences_total: { Args: never; Returns: number }
       update_client_with_banks: {
         Args: {
           p_banks: string[]
