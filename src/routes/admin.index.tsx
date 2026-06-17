@@ -188,6 +188,7 @@ function AdminDashboard() {
                   color: activePreset === p.label ? "#fff" : "var(--muted-foreground)",
                   border: "1px solid",
                   borderColor: activePreset === p.label ? "var(--green)" : "var(--line)",
+                  borderRadius: "999px",
                 }}
               >
                 {p.label}
@@ -202,7 +203,7 @@ function AdminDashboard() {
               max={endDate}
               onChange={(e) => { setActivePreset(""); setStartDate(e.target.value); }}
               className="text-[12px] px-3 py-2 outline-none"
-              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff" }}
+              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff", borderRadius: "var(--radius-sm)" }}
             />
             <span className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>Até</span>
             <input
@@ -212,7 +213,7 @@ function AdminDashboard() {
               max={todayISO()}
               onChange={(e) => { setActivePreset(""); setEndDate(e.target.value); }}
               className="text-[12px] px-3 py-2 outline-none"
-              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff" }}
+              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff", borderRadius: "var(--radius-sm)" }}
             />
           </div>
         </div>
@@ -246,7 +247,7 @@ function AdminDashboard() {
         </div>
 
         {/* Receita por cliente */}
-        <section style={{ background: "#FFFFFF", border: "1px solid var(--line)" }}>
+        <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
           <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)" }}>
             <div>
               <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "var(--green)", fontWeight: 600 }}>
@@ -296,7 +297,7 @@ function AdminDashboard() {
         </section>
 
         {/* Tabela de clientes */}
-        <section style={{ background: "#FFFFFF", border: "1px solid var(--line)" }}>
+        <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
           <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)" }}>
             <div>
               <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "var(--sage)", fontWeight: 600 }}>
@@ -334,8 +335,8 @@ function AdminDashboard() {
               {!loading && clientes.map((c, idx) => (
                 <tr
                   key={c.id}
-                  style={{ borderTop: "1px solid var(--line)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(74,103,65,0.03)")}
+                  style={{ borderTop: "1px solid var(--line)", transition: "background 0.15s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(74,103,65,0.05)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
                   <td className="px-7 lg:px-9 py-5">
@@ -375,10 +376,15 @@ function KpiCard({ icon, label, value, sub, tone, footer }: {
   const color = tone === "sage" ? "var(--green)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
   const bg = tone === "sage" ? "rgba(143,166,136,0.10)" : tone === "tan" ? "rgba(184,149,106,0.12)" : "rgba(27,57,77,0.10)";
   return (
-    <article className="p-7 flex flex-col gap-4" style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderTop: `3px solid ${color}` }}>
+    <article
+      className="p-7 flex flex-col gap-4"
+      style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderTop: `3px solid ${color}`, borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", transition: "transform 0.35s cubic-bezier(.22,.61,.36,1), box-shadow 0.35s" }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-card)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "var(--shadow-soft)"; }}
+    >
       <header className="flex items-start justify-between gap-4">
         <div className="text-[12px] uppercase" style={{ letterSpacing: "2.5px", color: "var(--foreground)", fontWeight: 600, lineHeight: 1.4 }}>{label}</div>
-        <div aria-hidden className="inline-flex items-center justify-center shrink-0" style={{ width: 40, height: 40, background: bg, color, fontSize: 18 }}>{icon}</div>
+        <div aria-hidden className="inline-flex items-center justify-center shrink-0" style={{ width: 40, height: 40, background: bg, color, fontSize: 18, borderRadius: "var(--radius-md)" }}>{icon}</div>
       </header>
       <div className="aurora-serif" style={{ fontSize: 64, fontWeight: 300, color, lineHeight: 1, letterSpacing: "-2px" }}>{value}</div>
       <div className="text-[13px]" style={{ color: "var(--foreground)", lineHeight: 1.5 }}>{sub}</div>
@@ -395,7 +401,7 @@ export function StatusBadge({ status }: { status: string }) {
     : status === "Pendente" ? { bg: "rgba(184,149,106,0.15)", color: "var(--tan)" }
     : { bg: "rgba(27,57,77,0.10)", color: "var(--navy)" };
   return (
-    <span className="inline-flex items-center gap-2 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: tone.bg, color: tone.color, padding: "5px 12px" }}>
+    <span className="inline-flex items-center gap-2 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: tone.bg, color: tone.color, padding: "5px 12px", borderRadius: "999px" }}>
       <span style={{ width: 6, height: 6, borderRadius: 999, background: tone.color }} />
       {status}
     </span>

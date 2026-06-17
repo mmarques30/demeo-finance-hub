@@ -647,6 +647,7 @@ export function PageHeader({
       className="px-6 lg:px-10 py-6 flex items-center justify-between gap-4 flex-wrap"
       style={{
         background: "#FFFFFF",
+        borderBottom: "1px solid var(--line)",
       }}
     >
       <h1

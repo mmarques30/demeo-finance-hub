@@ -104,6 +104,7 @@ function ClientesPage() {
                 background: filtro === f ? "var(--green)" : "transparent",
                 color: filtro === f ? "#fff" : "var(--muted-foreground)",
                 border: "1px solid " + (filtro === f ? "var(--green)" : "var(--line)"),
+                borderRadius: "999px",
               }}
             >
               {f}
@@ -189,7 +190,8 @@ function ClientesPage() {
                       <Link
                         to={"/admin/dfc" as never}
                         search={{ clientId: c.id } as never}
-                        className="aurora-link text-[11px]"
+                        className="inline-flex items-center text-[10px] uppercase transition-opacity hover:opacity-80"
+                        style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "1.5px", fontWeight: 500, padding: "4px 12px", borderRadius: "999px" }}
                       >
                         Ver Painel →
                       </Link>
