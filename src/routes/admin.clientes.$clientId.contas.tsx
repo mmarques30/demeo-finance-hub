@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
+import { ClientTabs } from "@/components/ClientTabs";
 import { brl, formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
-export const Route = createFileRoute("/admin/contas")({
-  component: ContasPage,
+export const Route = createFileRoute("/admin/clientes/$clientId/contas")({
+  component: ContasClientePage,
   head: () => ({ meta: [{ title: "Contas · Aurora" }] }),
 });
 
@@ -24,16 +24,10 @@ interface Payable {
   notes: string | null;
 }
 
-interface ClientOption {
-  id: string;
-  name: string;
-}
-
 type FilterView = "pendentes" | "pagos" | "todos";
 
 interface FormState {
   type: string;
-  client_id: string;
   description: string;
   amount: string;
   due_date: string;
@@ -77,7 +71,6 @@ function PayableSection({
   accentColor,
   marking,
   view,
-  clients,
   onMarkPaid,
   onUndoPaid,
   onDelete,
@@ -87,25 +80,20 @@ function PayableSection({
   accentColor: string;
   marking: string | null;
   view: FilterView;
-  clients: ClientOption[];
   onMarkPaid: (id: string) => void;
   onUndoPaid: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const clientMap = Object.fromEntries(clients.map((c) => [c.id, c.name]));
   const subtotal = items.reduce((s, p) => s + p.amount, 0);
 
   return (
     <div className="aurora-card p-0 overflow-hidden">
-      {/* Section header */}
       <div
         className="px-6 py-4 flex items-center justify-between"
         style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}
       >
         <div>
-          <div className="aurora-cap mb-1">
-            {title}
-          </div>
+          <div className="aurora-cap mb-1">{title}</div>
           <div className="aurora-serif text-[20px]" style={{ color: accentColor }}>
             {brl(subtotal)}
           </div>
@@ -123,7 +111,7 @@ function PayableSection({
         <table className="w-full">
           <thead>
             <tr>
-              {["Vencimento", "Descrição", "Cliente", "Categoria", "Valor", "Status", ""].map((h) => (
+              {["Vencimento", "Descrição", "Categoria", "Valor", "Status", ""].map((h) => (
                 <th
                   key={h}
                   className="text-left px-5 py-3 aurora-cap"
@@ -145,20 +133,15 @@ function PayableSection({
                     style={{ color: status === "vencido" ? "#B06040" : undefined, whiteSpace: "nowrap" }}
                   >
                     {formatDatePtBR(p.due_date)}
-                    {status === "vencido" && (
-                      <span className="ml-1.5 text-[10px]">⚠</span>
-                    )}
+                    {status === "vencido" && <span className="ml-1.5 text-[10px]">⚠</span>}
                   </td>
-                  <td className="px-5 py-3 text-[12px] max-w-[200px] truncate" title={p.description}>
+                  <td className="px-5 py-3 text-[12px] max-w-[220px] truncate" title={p.description}>
                     {p.description}
                     {p.notes && (
                       <div className="text-[10px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>
                         {p.notes}
                       </div>
                     )}
-                  </td>
-                  <td className="px-5 py-3 text-[12px]">
-                    {clientMap[p.client_id] ?? "—"}
                   </td>
                   <td className="px-5 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     {p.category ?? "—"}
@@ -225,17 +208,16 @@ function PayableSection({
 // ─── NovoLancamentoModal ──────────────────────────────────────────────────────
 
 function NovoLancamentoModal({
-  clients,
+  clientId,
   onClose,
   onSaved,
 }: {
-  clients: ClientOption[];
+  clientId: string;
   onClose: () => void;
   onSaved: (p: Payable) => void;
 }) {
   const [form, setForm] = useState<FormState>({
     type: "pagar",
-    client_id: clients[0]?.id ?? "",
     description: "",
     amount: "",
     due_date: todayISO(),
@@ -252,7 +234,6 @@ function NovoLancamentoModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const amount = parseFloat(form.amount.replace(",", "."));
-    if (!form.client_id) { setError("Selecione um cliente."); return; }
     if (!form.description.trim()) { setError("Informe a descrição."); return; }
     if (isNaN(amount) || amount <= 0) { setError("Valor inválido."); return; }
     if (!form.due_date) { setError("Informe o vencimento."); return; }
@@ -264,7 +245,7 @@ function NovoLancamentoModal({
       .from("payables")
       .insert({
         type: form.type,
-        client_id: form.client_id,
+        client_id: clientId,
         description: form.description.trim(),
         amount,
         due_date: form.due_date,
@@ -299,14 +280,8 @@ function NovoLancamentoModal({
     >
       <div
         className="bg-white flex flex-col"
-        style={{
-          width: 480,
-          maxHeight: "90vh",
-          overflowY: "auto",
-          borderTop: "3px solid var(--green)",
-        }}
+        style={{ width: 480, maxHeight: "90vh", overflowY: "auto", borderTop: "3px solid var(--green)" }}
       >
-        {/* Modal header */}
         <div
           className="px-6 py-5 flex items-center justify-between"
           style={{ borderBottom: "1px solid var(--line)" }}
@@ -315,15 +290,9 @@ function NovoLancamentoModal({
             <div className="aurora-cap mb-0.5">Novo lançamento</div>
             <div className="aurora-serif text-[18px]">Conta a pagar ou receber</div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-[16px] opacity-40 hover:opacity-70 transition-opacity"
-          >
-            ✕
-          </button>
+          <button onClick={onClose} className="text-[16px] opacity-40 hover:opacity-70 transition-opacity">✕</button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
           {error && (
             <div
@@ -347,9 +316,7 @@ function NovoLancamentoModal({
                   style={{
                     letterSpacing: "1.5px",
                     fontWeight: 600,
-                    background: form.type === t
-                      ? (t === "pagar" ? "var(--navy)" : "var(--green)")
-                      : "var(--linen)",
+                    background: form.type === t ? (t === "pagar" ? "var(--navy)" : "var(--green)") : "var(--linen)",
                     color: form.type === t ? "#fff" : "var(--muted-foreground)",
                     border: "1px solid var(--line)",
                   }}
@@ -360,22 +327,6 @@ function NovoLancamentoModal({
             </div>
           </div>
 
-          {/* Cliente */}
-          <div>
-            <label className="aurora-cap mb-1 block">Cliente *</label>
-            <select
-              value={form.client_id}
-              onChange={(e) => set("client_id", e.target.value)}
-              style={inputStyle}
-            >
-              <option value="">Selecione...</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Descrição */}
           <div>
             <label className="aurora-cap mb-1 block">Descrição *</label>
             <input
@@ -387,7 +338,6 @@ function NovoLancamentoModal({
             />
           </div>
 
-          {/* Valor + Vencimento */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="aurora-cap mb-1 block">Valor (R$) *</label>
@@ -402,16 +352,10 @@ function NovoLancamentoModal({
             </div>
             <div>
               <label className="aurora-cap mb-1 block">Vencimento *</label>
-              <input
-                type="date"
-                value={form.due_date}
-                onChange={(e) => set("due_date", e.target.value)}
-                style={inputStyle}
-              />
+              <input type="date" value={form.due_date} onChange={(e) => set("due_date", e.target.value)} style={inputStyle} />
             </div>
           </div>
 
-          {/* Categoria */}
           <div>
             <label className="aurora-cap mb-1 block">Categoria</label>
             <input
@@ -423,7 +367,6 @@ function NovoLancamentoModal({
             />
           </div>
 
-          {/* Observações */}
           <div>
             <label className="aurora-cap mb-1 block">Observações</label>
             <input
@@ -435,7 +378,6 @@ function NovoLancamentoModal({
             />
           </div>
 
-          {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-2" style={{ borderTop: "1px solid var(--line)" }}>
             <button
               type="button"
@@ -460,10 +402,10 @@ function NovoLancamentoModal({
   );
 }
 
-// ─── ContasPage ───────────────────────────────────────────────────────────────
+// ─── ContasClientePage ────────────────────────────────────────────────────────
 
-function ContasPage() {
-  const [clientFilter, setClientFilter] = useState<string>("all");
+function ContasClientePage() {
+  const { clientId } = Route.useParams();
   const [view, setView] = useState<FilterView>("pendentes");
   const [payables, setPayables] = useState<Payable[]>([]);
   const [loading, setLoading] = useState(true);
@@ -471,46 +413,25 @@ function ContasPage() {
   const [marking, setMarking] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const { data: clients = [] } = useQuery<ClientOption[]>({
-    queryKey: ["clients-list"],
-    queryFn: async () => {
-      const { data } = await supabase().from("clients").select("id, name").order("name");
-      return (data ?? []) as ClientOption[];
-    },
-  });
-
   async function loadPayables() {
     setLoading(true);
     setError(null);
-
-    let q = supabase()
+    const { data, error: err } = await supabase()
       .from("payables")
       .select("id, client_id, type, description, amount, due_date, paid_at, category, notes")
+      .eq("client_id", clientId)
       .order("due_date", { ascending: true });
-
-    if (clientFilter !== "all") q = q.eq("client_id", clientFilter);
-
-    const { data, error: err } = await q;
-    if (err) {
-      setError(err.message);
-    } else {
-      setPayables((data ?? []) as Payable[]);
-    }
+    if (err) setError(err.message);
+    else setPayables((data ?? []) as Payable[]);
     setLoading(false);
   }
 
-  useEffect(() => {
-    loadPayables();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientFilter]);
+  useEffect(() => { loadPayables(); }, [clientId]);
 
   async function markPaid(id: string) {
     setMarking(id);
     const paid = todayISO();
-    const { error: err } = await supabase()
-      .from("payables")
-      .update({ paid_at: paid })
-      .eq("id", id);
+    const { error: err } = await supabase().from("payables").update({ paid_at: paid }).eq("id", id);
     if (err) setError(err.message);
     else setPayables((prev) => prev.map((p) => (p.id === id ? { ...p, paid_at: paid } : p)));
     setMarking(null);
@@ -518,10 +439,7 @@ function ContasPage() {
 
   async function undoPaid(id: string) {
     setMarking(id);
-    const { error: err } = await supabase()
-      .from("payables")
-      .update({ paid_at: null })
-      .eq("id", id);
+    const { error: err } = await supabase().from("payables").update({ paid_at: null }).eq("id", id);
     if (err) setError(err.message);
     else setPayables((prev) => prev.map((p) => (p.id === id ? { ...p, paid_at: null } : p)));
     setMarking(null);
@@ -534,7 +452,6 @@ function ContasPage() {
     else setPayables((prev) => prev.filter((p) => p.id !== id));
   }
 
-  // Client-side filter by view
   const filtered = payables.filter((p) => {
     if (view === "pendentes") return !p.paid_at;
     if (view === "pagos") return !!p.paid_at;
@@ -544,7 +461,6 @@ function ContasPage() {
   const receber = filtered.filter((p) => p.type === "receber");
   const pagar = filtered.filter((p) => p.type === "pagar");
 
-  // KPIs always from pending (regardless of view filter)
   const pending = payables.filter((p) => !p.paid_at);
   const totalReceber = pending.filter((p) => p.type === "receber").reduce((s, p) => s + p.amount, 0);
   const totalPagar = pending.filter((p) => p.type === "pagar").reduce((s, p) => s + p.amount, 0);
@@ -567,9 +483,9 @@ function ContasPage() {
           </button>
         }
       />
+      <ClientTabs clientId={clientId} />
 
       <div className="px-8 lg:px-12 pb-12 flex flex-col gap-7">
-        {/* Error banner */}
         {error && (
           <div
             className="aurora-card flex items-center gap-3"
@@ -585,73 +501,47 @@ function ContasPage() {
         <div className="grid grid-cols-3 gap-4">
           <div className="aurora-card">
             <div className="aurora-cap mb-2">A Receber</div>
-            <div className="aurora-serif text-[28px]" style={{ color: "var(--green)" }}>
-              {brl(totalReceber)}
-            </div>
+            <div className="aurora-serif text-[28px]" style={{ color: "var(--green)" }}>{brl(totalReceber)}</div>
             <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
               {pending.filter((p) => p.type === "receber").length} pendentes
             </div>
           </div>
           <div className="aurora-card">
             <div className="aurora-cap mb-2">A Pagar</div>
-            <div className="aurora-serif text-[28px]" style={{ color: "var(--navy)" }}>
-              {brl(totalPagar)}
-            </div>
+            <div className="aurora-serif text-[28px]" style={{ color: "var(--navy)" }}>{brl(totalPagar)}</div>
             <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
               {pending.filter((p) => p.type === "pagar").length} pendentes
             </div>
           </div>
           <div className="aurora-card">
             <div className="aurora-cap mb-2">Saldo Previsto</div>
-            <div
-              className="aurora-serif text-[28px]"
-              style={{ color: saldoPrevisto >= 0 ? "var(--green)" : "#B06040" }}
-            >
+            <div className="aurora-serif text-[28px]" style={{ color: saldoPrevisto >= 0 ? "var(--green)" : "#B06040" }}>
               {brl(saldoPrevisto)}
             </div>
-            <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
-              receber − pagar pendentes
-            </div>
+            <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>receber − pagar pendentes</div>
           </div>
         </div>
 
-        {/* Filters bar */}
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="aurora-cap">Cliente</span>
-            <select
-              value={clientFilter}
-              onChange={(e) => setClientFilter(e.target.value)}
-              className="text-[12px] px-3 py-1.5 bg-white"
-              style={{ border: "1px solid var(--line)" }}
+        {/* View toggle */}
+        <div className="flex items-center gap-1">
+          {(["pendentes", "pagos", "todos"] as FilterView[]).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className="text-[10px] uppercase px-3 py-1.5 transition-colors"
+              style={{
+                letterSpacing: "1.5px",
+                background: view === v ? "var(--navy)" : "transparent",
+                color: view === v ? "#fff" : "var(--muted-foreground)",
+                border: "1px solid",
+                borderColor: view === v ? "var(--navy)" : "var(--line)",
+              }}
             >
-              <option value="all">Todos</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-1 ml-auto">
-            {(["pendentes", "pagos", "todos"] as FilterView[]).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className="text-[10px] uppercase px-3 py-1.5 transition-colors"
-                style={{
-                  letterSpacing: "1.5px",
-                  background: view === v ? "var(--navy)" : "transparent",
-                  color: view === v ? "#fff" : "var(--muted-foreground)",
-                  border: "1px solid",
-                  borderColor: view === v ? "var(--navy)" : "var(--line)",
-                }}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
+              {v}
+            </button>
+          ))}
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="aurora-card flex items-center gap-4">
             <div
@@ -662,7 +552,6 @@ function ContasPage() {
           </div>
         )}
 
-        {/* Tables */}
         {!loading && (
           <>
             <PayableSection
@@ -671,7 +560,6 @@ function ContasPage() {
               accentColor="var(--green)"
               marking={marking}
               view={view}
-              clients={clients}
               onMarkPaid={markPaid}
               onUndoPaid={undoPaid}
               onDelete={deletePayable}
@@ -682,7 +570,6 @@ function ContasPage() {
               accentColor="var(--navy)"
               marking={marking}
               view={view}
-              clients={clients}
               onMarkPaid={markPaid}
               onUndoPaid={undoPaid}
               onDelete={deletePayable}
@@ -693,7 +580,7 @@ function ContasPage() {
 
       {showModal && (
         <NovoLancamentoModal
-          clients={clients}
+          clientId={clientId}
           onClose={() => setShowModal(false)}
           onSaved={(p) => {
             setPayables((prev) => [...prev, p].sort((a, b) => a.due_date.localeCompare(b.due_date)));

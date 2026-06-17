@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
+import { ClientTabs } from "@/components/ClientTabs";
 import { supabase } from "@/lib/supabase";
 import { formatDatePtBR } from "@/lib/utils";
 
-export const Route = createFileRoute("/admin/recorrencias")({
-  component: RecorrenciasPage,
+export const Route = createFileRoute("/admin/clientes/$clientId/recorrencias")({
+  component: RecorrenciasClientePage,
   head: () => ({ meta: [{ title: "Recorrências · Aurora" }] }),
 });
 
@@ -17,27 +18,13 @@ interface RecorrenciaRow {
   last_seen: string;
 }
 
-interface ClientOption {
-  id: string;
-  name: string;
-}
-
-function RecorrenciasPage() {
+function RecorrenciasClientePage() {
+  const { clientId } = Route.useParams();
   const qc = useQueryClient();
-  const [clientId, setClientId] = useState("");
   const [editingCategory, setEditingCategory] = useState<Record<string, string>>({});
-
-  const { data: clients = [] } = useQuery<ClientOption[]>({
-    queryKey: ["clients-list"],
-    queryFn: async () => {
-      const { data } = await supabase().from("clients").select("id, name").order("name");
-      return (data ?? []) as ClientOption[];
-    },
-  });
 
   const { data: recorrencias = [], isLoading } = useQuery<RecorrenciaRow[]>({
     queryKey: ["pending-recorrencias", clientId],
-    enabled: !!clientId,
     queryFn: async () => {
       const { data, error } = await supabase().rpc("pending_recurrences", {
         p_client_id: clientId,
@@ -49,7 +36,6 @@ function RecorrenciasPage() {
 
   const { data: categories = [] } = useQuery<string[]>({
     queryKey: ["categories-names", clientId],
-    enabled: !!clientId,
     queryFn: async () => {
       const { data } = await supabase()
         .from("categories")
@@ -62,13 +48,7 @@ function RecorrenciasPage() {
   });
 
   const confirmMutation = useMutation({
-    mutationFn: async ({
-      pattern,
-      category,
-    }: {
-      pattern: string;
-      category: string;
-    }) => {
+    mutationFn: async ({ pattern, category }: { pattern: string; category: string }) => {
       const { error } = await supabase().from("classification_rules").upsert(
         {
           client_id: clientId,
@@ -121,33 +101,11 @@ function RecorrenciasPage() {
       <PageHeader
         title="Recorrências"
         cap="Motor de classificação"
-        right={
-          <select
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            className="text-[12px] px-3 py-2"
-            style={{ border: "1px solid var(--line)", minWidth: 220 }}
-          >
-            <option value="">Selecione o cliente...</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        }
       />
+      <ClientTabs clientId={clientId} />
 
       <div className="px-6 lg:px-10 py-8 flex flex-col gap-6">
-        {!clientId && (
-          <div className="aurora-card text-center py-14">
-            <div className="aurora-serif text-[20px]" style={{ color: "var(--muted-foreground)" }}>
-              Selecione um cliente para ver os padrões detectados
-            </div>
-          </div>
-        )}
-
-        {clientId && isLoading && (
+        {isLoading && (
           <div className="aurora-card flex items-center gap-4">
             <div
               className="w-5 h-5 rounded-full border-2 animate-spin"
@@ -157,11 +115,9 @@ function RecorrenciasPage() {
           </div>
         )}
 
-        {clientId && !isLoading && recorrencias.length === 0 && (
+        {!isLoading && recorrencias.length === 0 && (
           <div className="aurora-card text-center py-14">
-            <div className="aurora-serif text-[24px]" style={{ color: "var(--green)" }}>
-              ✓
-            </div>
+            <div className="aurora-serif text-[24px]" style={{ color: "var(--green)" }}>✓</div>
             <div className="aurora-serif text-[20px] mt-2">Nenhuma recorrência pendente</div>
             <div className="text-[12px] mt-2" style={{ color: "var(--muted-foreground)" }}>
               Todos os padrões detectados já têm regra definida.
@@ -169,7 +125,7 @@ function RecorrenciasPage() {
           </div>
         )}
 
-        {clientId && !isLoading && recorrencias.length > 0 && (
+        {!isLoading && recorrencias.length > 0 && (
           <div style={{ border: "1px solid var(--line)" }}>
             <div
               className="px-7 py-4 flex items-center justify-between"
@@ -192,17 +148,15 @@ function RecorrenciasPage() {
             <table className="w-full">
               <thead>
                 <tr style={{ background: "#FAFAF8", borderBottom: "1px solid var(--line)" }}>
-                  {["Padrão detectado", "Categoria sugerida", "Ocorrências", "Última vez", "Ação"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="text-left px-7 py-3 text-[11px] uppercase"
-                        style={{ letterSpacing: "2px", color: "var(--muted-foreground)", fontWeight: 600 }}
-                      >
-                        {h}
-                      </th>
-                    )
-                  )}
+                  {["Padrão detectado", "Categoria sugerida", "Ocorrências", "Última vez", "Ação"].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-7 py-3 text-[11px] uppercase"
+                      style={{ letterSpacing: "2px", color: "var(--muted-foreground)", fontWeight: 600 }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -210,10 +164,7 @@ function RecorrenciasPage() {
                   const editCat = editingCategory[row.pattern];
                   const isEditing = editCat !== undefined;
                   return (
-                    <tr
-                      key={row.pattern}
-                      style={{ borderTop: "1px solid var(--line)" }}
-                    >
+                    <tr key={row.pattern} style={{ borderTop: "1px solid var(--line)" }}>
                       <td className="px-7 py-4">
                         <code
                           className="text-[12px] px-2 py-1"
