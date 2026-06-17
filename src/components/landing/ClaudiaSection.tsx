@@ -34,7 +34,7 @@ export function ClaudiaSection() {
           >
             {/* Foto da Claudia */}
             <img
-              src="/claudia.jpg"
+              src={claudiaPhoto.url}
               alt="Claudia De Meo, fundadora da Aurora"
               loading="lazy"
               decoding="async"
