@@ -31,6 +31,8 @@ interface ClientInfo {
   name: string;
 }
 
+const PAGE_SIZE = 50;
+
 function PendentesPage() {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<PendingTx[]>([]);
@@ -41,20 +43,34 @@ function PendentesPage() {
   const [installments, setInstallments] = useState<Record<string, InstallmentState>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(page);
+  }, [page]);
 
-  async function loadData() {
+  async function loadData(p: number) {
     setLoading(true);
     setError(null);
+    setCats({});
+    setRecurring({});
+    setInstallments({});
 
-    const { data: txData, error: txErr } = await supabase()
-      .from("transactions")
-      .select("id, client_id, date, description, raw_description, amount, category, status")
-      .eq("status", "pending")
-      .order("date", { ascending: false });
+    const [{ data: txData, error: txErr }, { count }] = await Promise.all([
+      supabase()
+        .from("transactions")
+        .select("id, client_id, date, description, raw_description, amount, category, status")
+        .eq("status", "pending")
+        .order("date", { ascending: false })
+        .range(p * PAGE_SIZE, (p + 1) * PAGE_SIZE - 1),
+      supabase()
+        .from("transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ]);
+
+    setTotalCount(count ?? 0);
 
     if (txErr) {
       setError(`Erro ao carregar transações: ${txErr.message}`);
@@ -216,6 +232,17 @@ function PendentesPage() {
           </div>
         )}
 
+        {totalCount > PAGE_SIZE && (
+          <div className="flex items-center justify-between">
+            <div className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+              Página {page + 1} de {Math.ceil(totalCount / PAGE_SIZE)} · {totalCount} lançamentos pendentes no total
+            </div>
+            <div className="text-[11px] uppercase" style={{ color: "var(--tan)", letterSpacing: "1.5px" }}>
+              Salve antes de navegar
+            </div>
+          </div>
+        )}
+
         {Object.entries(grouped).map(([cid, items]) => {
           const client = clientMap[cid];
           const isSaving = saving === cid;
@@ -352,6 +379,29 @@ function PendentesPage() {
             </div>
           );
         })}
+        {totalCount > PAGE_SIZE && (
+          <div className="flex items-center justify-between pt-2">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0 || loading}
+              className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" }}
+            >
+              ← Anterior
+            </button>
+            <div className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+              {page + 1} / {Math.ceil(totalCount / PAGE_SIZE)}
+            </div>
+            <button
+              onClick={() => setPage((p) => Math.min(Math.ceil(totalCount / PAGE_SIZE) - 1, p + 1))}
+              disabled={page >= Math.ceil(totalCount / PAGE_SIZE) - 1 || loading}
+              className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" }}
+            >
+              Próxima →
+            </button>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
