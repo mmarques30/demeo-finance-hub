@@ -54,6 +54,7 @@ function ImportarPage() {
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
 
   const CATEGORIAS = useCategories(clientId);
 
@@ -100,52 +101,60 @@ function ImportarPage() {
     }
     setFiles(fileList);
     setError(null);
+    setCurrentFileIndex(0);
     setStage("reading");
 
-    try {
-      const file = fileList[0];
-      const file_base64 = await toBase64(file);
+    const allTransactions: Transaction[] = [];
 
-      setStage("identifying");
+    const {
+      data: { session },
+    } = await supabase().auth.getSession();
+    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-      const {
-        data: { session },
-      } = await supabase().auth.getSession();
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+    for (let i = 0; i < fileList.length; i++) {
+      setCurrentFileIndex(i);
+      const file = fileList[i];
 
-      setStage("classifying");
+      try {
+        setStage("reading");
+        const file_base64 = await toBase64(file);
 
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-upload`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token ?? anonKey}`,
-          apikey: anonKey,
-        },
-        body: JSON.stringify({
-          file_base64,
-          filename: file.name,
-          client_id: uploadClientId,
-          bank_name: bank,
-        }),
-      });
+        setStage("identifying");
+        setStage("classifying");
 
-      const result = await res.json();
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-upload`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token ?? anonKey}`,
+            apikey: anonKey,
+          },
+          body: JSON.stringify({
+            file_base64,
+            filename: file.name,
+            client_id: uploadClientId,
+            bank_name: bank,
+          }),
+        });
 
-      if (!res.ok) {
-        setError(result.error ?? "Erro ao processar arquivo.");
-        setStage("idle");
-        return;
+        const result = await res.json();
+
+        if (!res.ok) {
+          const msg = `${file.name}: ${result.error ?? "Erro ao processar."}`;
+          setError((prev) => (prev ? `${prev}\n${msg}` : msg));
+          continue;
+        }
+
+        allTransactions.push(...(result.transactions ?? []));
+      } catch (err) {
+        const msg = `${file.name}: ${String(err)}`;
+        setError((prev) => (prev ? `${prev}\n${msg}` : msg));
       }
-
-      const txList: Transaction[] = result.transactions ?? [];
-      setTransactions(txList);
-      setStage("done");
-      // n8n notificado pela Edge Function create-upload (N8N_WEBHOOK_URL) — não duplicar aqui
-    } catch (err) {
-      setError(String(err));
-      setStage("idle");
     }
+
+    // n8n notificado pela Edge Function create-upload (N8N_WEBHOOK_URL) — não duplicar aqui
+    setTransactions(allTransactions);
+    setStage("done");
   }
 
   function onDrop(e: React.DragEvent) {
@@ -350,6 +359,9 @@ function ImportarPage() {
             />
             <div>
               <div className="text-[13px]" style={{ fontWeight: 500 }}>
+                {files.length > 1
+                  ? `Arquivo ${currentFileIndex + 1} de ${files.length}: ${files[currentFileIndex]?.name} — `
+                  : ""}
                 {stage === "reading" && "Lendo arquivo..."}
                 {stage === "identifying" && "Identificando lançamentos..."}
                 {stage === "classifying" && "Classificando com IA..."}
