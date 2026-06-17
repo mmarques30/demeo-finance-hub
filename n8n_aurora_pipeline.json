@@ -5,112 +5,233 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "aurora-extrato",
-        "responseMode": "onReceived",
         "options": {}
       },
-      "id": "aurora-webhook-001",
-      "name": "Webhook — Upload Processado",
+      "id": "db14e501-74c1-42f3-b114-7623664d8711",
+      "name": "Webhook — Upload Novo",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [200, 300],
+      "position": [-1248, 128],
       "webhookId": "aurora-extrato"
     },
     {
       "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "f1", "name": "upload_id",      "value": "={{ $json.body?.upload_id      ?? $json.upload_id      ?? \"\" }}", "type": "string" },
+            { "id": "f2", "name": "client_id",      "value": "={{ $json.body?.client_id      ?? $json.client_id      ?? \"\" }}", "type": "string" },
+            { "id": "f3", "name": "tx_count",       "value": "={{ $json.body?.tx_count       ?? $json.tx_count       ?? 0 }}",  "type": "number" },
+            { "id": "f4", "name": "classified",     "value": "={{ $json.body?.classified     ?? $json.classified     ?? 0 }}",  "type": "number" },
+            { "id": "f5", "name": "pending_manual", "value": "={{ $json.body?.pending_manual ?? $json.pending_manual ?? 0 }}",  "type": "number" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "91f66afe-f8a1-45dc-bb81-b0273fb0e053",
+      "name": "Normaliza Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-1024, 128]
+    },
+    {
+      "parameters": {
+        "url": "=https://ofvhmiugqkpzlgziqnjb.supabase.co/rest/v1/clients?id=eq.{{ $json.client_id }}&select=name,owner_name",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "{{SUPABASE_ANON_KEY}}" },
+            { "name": "Authorization", "value": "Bearer {{SUPABASE_ANON_KEY}}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "19a465b4-b2ec-44bd-95c9-7507af63e361",
+      "name": "Supabase — Busca Cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-816, 128]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "g1", "name": "client_name",    "value": "={{ $json.name ?? \"Cliente desconhecido\" }}", "type": "string" },
+            { "id": "g2", "name": "upload_id",      "value": "={{ $(\"Normaliza Payload\").item.json.upload_id }}",      "type": "string" },
+            { "id": "g3", "name": "tx_count",       "value": "={{ $(\"Normaliza Payload\").item.json.tx_count }}",       "type": "number" },
+            { "id": "g4", "name": "classified",     "value": "={{ $(\"Normaliza Payload\").item.json.classified }}",     "type": "number" },
+            { "id": "g5", "name": "pending_manual", "value": "={{ $(\"Normaliza Payload\").item.json.pending_manual }}", "type": "number" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "af12aeb0-804d-4a71-84d8-fa2a9306b9d3",
+      "name": "Monta Contexto",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-592, 128]
+    },
+    {
+      "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
           "conditions": [
             {
               "id": "cond-pending-001",
               "leftValue": "={{ $json.pending_manual }}",
               "rightValue": 0,
-              "operator": {
-                "type": "number",
-                "operation": "gt"
-              }
+              "operator": { "type": "number", "operation": "gt" }
             }
           ],
           "combinator": "and"
         },
         "options": {}
       },
-      "id": "aurora-if-001",
+      "id": "d2131666-0d30-46bf-b9de-926da91e9014",
       "name": "Tem pendentes?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [440, 300]
+      "position": [-352, 128]
     },
     {
       "parameters": {
-        "fromEmail": "aurora@iaplicada.com",
-        "toEmail": "SEU_EMAIL_CLAUDIA@dominio.com",
-        "subject": "=Aurora · {{ $('Webhook — Upload Processado').item.json.classified }} classificados · {{ $('Webhook — Upload Processado').item.json.pending_manual }} para revisar ⚠️",
-        "emailType": "html",
-        "message": "=<div style=\"font-family: sans-serif; max-width: 600px;\">\n  <h2 style=\"color: #1a1a2e;\">Extrato processado ✅</h2>\n  <p><strong>{{ $('Webhook — Upload Processado').item.json.classified }}</strong> lançamentos foram classificados automaticamente.</p>\n  <p style=\"color: #e67e22;\">⚠️ <strong>{{ $('Webhook — Upload Processado').item.json.pending_manual }}</strong> lançamento(s) precisam de revisão manual.</p>\n  <a href=\"https://demeo-finance-hub.lovable.app/admin/pendentes\" style=\"display:inline-block;background:#1a1a2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:16px;\">Revisar no Aurora →</a>\n</div>",
+        "method": "POST",
+        "url": "https://webhook.site/69931349-0c03-4030-be44-29b0fcb16dcb",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "to",             "value": "69931349-0c03-4030-be44-29b0fcb16dcb@emailhook.site" },
+            { "name": "subject",        "value": "=Aurora · {{ $json.classified }} classificados · {{ $json.pending_manual }} para revisar ⚠️" },
+            { "name": "client_name",    "value": "={{ $json.client_name }}" },
+            { "name": "upload_id",      "value": "={{ $json.upload_id }}" },
+            { "name": "tx_count",       "value": "={{ $json.tx_count }}" },
+            { "name": "classified",     "value": "={{ $json.classified }}" },
+            { "name": "pending_manual", "value": "={{ $json.pending_manual }}" },
+            { "name": "url_revisao",    "value": "https://demeo-finance-hub.lovable.app/admin/pendentes" }
+          ]
+        },
         "options": {}
       },
-      "id": "aurora-email-pendentes",
-      "name": "Email — Revisão necessária",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [680, 180]
+      "id": "c01bd4db-d34e-491f-81a4-c821cb7fed9c",
+      "name": "Webhook — Revisão necessária",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-128, 0]
     },
     {
       "parameters": {
-        "fromEmail": "aurora@iaplicada.com",
-        "toEmail": "SEU_EMAIL_CLAUDIA@dominio.com",
-        "subject": "=Aurora · {{ $('Webhook — Upload Processado').item.json.classified }} lançamentos classificados automaticamente ✓",
-        "emailType": "html",
-        "message": "=<div style=\"font-family: sans-serif; max-width: 600px;\">\n  <h2 style=\"color: #1a1a2e;\">Extrato processado ✅</h2>\n  <p>Todos os <strong>{{ $('Webhook — Upload Processado').item.json.classified }}</strong> lançamentos foram classificados automaticamente. Nenhuma revisão necessária.</p>\n  <a href=\"https://demeo-finance-hub.lovable.app/admin/importar\" style=\"display:inline-block;background:#1a1a2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:16px;\">Ver no Aurora →</a>\n</div>",
+        "method": "POST",
+        "url": "https://webhook.site/69931349-0c03-4030-be44-29b0fcb16dcb",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "to",         "value": "69931349-0c03-4030-be44-29b0fcb16dcb@emailhook.site" },
+            { "name": "subject",    "value": "=Aurora · {{ $json.tx_count }} lançamentos classificados ✓" },
+            { "name": "client_name","value": "={{ $json.client_name }}" },
+            { "name": "upload_id",  "value": "={{ $json.upload_id }}" },
+            { "name": "tx_count",   "value": "={{ $json.tx_count }}" },
+            { "name": "classified", "value": "={{ $json.classified }}" }
+          ]
+        },
         "options": {}
       },
-      "id": "aurora-email-ok",
-      "name": "Email — Tudo classificado",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [680, 420]
+      "id": "75ee44da-7830-45fc-b805-c434c3905acd",
+      "name": "Webhook — Tudo classificado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-144, 272]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 12 * * 1-5" }
+          ]
+        }
+      },
+      "name": "Agendamento — 09h BRT",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [-1248, 500]
+    },
+    {
+      "parameters": {
+        "url": "https://ofvhmiugqkpzlgziqnjb.supabase.co/functions/v1/pending-count",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "{{SUPABASE_ANON_KEY}}" },
+            { "name": "Authorization", "value": "Bearer {{SUPABASE_ANON_KEY}}" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Supabase — Contagem Pendentes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-1000, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+          "conditions": [
+            {
+              "id": "cond-digest-001",
+              "leftValue": "={{ $json.total }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Há pendências hoje?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-720, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.site/69931349-0c03-4030-be44-29b0fcb16dcb",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "to",              "value": "69931349-0c03-4030-be44-29b0fcb16dcb@emailhook.site" },
+            { "name": "subject",         "value": "=Aurora · Digest Matinal · {{ $json.total }} pendência(s) aguardam revisão 📋" },
+            { "name": "total_pendentes", "value": "={{ $json.total }}" },
+            { "name": "resumo_clientes", "value": "={{ $json.clients.map(c => c.name + ' — ' + c.count + ' pendente(s)').join('\\n') }}" },
+            { "name": "url_revisao",     "value": "https://demeo-finance-hub.lovable.app/admin/pendentes" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Webhook — Digest Matinal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-480, 500]
     }
   ],
   "connections": {
-    "Webhook — Upload Processado": {
-      "main": [
-        [
-          {
-            "node": "Tem pendentes?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Tem pendentes?": {
-      "main": [
-        [
-          {
-            "node": "Email — Revisão necessária",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Email — Tudo classificado",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
+    "Webhook — Upload Novo":          { "main": [[{ "node": "Normaliza Payload",              "type": "main", "index": 0 }]] },
+    "Normaliza Payload":              { "main": [[{ "node": "Supabase — Busca Cliente",        "type": "main", "index": 0 }]] },
+    "Supabase — Busca Cliente":       { "main": [[{ "node": "Monta Contexto",                  "type": "main", "index": 0 }]] },
+    "Monta Contexto":                 { "main": [[{ "node": "Tem pendentes?",                  "type": "main", "index": 0 }]] },
+    "Tem pendentes?":                 { "main": [
+      [{ "node": "Webhook — Revisão necessária", "type": "main", "index": 0 }],
+      [{ "node": "Webhook — Tudo classificado",  "type": "main", "index": 0 }]
+    ]},
+    "Agendamento — 09h BRT":          { "main": [[{ "node": "Supabase — Contagem Pendentes",  "type": "main", "index": 0 }]] },
+    "Supabase — Contagem Pendentes":  { "main": [[{ "node": "Há pendências hoje?",             "type": "main", "index": 0 }]] },
+    "Há pendências hoje?":            { "main": [
+      [{ "node": "Webhook — Digest Matinal", "type": "main", "index": 0 }],
+      []
+    ]}
   },
   "active": true,
   "settings": {
-    "executionOrder": "v1"
-  },
-  "meta": {
-    "notes": "ATENÇÃO: Este workflow recebe a notificação do create-upload (que já chama parse-extract e classify-batch). Não há chamadas duplicadas.\n\nPayload recebido: { upload_id, client_id, tx_count, classified, pending_manual }\n\nPara ativar:\n1. Abrir o workflow TwPUbUe1PTYPrpPP em mariaiaplicada.app.n8n.cloud\n2. Substituir SEU_EMAIL_CLAUDIA@dominio.com pelo e-mail real\n3. Configurar credencial de email (Gmail ou SMTP) nos nós de email\n4. Ativar o workflow (toggle no canto superior direito)\n\nO webhook já está configurado: path = aurora-extrato\nURL que o create-upload chama: https://mariaiaplicada.app.n8n.cloud/webhook/aurora-extrato"
+    "executionOrder": "v1",
+    "note": "Caminho A (webhook): dispara a cada upload em tempo real.\nCaminho B (schedule): digest 09:00 BRT (12:00 UTC) seg-sex, consulta pending-count edge function.\nNenhum novo workflow criado — ambos os caminhos vivem no workflow TwPUbUe1PTYPrpPP.\n{{SUPABASE_ANON_KEY}} = substituir pela anon key real no n8n (já configurada no workflow ativo)."
   }
 }
