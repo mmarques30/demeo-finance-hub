@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { brl, currentMonthLabel, currentMonthStr, monthRangeDates } from "@/lib/utils";
+import { brl } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/")({
@@ -23,17 +23,44 @@ interface ClientSummary extends ClientRow {
   banks: string[];
 }
 
+function todayISO() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function firstOfMonthISO(offsetMonths = 0) {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + offsetMonths, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+function lastOfMonthISO(offsetMonths = 0) {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + offsetMonths + 1, 0);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function firstOfYearISO() {
+  return `${new Date().getFullYear()}-01-01`;
+}
+
+const PRESETS = [
+  { label: "Este mês",     start: () => firstOfMonthISO(0),  end: () => todayISO() },
+  { label: "Mês anterior", start: () => firstOfMonthISO(-1), end: () => lastOfMonthISO(-1) },
+  { label: "Últ. 3 meses", start: () => firstOfMonthISO(-2), end: () => todayISO() },
+  { label: "Últ. 6 meses", start: () => firstOfMonthISO(-5), end: () => todayISO() },
+  { label: "Este ano",     start: () => firstOfYearISO(),    end: () => todayISO() },
+] as const;
+
 function AdminDashboard() {
   const [clientes, setClientes] = useState<ClientSummary[]>([]);
   const [totalPendentes, setTotalPendentes] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [startDate, setStartDate] = useState(firstOfMonthISO(0));
+  const [endDate, setEndDate] = useState(todayISO());
+  const [activePreset, setActivePreset] = useState<string>("Este mês");
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  async function loadDashboard() {
-    const { start, end } = monthRangeDates(currentMonthStr());
+  const loadDashboard = useCallback(async (start: string, end: string) => {
 
     const [
       { data: clientsData },
@@ -95,6 +122,17 @@ function AdminDashboard() {
     setClientes(summaries);
     setTotalPendentes(totalPend);
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    loadDashboard(startDate, endDate);
+  }, [startDate, endDate, loadDashboard]);
+
+  function applyPreset(preset: typeof PRESETS[number]) {
+    setActivePreset(preset.label);
+    setStartDate(preset.start());
+    setEndDate(preset.end());
   }
 
   const ativos = clientes.length;
@@ -102,15 +140,17 @@ function AdminDashboard() {
   const totalReceita = clientes.reduce((s, c) => s + c.receita, 0);
   const totalSaldo = clientes.reduce((s, c) => s + c.saldo, 0);
   const maxReceita = Math.max(...clientes.map((c) => c.receita), 1);
-  const mesLabel = currentMonthLabel();
+  const periodoLabel = startDate === endDate
+    ? new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR")
+    : `${new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} – ${new Date(endDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}`;
 
   return (
     <AdminLayout>
       <PageHeader
-        cap={`Fechamentos · ${mesLabel}`}
+        cap={`Fechamentos · ${periodoLabel}`}
         title="Visão geral"
         emphasis="da carteira"
-        description="Acompanhe o status do mês, lançamentos pendentes e a evolução de cada cliente em um único lugar."
+        description="Acompanhe o status do período, lançamentos pendentes e a evolução de cada cliente em um único lugar."
         right={
           <Link
             to={"/admin/importar" as never}
@@ -123,6 +163,51 @@ function AdminDashboard() {
       />
 
       <div className="px-6 lg:px-10 py-10 flex flex-col gap-10">
+
+        {/* Filtro de período */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap gap-2">
+            {PRESETS.map((p) => (
+              <button
+                key={p.label}
+                onClick={() => applyPreset(p)}
+                className="text-[10px] uppercase px-3 py-2 transition-colors"
+                style={{
+                  letterSpacing: "1.5px",
+                  fontWeight: 600,
+                  background: activePreset === p.label ? "var(--green)" : "transparent",
+                  color: activePreset === p.label ? "#fff" : "var(--muted-foreground)",
+                  border: "1px solid",
+                  borderColor: activePreset === p.label ? "var(--green)" : "var(--line)",
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>De</span>
+            <input
+              type="date"
+              value={startDate}
+              max={endDate}
+              onChange={(e) => { setActivePreset(""); setStartDate(e.target.value); }}
+              className="text-[12px] px-3 py-2 outline-none"
+              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff" }}
+            />
+            <span className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>Até</span>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate}
+              max={todayISO()}
+              onChange={(e) => { setActivePreset(""); setEndDate(e.target.value); }}
+              className="text-[12px] px-3 py-2 outline-none"
+              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff" }}
+            />
+          </div>
+        </div>
+
         {/* KPIs */}
         <div className="grid md:grid-cols-3 gap-5">
           <KpiCard
@@ -131,7 +216,7 @@ function AdminDashboard() {
             value={loading ? "—" : String(ativos)}
             sub="empresas sob gestão na carteira"
             tone="sage"
-            footer={loading ? "" : `${brl(totalSaldo).replace(",00", "")} resultado consolidado do mês`}
+            footer={loading ? "" : `${brl(totalSaldo).replace(",00", "")} resultado consolidado do período`}
           />
           <KpiCard
             icon="⊙"
@@ -159,7 +244,7 @@ function AdminDashboard() {
                 Receita · Por cliente
               </div>
               <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 300, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
-                {mesLabel} ·{" "}
+                {periodoLabel} ·{" "}
                 <em className="italic" style={{ color: "var(--green)" }}>
                   {brl(totalReceita).replace(",00", "")}
                 </em>
