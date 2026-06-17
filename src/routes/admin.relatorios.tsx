@@ -196,7 +196,7 @@ function openPrintReport(clientName: string, period: string, txs: Tx[], forecast
   }
 
   <div class="sec">
-    <div class="sec-title">Análise por Categoria</div>
+    <div class="sec-title">DFC Gerencial</div>
     <table>
       <thead><tr><th>Conta</th><th style="text-align:right">Valor</th></tr></thead>
       <tbody>
@@ -272,7 +272,7 @@ function exportExcel(clientName: string, period: string, txs: Tx[], forecast: Fo
     dreXlsx.push({ Grupo: "", Categoria: "", Valor: 0 });
   }
   dreXlsx.push({ Grupo: "SALDO DO PERÍODO", Categoria: "", Valor: dre.resultado });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dreXlsx), "Análise por Cat.");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dreXlsx), "DFC Gerencial");
 
   // Aba 4: Parcelamentos
   const instTxs = txs.filter((t) => t.installment_group_id);
@@ -542,7 +542,7 @@ function RelatoriosPage() {
                       <td className="px-6 py-4">
                         {hasData ? (
                           <span className="aurora-badge aurora-badge--ok text-[11px]">
-                            DFC + Análise
+                            DFC + Gerencial
                           </span>
                         ) : (
                           <span
