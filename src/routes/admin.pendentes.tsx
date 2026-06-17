@@ -128,62 +128,62 @@ function PendentesPage() {
   }
 
   async function saveClient(clientId: string) {
-    const clientTxs = transactions.filter((t) => t.client_id === clientId);
+    const clientTxs = transactions.filter((t) => t.client_id === clientId && !!cats[t.id]);
     setSaving(clientId);
     setError(null);
 
     try {
-      for (const tx of clientTxs) {
-        const category = cats[tx.id];
-        if (!category) continue; // não toca no que não foi preenchido
+      // Monta todos os payloads em paralelo (deterministicGroupId é async por tx)
+      const payloads = await Promise.all(
+        clientTxs.map(async (tx) => {
+          const category = cats[tx.id];
+          const isRecurring = !!recurring[tx.id];
+          const inst = installments[tx.id];
+          const installmentFields =
+            inst?.enabled && inst.total > 0 && inst.number > 0
+              ? {
+                  installment_number: inst.number,
+                  installment_total: inst.total,
+                  installment_group_id: await deterministicGroupId(tx.client_id, tx.description, inst.total),
+                }
+              : {};
+          return { tx, category, isRecurring, installmentFields };
+        })
+      );
 
-        const isRecurring = !!recurring[tx.id];
+      // 1. Atualiza todas as transações em paralelo
+      await Promise.all(
+        payloads.map(({ tx, category, isRecurring, installmentFields }) =>
+          supabase()
+            .from("transactions")
+            .update({ category, status: "approved", is_recurring: isRecurring, ...installmentFields })
+            .eq("id", tx.id)
+            .then(({ error }) => { if (error) throw new Error(`Transação ${tx.id}: ${error.message}`); })
+        )
+      );
 
-        // 1. Atualiza a transação
-        const inst = installments[tx.id];
-        const installmentFields =
-          inst?.enabled && inst.total > 0 && inst.number > 0
-            ? {
-                installment_number: inst.number,
-                installment_total: inst.total,
-                installment_group_id: await deterministicGroupId(tx.client_id, tx.description, inst.total),
-              }
-            : {};
+      // 2. Upsert de todas as regras recorrentes em um único roundtrip
+      const rulesToUpsert = payloads
+        .filter(({ isRecurring }) => isRecurring)
+        .map(({ tx, category }) => ({
+          client_id: tx.client_id,
+          pattern: buildPattern(tx.description),
+          category,
+          is_recurring: true,
+          hits: 2,
+          source: "manual",
+          is_active: true,
+        }));
 
-        const { error: updateErr } = await supabase()
-          .from("transactions")
-          .update({
-            category,
-            status: "approved",
-            is_recurring: isRecurring,
-            ...installmentFields,
-          })
-          .eq("id", tx.id);
-
-        if (updateErr) throw new Error(`Transação ${tx.id}: ${updateErr.message}`);
-
-        // 2. Se "salvar como regra", insere em classification_rules como regra ativa imediata
-        if (isRecurring) {
-          const pattern = buildPattern(tx.description);
-          await supabase().from("classification_rules").upsert(
-            {
-              client_id: tx.client_id,
-              pattern,
-              category,
-              is_recurring: true,
-              hits: 2,
-              source: "manual",
-              is_active: true,
-            },
-            { onConflict: "client_id,pattern" }
-          );
-        }
+      if (rulesToUpsert.length > 0) {
+        const { error: rulesErr } = await supabase()
+          .from("classification_rules")
+          .upsert(rulesToUpsert, { onConflict: "client_id,pattern" });
+        if (rulesErr) throw new Error(`Regras: ${rulesErr.message}`);
       }
 
       // Remove transações salvas da lista local
-      const savedIds = new Set(
-        clientTxs.filter((t) => !!cats[t.id]).map((t) => t.id)
-      );
+      const savedIds = new Set(clientTxs.map((t) => t.id));
       setTransactions((prev) => prev.filter((t) => !savedIds.has(t.id)));
     } catch (e) {
       setError(String(e));
