@@ -167,8 +167,8 @@ export interface FileRoutesByFullPath {
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
-  '/admin/clientes/$clientId/recorrencias': typeof AdminClientesClientIdRecorrenciasRoute
   '/admin/clientes/$clientId/contas': typeof AdminClientesClientIdContasRoute
+  '/admin/clientes/$clientId/recorrencias': typeof AdminClientesClientIdRecorrenciasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -191,8 +191,8 @@ export interface FileRoutesByTo {
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
-  '/admin/clientes/$clientId/recorrencias': typeof AdminClientesClientIdRecorrenciasRoute
   '/admin/clientes/$clientId/contas': typeof AdminClientesClientIdContasRoute
+  '/admin/clientes/$clientId/recorrencias': typeof AdminClientesClientIdRecorrenciasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -216,8 +216,8 @@ export interface FileRoutesById {
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
-  '/admin/clientes/$clientId/recorrencias': typeof AdminClientesClientIdRecorrenciasRoute
   '/admin/clientes/$clientId/contas': typeof AdminClientesClientIdContasRoute
+  '/admin/clientes/$clientId/recorrencias': typeof AdminClientesClientIdRecorrenciasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -242,8 +242,8 @@ export interface FileRouteTypes {
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
-    | '/admin/clientes/$clientId/recorrencias'
     | '/admin/clientes/$clientId/contas'
+    | '/admin/clientes/$clientId/recorrencias'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -266,8 +266,8 @@ export interface FileRouteTypes {
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
-    | '/admin/clientes/$clientId/recorrencias'
     | '/admin/clientes/$clientId/contas'
+    | '/admin/clientes/$clientId/recorrencias'
   id:
     | '__root__'
     | '/'
@@ -290,8 +290,8 @@ export interface FileRouteTypes {
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
-    | '/admin/clientes/$clientId/recorrencias'
     | '/admin/clientes/$clientId/contas'
+    | '/admin/clientes/$clientId/recorrencias'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -474,17 +474,20 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminClientesClientIdRouteChildren {
-  AdminClientesClientIdRecorrenciasRoute: typeof AdminClientesClientIdRecorrenciasRoute
   AdminClientesClientIdContasRoute: typeof AdminClientesClientIdContasRoute
+  AdminClientesClientIdRecorrenciasRoute: typeof AdminClientesClientIdRecorrenciasRoute
 }
 
 const AdminClientesClientIdRouteChildren: AdminClientesClientIdRouteChildren = {
-  AdminClientesClientIdRecorrenciasRoute: AdminClientesClientIdRecorrenciasRoute,
   AdminClientesClientIdContasRoute: AdminClientesClientIdContasRoute,
+  AdminClientesClientIdRecorrenciasRoute:
+    AdminClientesClientIdRecorrenciasRoute,
 }
 
 const AdminClientesClientIdRouteWithChildren =
-  AdminClientesClientIdRoute._addFileChildren(AdminClientesClientIdRouteChildren)
+  AdminClientesClientIdRoute._addFileChildren(
+    AdminClientesClientIdRouteChildren,
+  )
 
 interface AdminClientesRouteChildren {
   AdminClientesClientIdRoute: typeof AdminClientesClientIdRouteWithChildren
@@ -544,3 +547,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
