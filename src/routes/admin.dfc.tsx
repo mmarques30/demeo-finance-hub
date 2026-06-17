@@ -164,18 +164,19 @@ function DFCPage() {
       />
 
       {/* Tab bar */}
-      <div className="flex px-8 lg:px-12" style={{ borderBottom: "1px solid var(--line)" }}>
+      <div className="flex gap-1 px-8 lg:px-12 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
         {DFC_TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className="px-5 py-3 text-[11px] uppercase transition-colors"
+            className="px-4 py-2 text-[11px] uppercase transition-all"
             style={{
               letterSpacing: "2px",
               fontWeight: 600,
-              borderBottom: activeTab === tab.key ? "2px solid var(--green)" : "2px solid transparent",
-              color: activeTab === tab.key ? "var(--green)" : "var(--muted-foreground)",
-              marginBottom: -1,
+              borderRadius: "999px",
+              background: activeTab === tab.key ? "var(--green)" : "transparent",
+              color: activeTab === tab.key ? "#fff" : "var(--muted-foreground)",
+              border: "none",
             }}
           >
             {tab.label}
