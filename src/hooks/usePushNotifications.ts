@@ -22,7 +22,7 @@ export function usePushNotifications() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isSupported) return;
+    if (!isSupported || !VAPID_PUBLIC_KEY) return;
     navigator.serviceWorker.ready.then((reg) => {
       reg.pushManager.getSubscription().then((sub) => {
         setIsSubscribed(!!sub);
