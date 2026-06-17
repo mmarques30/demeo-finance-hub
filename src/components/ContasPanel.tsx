@@ -1,16 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { ClientTabs } from "@/components/ClientTabs";
 import { brl, formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
-
-export const Route = createFileRoute("/admin/clientes/$clientId/contas")({
-  component: ContasClientePage,
-  head: () => ({ meta: [{ title: "Contas · Aurora" }] }),
-});
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Payable {
   id: string;
@@ -35,8 +25,6 @@ interface FormState {
   notes: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -47,7 +35,7 @@ function displayStatus(p: Payable): "pago" | "vencido" | "pendente" {
   return "pendente";
 }
 
-function StatusBadge({ status }: { status: "pago" | "vencido" | "pendente" }) {
+function PayableStatusBadge({ status }: { status: "pago" | "vencido" | "pendente" }) {
   const cfg = {
     pago: { bg: "rgba(74,124,89,0.12)", color: "var(--green)", label: "Pago" },
     vencido: { bg: "rgba(176,96,64,0.12)", color: "#B06040", label: "Vencido" },
@@ -62,8 +50,6 @@ function StatusBadge({ status }: { status: "pago" | "vencido" | "pendente" }) {
     </span>
   );
 }
-
-// ─── PayableSection ───────────────────────────────────────────────────────────
 
 function PayableSection({
   title,
@@ -150,7 +136,7 @@ function PayableSection({
                     {brl(p.amount)}
                   </td>
                   <td className="px-5 py-3">
-                    <StatusBadge status={status} />
+                    <PayableStatusBadge status={status} />
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
@@ -159,13 +145,7 @@ function PayableSection({
                           onClick={() => onMarkPaid(p.id)}
                           disabled={isMarking}
                           className="text-[10px] uppercase px-2.5 py-1 transition-opacity disabled:opacity-40"
-                          style={{
-                            background: "var(--green)",
-                            color: "#fff",
-                            letterSpacing: "1.5px",
-                            fontWeight: 500,
-                            whiteSpace: "nowrap",
-                          }}
+                          style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px", fontWeight: 500, whiteSpace: "nowrap" }}
                         >
                           {isMarking ? "…" : "✓ Pago"}
                         </button>
@@ -175,12 +155,7 @@ function PayableSection({
                           onClick={() => onUndoPaid(p.id)}
                           disabled={isMarking}
                           className="text-[10px] uppercase px-2.5 py-1 transition-opacity disabled:opacity-40"
-                          style={{
-                            border: "1px solid var(--line)",
-                            color: "var(--muted-foreground)",
-                            letterSpacing: "1.5px",
-                            whiteSpace: "nowrap",
-                          }}
+                          style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px", whiteSpace: "nowrap" }}
                         >
                           {isMarking ? "…" : "Desfazer"}
                         </button>
@@ -204,8 +179,6 @@ function PayableSection({
     </div>
   );
 }
-
-// ─── NovoLancamentoModal ──────────────────────────────────────────────────────
 
 function NovoLancamentoModal({
   clientId,
@@ -255,22 +228,11 @@ function NovoLancamentoModal({
       .select("id, client_id, type, description, amount, due_date, paid_at, category, notes")
       .single();
 
-    if (err) {
-      setError(err.message);
-      setSaving(false);
-      return;
-    }
-
+    if (err) { setError(err.message); setSaving(false); return; }
     onSaved(data as Payable);
   }
 
-  const inputStyle = {
-    border: "1px solid var(--line)",
-    background: "#fff",
-    padding: "6px 10px",
-    fontSize: 13,
-    width: "100%",
-  };
+  const inputStyle = { border: "1px solid var(--line)", background: "#fff", padding: "6px 10px", fontSize: 13, width: "100%" };
 
   return (
     <div
@@ -282,10 +244,7 @@ function NovoLancamentoModal({
         className="bg-white flex flex-col"
         style={{ width: 480, maxHeight: "90vh", overflowY: "auto", borderTop: "3px solid var(--green)" }}
       >
-        <div
-          className="px-6 py-5 flex items-center justify-between"
-          style={{ borderBottom: "1px solid var(--line)" }}
-        >
+        <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5">Novo lançamento</div>
             <div className="aurora-serif text-[18px]">Conta a pagar ou receber</div>
@@ -295,15 +254,11 @@ function NovoLancamentoModal({
 
         <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
           {error && (
-            <div
-              className="text-[12px] px-3 py-2"
-              style={{ background: "rgba(176,96,64,0.1)", color: "#B06040", border: "1px solid rgba(176,96,64,0.2)" }}
-            >
+            <div className="text-[12px] px-3 py-2" style={{ background: "rgba(176,96,64,0.1)", color: "#B06040", border: "1px solid rgba(176,96,64,0.2)" }}>
               {error}
             </div>
           )}
 
-          {/* Tipo toggle */}
           <div>
             <div className="aurora-cap mb-2">Tipo</div>
             <div className="flex">
@@ -329,26 +284,13 @@ function NovoLancamentoModal({
 
           <div>
             <label className="aurora-cap mb-1 block">Descrição *</label>
-            <input
-              type="text"
-              value={form.description}
-              onChange={(e) => set("description", e.target.value)}
-              placeholder="Ex: Aluguel junho, Mensalidade serviço X..."
-              style={inputStyle}
-            />
+            <input type="text" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Ex: Aluguel junho, Mensalidade serviço X..." style={inputStyle} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="aurora-cap mb-1 block">Valor (R$) *</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={form.amount}
-                onChange={(e) => set("amount", e.target.value)}
-                placeholder="0,00"
-                style={inputStyle}
-              />
+              <input type="text" inputMode="decimal" value={form.amount} onChange={(e) => set("amount", e.target.value)} placeholder="0,00" style={inputStyle} />
             </div>
             <div>
               <label className="aurora-cap mb-1 block">Vencimento *</label>
@@ -358,41 +300,19 @@ function NovoLancamentoModal({
 
           <div>
             <label className="aurora-cap mb-1 block">Categoria</label>
-            <input
-              type="text"
-              value={form.category}
-              onChange={(e) => set("category", e.target.value)}
-              placeholder="Ex: Aluguel, Fornecedores, Receita de serviço..."
-              style={inputStyle}
-            />
+            <input type="text" value={form.category} onChange={(e) => set("category", e.target.value)} placeholder="Ex: Aluguel, Fornecedores, Receita de serviço..." style={inputStyle} />
           </div>
 
           <div>
             <label className="aurora-cap mb-1 block">Observações</label>
-            <input
-              type="text"
-              value={form.notes}
-              onChange={(e) => set("notes", e.target.value)}
-              placeholder="Informações adicionais..."
-              style={inputStyle}
-            />
+            <input type="text" value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Informações adicionais..." style={inputStyle} />
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-2" style={{ borderTop: "1px solid var(--line)" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-[11px] uppercase px-4 py-2"
-              style={{ color: "var(--muted-foreground)", letterSpacing: "1.5px" }}
-            >
+            <button type="button" onClick={onClose} className="text-[11px] uppercase px-4 py-2" style={{ color: "var(--muted-foreground)", letterSpacing: "1.5px" }}>
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="text-[11px] uppercase px-5 py-2 transition-opacity disabled:opacity-50"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
-            >
+            <button type="submit" disabled={saving} className="text-[11px] uppercase px-5 py-2 transition-opacity disabled:opacity-50" style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
               {saving ? "Salvando..." : "Salvar"}
             </button>
           </div>
@@ -402,10 +322,7 @@ function NovoLancamentoModal({
   );
 }
 
-// ─── ContasClientePage ────────────────────────────────────────────────────────
-
-function ContasClientePage() {
-  const { clientId } = Route.useParams();
+export function ContasPanel({ clientId }: { clientId: string }) {
   const [view, setView] = useState<FilterView>("pendentes");
   const [payables, setPayables] = useState<Payable[]>([]);
   const [loading, setLoading] = useState(true);
@@ -426,7 +343,7 @@ function ContasClientePage() {
     setLoading(false);
   }
 
-  useEffect(() => { loadPayables(); }, [clientId]);
+  useEffect(() => { if (clientId) loadPayables(); }, [clientId]);
 
   async function markPaid(id: string) {
     setMarking(id);
@@ -467,38 +384,10 @@ function ContasClientePage() {
   const saldoPrevisto = totalReceber - totalPagar;
 
   return (
-    <AdminLayout>
-      <PageHeader
-        cap="Financeiro"
-        title="Contas a pagar"
-        emphasis="e receber"
-        description="Lançamentos programados com vencimento definido."
-        right={
-          <button
-            onClick={() => setShowModal(true)}
-            className="text-[10px] uppercase px-4 py-2"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
-          >
-            + Novo
-          </button>
-        }
-      />
-      <ClientTabs clientId={clientId} />
-
-      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-7">
-        {error && (
-          <div
-            className="aurora-card flex items-center gap-3"
-            style={{ background: "rgba(176,96,64,0.08)", borderLeft: "3px solid #B06040" }}
-          >
-            <span style={{ color: "#B06040", fontSize: 18 }}>!</span>
-            <div className="text-[13px]">{error}</div>
-            <button className="ml-auto text-[11px] opacity-50 hover:opacity-100" onClick={() => setError(null)}>✕</button>
-          </div>
-        )}
-
-        {/* KPI cards */}
-        <div className="grid grid-cols-3 gap-4">
+    <div className="px-8 lg:px-12 pb-12 flex flex-col gap-7">
+      {/* Header row with KPIs and "+ Novo" button */}
+      <div className="flex items-start justify-between gap-4 pt-6">
+        <div className="grid grid-cols-3 gap-4 flex-1">
           <div className="aurora-card">
             <div className="aurora-cap mb-2">A Receber</div>
             <div className="aurora-serif text-[28px]" style={{ color: "var(--green)" }}>{brl(totalReceber)}</div>
@@ -521,62 +410,74 @@ function ContasClientePage() {
             <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>receber − pagar pendentes</div>
           </div>
         </div>
-
-        {/* View toggle */}
-        <div className="flex items-center gap-1">
-          {(["pendentes", "pagos", "todos"] as FilterView[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className="text-[10px] uppercase px-3 py-1.5 transition-colors"
-              style={{
-                letterSpacing: "1.5px",
-                background: view === v ? "var(--navy)" : "transparent",
-                color: view === v ? "#fff" : "var(--muted-foreground)",
-                border: "1px solid",
-                borderColor: view === v ? "var(--navy)" : "var(--line)",
-              }}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
-
-        {loading && (
-          <div className="aurora-card flex items-center gap-4">
-            <div
-              className="w-5 h-5 rounded-full border-2 animate-spin"
-              style={{ borderColor: "var(--green)", borderTopColor: "transparent" }}
-            />
-            <div className="text-[13px]">Carregando contas...</div>
-          </div>
-        )}
-
-        {!loading && (
-          <>
-            <PayableSection
-              title="Contas a Receber"
-              items={receber}
-              accentColor="var(--green)"
-              marking={marking}
-              view={view}
-              onMarkPaid={markPaid}
-              onUndoPaid={undoPaid}
-              onDelete={deletePayable}
-            />
-            <PayableSection
-              title="Contas a Pagar"
-              items={pagar}
-              accentColor="var(--navy)"
-              marking={marking}
-              view={view}
-              onMarkPaid={markPaid}
-              onUndoPaid={undoPaid}
-              onDelete={deletePayable}
-            />
-          </>
-        )}
+        <button
+          onClick={() => setShowModal(true)}
+          className="text-[10px] uppercase px-4 py-2.5 mt-1 shrink-0"
+          style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+        >
+          + Novo
+        </button>
       </div>
+
+      {error && (
+        <div className="aurora-card flex items-center gap-3" style={{ background: "rgba(176,96,64,0.08)", borderLeft: "3px solid #B06040" }}>
+          <span style={{ color: "#B06040", fontSize: 18 }}>!</span>
+          <div className="text-[13px]">{error}</div>
+          <button className="ml-auto text-[11px] opacity-50 hover:opacity-100" onClick={() => setError(null)}>✕</button>
+        </div>
+      )}
+
+      {/* View toggle */}
+      <div className="flex items-center gap-1">
+        {(["pendentes", "pagos", "todos"] as FilterView[]).map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className="text-[10px] uppercase px-3 py-1.5 transition-colors"
+            style={{
+              letterSpacing: "1.5px",
+              background: view === v ? "var(--navy)" : "transparent",
+              color: view === v ? "#fff" : "var(--muted-foreground)",
+              border: "1px solid",
+              borderColor: view === v ? "var(--navy)" : "var(--line)",
+            }}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+
+      {loading && (
+        <div className="aurora-card flex items-center gap-4">
+          <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
+          <div className="text-[13px]">Carregando contas...</div>
+        </div>
+      )}
+
+      {!loading && (
+        <>
+          <PayableSection
+            title="Contas a Receber"
+            items={receber}
+            accentColor="var(--green)"
+            marking={marking}
+            view={view}
+            onMarkPaid={markPaid}
+            onUndoPaid={undoPaid}
+            onDelete={deletePayable}
+          />
+          <PayableSection
+            title="Contas a Pagar"
+            items={pagar}
+            accentColor="var(--navy)"
+            marking={marking}
+            view={view}
+            onMarkPaid={markPaid}
+            onUndoPaid={undoPaid}
+            onDelete={deletePayable}
+          />
+        </>
+      )}
 
       {showModal && (
         <NovoLancamentoModal
@@ -588,6 +489,6 @@ function ContasClientePage() {
           }}
         />
       )}
-    </AdminLayout>
+    </div>
   );
 }

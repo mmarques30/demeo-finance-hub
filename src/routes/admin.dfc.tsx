@@ -4,6 +4,8 @@ import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl, monthOptions, monthRangeDates } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useDFCForecast } from "@/hooks/useDFCForecast";
+import { RecorrenciasPanel } from "@/components/RecorrenciasPanel";
+import { ContasPanel } from "@/components/ContasPanel";
 
 export const Route = createFileRoute("/admin/dfc")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -30,11 +32,20 @@ function deltaPct(curr: number, prev: number): string | null {
 
 const PERIODS = monthOptions(12);
 
+type DFCTab = "dfc" | "recorrencias" | "contas";
+
+const DFC_TABS: { key: DFCTab; label: string }[] = [
+  { key: "dfc", label: "DFC Gerencial" },
+  { key: "recorrencias", label: "Recorrências" },
+  { key: "contas", label: "Contas" },
+];
+
 function DFCPage() {
   const { clientId: preselectedId } = Route.useSearch();
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientId, setClientId] = useState(preselectedId ?? "");
   const [period, setPeriod] = useState(PERIODS[0]);
+  const [activeTab, setActiveTab] = useState<DFCTab>("dfc");
   const [tx, setTx] = useState<Tx[]>([]);
   const [prevTx, setPrevTx] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(false);
@@ -152,6 +163,30 @@ function DFCPage() {
         }
       />
 
+      {/* Tab bar */}
+      <div className="flex px-8 lg:px-12" style={{ borderBottom: "1px solid var(--line)" }}>
+        {DFC_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className="px-5 py-3 text-[11px] uppercase transition-colors"
+            style={{
+              letterSpacing: "2px",
+              fontWeight: 600,
+              borderBottom: activeTab === tab.key ? "2px solid var(--green)" : "2px solid transparent",
+              color: activeTab === tab.key ? "var(--green)" : "var(--muted-foreground)",
+              marginBottom: -1,
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "recorrencias" && <RecorrenciasPanel clientId={clientId} />}
+      {activeTab === "contas" && <ContasPanel clientId={clientId} />}
+
+      {activeTab === "dfc" && (
       <div className="px-8 lg:px-12 pb-12 grid gap-8">
         {loading && (
           <div className="aurora-card flex items-center gap-3">
@@ -314,6 +349,7 @@ function DFCPage() {
           </div>
         )}
       </div>
+      )}
     </AdminLayout>
   );
 }
