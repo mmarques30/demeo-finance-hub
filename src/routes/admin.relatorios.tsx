@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { brl, formatDatePtBR, monthRangeDates } from "@/lib/utils";
+import { brl, formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
 import { computeForecastMonths, type ForecastMonth } from "@/hooks/useDFCForecast";
@@ -11,6 +11,32 @@ export const Route = createFileRoute("/admin/relatorios")({
   head: () => ({ meta: [{ title: "Relatórios · Aurora" }] }),
 });
 
+// ─── helpers de data (mesmos do dashboard) ───────────────────────────────────
+function todayISO() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+function firstOfMonthISO(offsetMonths = 0) {
+  const d = new Date(new Date().getFullYear(), new Date().getMonth() + offsetMonths, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+function lastOfMonthISO(offsetMonths = 0) {
+  const d = new Date(new Date().getFullYear(), new Date().getMonth() + offsetMonths + 1, 0);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function firstOfYearISO() {
+  return `${new Date().getFullYear()}-01-01`;
+}
+
+const PRESETS = [
+  { label: "Este mês",     start: () => firstOfMonthISO(0),  end: () => lastOfMonthISO(0) },
+  { label: "Mês anterior", start: () => firstOfMonthISO(-1), end: () => lastOfMonthISO(-1) },
+  { label: "Últ. 3 meses", start: () => firstOfMonthISO(-2), end: () => lastOfMonthISO(0) },
+  { label: "Últ. 6 meses", start: () => firstOfMonthISO(-5), end: () => lastOfMonthISO(0) },
+  { label: "Este ano",     start: () => firstOfYearISO(),    end: () => lastOfMonthISO(0) },
+] as const;
+
+// ─── tipos ────────────────────────────────────────────────────────────────────
 interface ClientRow {
   id: string;
   name: string;
@@ -43,6 +69,7 @@ interface DREData { groups: DREGroup[]; resultado: number }
 
 const DRE_GROUP_ORDER = ["Receita", "Despesa Fixa", "Despesa Variável", "Investimento", "Outros"];
 
+// ─── cálculos (puros) ─────────────────────────────────────────────────────────
 function computeReport(txs: Tx[]): ReportData {
   const receitas = txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const despesas = txs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
@@ -101,7 +128,14 @@ function computeDRE(txs: Tx[], catMap: Map<string, CatInfo>): DREData {
   return { groups, resultado };
 }
 
-function openPrintReport(clientName: string, period: string, txs: Tx[], forecast: ForecastMonth[], catMap: Map<string, CatInfo>) {
+// ─── exportações ──────────────────────────────────────────────────────────────
+function openPrintReport(
+  clientName: string,
+  periodoLabel: string,
+  txs: Tx[],
+  forecast: ForecastMonth[],
+  catMap: Map<string, CatInfo>
+) {
   const d = computeReport(txs);
   const dre = computeDRE(txs, catMap);
   const today = new Date().toLocaleDateString("pt-BR");
@@ -146,7 +180,7 @@ function openPrintReport(clientName: string, period: string, txs: Tx[], forecast
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório — ${clientName} — ${period}</title>
+<title>Relatório — ${clientName} — ${periodoLabel}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:Georgia,'Times New Roman',serif;color:#1B3950;background:#fff;padding:48px}
@@ -171,14 +205,14 @@ function openPrintReport(clientName: string, period: string, txs: Tx[], forecast
 <body>
   <div class="cap">Aurora · Relatório Financeiro</div>
   <h1>${clientName}</h1>
-  <div class="sub">Período: ${period} &nbsp;·&nbsp; Gerado em ${today}</div>
+  <div class="sub">Período: ${periodoLabel} &nbsp;·&nbsp; Gerado em ${today}</div>
 
   <div class="sec">
     <div class="sec-title">Demonstrativo de Fluxo de Caixa</div>
     <div class="g4">
       <div class="card"><div class="card-lbl">Receitas</div><div class="card-val" style="color:#8FA688">${brl(d.receitas)}</div></div>
       <div class="card"><div class="card-lbl">Despesas</div><div class="card-val" style="color:#B8956A">${brl(d.despesas)}</div></div>
-      <div class="card"><div class="card-lbl">Resultado</div><div class="card-val" style="color:${d.resultado >= 0 ? "#8FA688" : "#B8956A"}">${brl(d.resultado)}</div></div>
+      <div class="card"><div class="card-lbl">Saldo do Período</div><div class="card-val" style="color:${d.resultado >= 0 ? "#8FA688" : "#B8956A"}">${brl(d.resultado)}</div></div>
       <div class="card"><div class="card-lbl">Lançamentos</div><div class="card-val" style="color:#1B3950">${txs.length}</div></div>
     </div>
   </div>
@@ -233,7 +267,15 @@ function openPrintReport(clientName: string, period: string, txs: Tx[], forecast
   win.onload = () => win.print();
 }
 
-function exportExcel(clientName: string, period: string, txs: Tx[], forecast: ForecastMonth[], catMap: Map<string, CatInfo>) {
+function exportExcel(
+  clientName: string,
+  periodoLabel: string,
+  startDate: string,
+  endDate: string,
+  txs: Tx[],
+  forecast: ForecastMonth[],
+  catMap: Map<string, CatInfo>
+) {
   const d = computeReport(txs);
   const dre = computeDRE(txs, catMap);
   const wb = XLSX.utils.book_new();
@@ -253,16 +295,17 @@ function exportExcel(clientName: string, period: string, txs: Tx[], forecast: Fo
 
   // Aba 2: DFC Resumo
   const dfcRows = [
+    { Indicador: "Período", Valor: periodoLabel },
     { Indicador: "Receitas", Valor: d.receitas },
     { Indicador: "Despesas", Valor: d.despesas },
-    { Indicador: "Resultado", Valor: d.resultado },
+    { Indicador: "Saldo do Período", Valor: d.resultado },
     { Indicador: "Despesas Fixas", Valor: d.fixos },
     { Indicador: "Despesas Variáveis", Valor: d.variaveis },
     { Indicador: "Nº de Lançamentos", Valor: txs.length },
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dfcRows), "DFC");
 
-  // Aba 3: DRE estruturada por grupo
+  // Aba 3: DFC Gerencial por grupo
   const dreXlsx: { Grupo: string; Categoria: string; Valor: number }[] = [];
   for (const g of dre.groups) {
     for (const l of g.lines) {
@@ -299,66 +342,43 @@ function exportExcel(clientName: string, period: string, txs: Tx[], forecast: Fo
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projRows), "Projeção");
 
-  XLSX.writeFile(wb, `Relatorio_${clientName.replace(/\s+/g, "_")}_${period.replace("/", "-")}.xlsx`);
+  const slug = `${startDate}_${endDate}`;
+  XLSX.writeFile(wb, `Relatorio_${clientName.replace(/\s+/g, "_")}_${slug}.xlsx`);
 }
 
+// ─── componente principal ─────────────────────────────────────────────────────
 function RelatoriosPage() {
   const [clients, setClients] = useState<ClientRow[]>([]);
-  const [availablePeriods, setAvailablePeriods] = useState<Record<string, string[]>>({});
-  const [selectedPeriod, setSelectedPeriod] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState<Record<string, "pdf" | "excel" | null>>({});
 
+  const [startDate, setStartDate] = useState(firstOfMonthISO(-1));
+  const [endDate, setEndDate] = useState(lastOfMonthISO(-1));
+  const [activePreset, setActivePreset] = useState("Mês anterior");
+
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-
-      const { data: clientsData } = await supabase()
-        .from("clients")
-        .select("id, name, last_upload_at")
-        .order("name");
-
-      const cls = (clientsData ?? []) as ClientRow[];
-      setClients(cls);
-
-      if (cls.length === 0) {
+    supabase()
+      .from("clients")
+      .select("id, name, last_upload_at")
+      .order("name")
+      .then(({ data }) => {
+        setClients((data ?? []) as ClientRow[]);
         setLoading(false);
-        return;
-      }
-
-      const { data: txDates } = await supabase()
-        .from("transactions")
-        .select("client_id, date")
-        .in("client_id", cls.map((c) => c.id))
-        .eq("status", "approved")
-        .order("date", { ascending: false });
-
-      const periodsMap: Record<string, string[]> = {};
-      const seen: Record<string, Set<string>> = {};
-      for (const row of txDates ?? []) {
-        const [yyyy, mm] = (row.date as string).split("-");
-        const p = `${mm}/${yyyy}`;
-        if (!seen[row.client_id]) seen[row.client_id] = new Set();
-        if (!seen[row.client_id].has(p)) {
-          seen[row.client_id].add(p);
-          if (!periodsMap[row.client_id]) periodsMap[row.client_id] = [];
-          periodsMap[row.client_id].push(p);
-        }
-      }
-      setAvailablePeriods(periodsMap);
-
-      const defaults: Record<string, string> = {};
-      for (const [cid, periods] of Object.entries(periodsMap)) {
-        if (periods.length > 0) defaults[cid] = periods[0];
-      }
-      setSelectedPeriod(defaults);
-      setLoading(false);
-    }
-    load();
+      });
   }, []);
 
-  async function fetchTxs(clientId: string, period: string): Promise<Tx[]> {
-    const { start, end } = monthRangeDates(period);
+  function applyPreset(preset: typeof PRESETS[number]) {
+    setActivePreset(preset.label);
+    setStartDate(preset.start());
+    setEndDate(preset.end());
+  }
+
+  const periodoLabel =
+    startDate === endDate
+      ? new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR")
+      : `${new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} – ${new Date(endDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}`;
+
+  async function fetchTxs(clientId: string): Promise<Tx[]> {
     const { data } = await supabase()
       .from("transactions")
       .select(
@@ -366,18 +386,20 @@ function RelatoriosPage() {
       )
       .eq("client_id", clientId)
       .eq("status", "approved")
-      .gte("date", start)
-      .lte("date", end)
+      .gte("date", startDate)
+      .lte("date", endDate)
       .order("date");
     return (data ?? []) as Tx[];
   }
 
-  // Busca 6 meses históricos + parcelas e calcula projeção com a mesma lógica do useDFCForecast.
-  async function fetchForecast(clientId: string, period: string): Promise<ForecastMonth[]> {
-    const [mm, yyyy] = period.split("/").map(Number);
+  // Projeta a partir do último mês do intervalo selecionado.
+  async function fetchForecast(clientId: string): Promise<ForecastMonth[]> {
+    const endDt = new Date(endDate + "T12:00:00");
+    const mm = endDt.getMonth() + 1;
+    const yyyy = endDt.getFullYear();
+    // Janela histórica: 6 meses antes do fim do intervalo
     const histStart = new Date(yyyy, mm - 1 - 5, 1);
-    const startDate = `${histStart.getFullYear()}-${String(histStart.getMonth() + 1).padStart(2, "0")}-01`;
-    const endDate = `${yyyy}-${String(mm).padStart(2, "0")}-31`;
+    const histStartStr = `${histStart.getFullYear()}-${String(histStart.getMonth() + 1).padStart(2, "0")}-01`;
 
     const [{ data: histData }, { data: instData }] = await Promise.all([
       supabase()
@@ -385,7 +407,7 @@ function RelatoriosPage() {
         .select("date, amount, is_recurring")
         .eq("client_id", clientId)
         .eq("status", "approved")
-        .gte("date", startDate)
+        .gte("date", histStartStr)
         .lte("date", endDate),
       supabase()
         .from("transactions")
@@ -395,7 +417,6 @@ function RelatoriosPage() {
         .not("installment_group_id", "is", null),
     ]);
 
-    // Deduplica parcelamentos por grupo (mantém parcela mais recente)
     type InstRow = { amount: number; installment_number: number; installment_total: number; date: string; installment_group_id: string };
     const rows = (instData ?? []) as InstRow[];
     const groupMap = new Map<string, InstRow>();
@@ -414,47 +435,94 @@ function RelatoriosPage() {
   }
 
   async function handlePDF(clientId: string) {
-    const period = selectedPeriod[clientId];
-    if (!period) return;
     setExporting((e) => ({ ...e, [clientId]: "pdf" }));
     const [txs, forecast, catMap] = await Promise.all([
-      fetchTxs(clientId, period),
-      fetchForecast(clientId, period),
+      fetchTxs(clientId),
+      fetchForecast(clientId),
       fetchCategories(clientId),
     ]);
     const client = clients.find((c) => c.id === clientId)!;
     setExporting((e) => ({ ...e, [clientId]: null }));
-    openPrintReport(client.name, period, txs, forecast, catMap);
+    openPrintReport(client.name, periodoLabel, txs, forecast, catMap);
   }
 
   async function handleExcel(clientId: string) {
-    const period = selectedPeriod[clientId];
-    if (!period) return;
     setExporting((e) => ({ ...e, [clientId]: "excel" }));
     const [txs, forecast, catMap] = await Promise.all([
-      fetchTxs(clientId, period),
-      fetchForecast(clientId, period),
+      fetchTxs(clientId),
+      fetchForecast(clientId),
       fetchCategories(clientId),
     ]);
     const client = clients.find((c) => c.id === clientId)!;
-    exportExcel(client.name, period, txs, forecast, catMap);
+    exportExcel(client.name, periodoLabel, startDate, endDate, txs, forecast, catMap);
     setExporting((e) => ({ ...e, [clientId]: null }));
   }
 
   return (
     <AdminLayout>
       <PageHeader
-        cap="Entregas mensais"
+        cap="Entregas aos clientes"
         title="Relatórios"
-        emphasis="gerados"
-        description="Histórico de relatórios entregues aos clientes da carteira."
+        emphasis="financeiros"
+        description="Selecione o período e exporte DFC + DFC Gerencial para cada cliente."
       />
-      <div className="px-8 lg:px-12 pb-12">
+      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-6">
+
+        {/* Filtro de período */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap gap-2">
+            {PRESETS.map((p) => (
+              <button
+                key={p.label}
+                onClick={() => applyPreset(p)}
+                className="text-[10px] uppercase px-3 py-2 transition-colors"
+                style={{
+                  letterSpacing: "1.5px",
+                  fontWeight: 600,
+                  background: activePreset === p.label ? "var(--green)" : "transparent",
+                  color: activePreset === p.label ? "#fff" : "var(--muted-foreground)",
+                  border: "1px solid",
+                  borderColor: activePreset === p.label ? "var(--green)" : "var(--line)",
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>De</span>
+            <input
+              type="date"
+              value={startDate}
+              max={endDate}
+              onChange={(e) => { setActivePreset(""); setStartDate(e.target.value); }}
+              className="text-[12px] px-3 py-2 outline-none"
+              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff" }}
+            />
+            <span className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>Até</span>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate}
+              max={todayISO()}
+              onChange={(e) => { setActivePreset(""); setEndDate(e.target.value); }}
+              className="text-[12px] px-3 py-2 outline-none"
+              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff" }}
+            />
+          </div>
+        </div>
+
+        {/* Período ativo */}
+        <div className="text-[11px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)", fontWeight: 500 }}>
+          Período selecionado: <span style={{ color: "var(--green)" }}>{periodoLabel}</span>
+        </div>
+
+        {/* Tabela de clientes */}
         <div className="aurora-card p-0 overflow-hidden">
           <table className="w-full">
             <thead>
               <tr style={{ background: "var(--linen)" }}>
-                {["Cliente", "Período", "Último extrato", "Tipo", "Ações"].map((h) => (
+                {["Cliente", "Último extrato", "Formato", "Exportar"].map((h) => (
                   <th
                     key={h}
                     className="text-left px-6 py-3 aurora-cap"
@@ -468,76 +536,33 @@ function RelatoriosPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-10 text-center text-[12px]"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
+                  <td colSpan={4} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     Carregando clientes...
                   </td>
                 </tr>
               )}
               {!loading && clients.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-10 text-center text-[12px]"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
+                  <td colSpan={4} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     Nenhum cliente cadastrado.
                   </td>
                 </tr>
               )}
               {!loading &&
                 clients.map((c, i) => {
-                  const periods = availablePeriods[c.id] ?? [];
-                  const period = selectedPeriod[c.id];
-                  const hasData = periods.length > 0;
+                  const hasData = !!c.last_upload_at;
                   const isExp = exporting[c.id];
 
                   return (
                     <tr
                       key={c.id}
-                      style={{
-                        background: i % 2 === 0 ? "#fff" : "#FAFAF8",
-                        borderTop: "1px solid var(--line)",
-                      }}
+                      style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}
                     >
                       <td className="px-6 py-4 text-[13px]" style={{ fontWeight: 500 }}>
                         {c.name}
                       </td>
-                      <td className="px-6 py-4">
-                        {hasData ? (
-                          <select
-                            value={period ?? ""}
-                            onChange={(e) =>
-                              setSelectedPeriod((sp) => ({ ...sp, [c.id]: e.target.value }))
-                            }
-                            className="text-[12px] px-2 py-1"
-                            style={{ border: "1px solid var(--line)", background: "#fff" }}
-                          >
-                            {periods.map((p) => (
-                              <option key={p} value={p}>
-                                {p}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span
-                            className="text-[12px]"
-                            style={{ color: "var(--muted-foreground)" }}
-                          >
-                            —
-                          </span>
-                        )}
-                      </td>
-                      <td
-                        className="px-6 py-4 text-[12px]"
-                        style={{ color: "var(--muted-foreground)" }}
-                      >
-                        {c.last_upload_at
-                          ? `Importado em ${formatDatePtBR(c.last_upload_at)}`
-                          : "—"}
+                      <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                        {c.last_upload_at ? `Importado em ${formatDatePtBR(c.last_upload_at)}` : "—"}
                       </td>
                       <td className="px-6 py-4">
                         {hasData ? (
@@ -545,10 +570,7 @@ function RelatoriosPage() {
                             DFC + Gerencial
                           </span>
                         ) : (
-                          <span
-                            className="text-[11px]"
-                            style={{ color: "var(--muted-foreground)" }}
-                          >
+                          <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
                             Sem dados
                           </span>
                         )}
@@ -559,11 +581,7 @@ function RelatoriosPage() {
                             onClick={() => handlePDF(c.id)}
                             disabled={!hasData || !!isExp}
                             className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40 transition-opacity"
-                            style={{
-                              border: "1px solid var(--navy)",
-                              color: "var(--navy)",
-                              letterSpacing: "1.5px",
-                            }}
+                            style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" }}
                           >
                             {isExp === "pdf" ? "..." : "PDF ↓"}
                           </button>
@@ -571,11 +589,7 @@ function RelatoriosPage() {
                             onClick={() => handleExcel(c.id)}
                             disabled={!hasData || !!isExp}
                             className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40 transition-opacity"
-                            style={{
-                              border: "1px solid var(--green)",
-                              color: "var(--green)",
-                              letterSpacing: "1.5px",
-                            }}
+                            style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "1.5px" }}
                           >
                             {isExp === "excel" ? "..." : "Excel ↓"}
                           </button>
