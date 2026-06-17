@@ -443,7 +443,43 @@ Deno.serve(async (req) => {
       status: "pending",
     }));
 
-    const { error: insertError } = await supabase.from("transactions").insert(txRows);
+    // Detecção de duplicatas: remove transações com mesmo (date, amount, description)
+    // já presentes no banco para este cliente (approved ou pending).
+    const candidateDates = [...new Set(txRows.map((t) => t.date))];
+    const { data: existing } = await supabase
+      .from("transactions")
+      .select("date, amount, description")
+      .eq("client_id", upload.client_id)
+      .in("date", candidateDates)
+      .in("status", ["approved", "pending"]);
+
+    const existingKeys = new Set(
+      (existing ?? []).map((t) => `${t.date}|${t.amount}|${t.description}`)
+    );
+    const deduped = txRows.filter(
+      (t) => !existingKeys.has(`${t.date}|${t.amount}|${t.description}`)
+    );
+    const duplicatesCount = txRows.length - deduped.length;
+
+    if (duplicatesCount > 0) {
+      console.log(`[parse-extract] ${duplicatesCount} transação(ões) duplicada(s) ignorada(s)`);
+    }
+
+    if (deduped.length === 0) {
+      await supabase
+        .from("uploads")
+        .update({
+          status: "error",
+          error_message: "Todos os lançamentos deste arquivo já foram importados anteriormente.",
+        })
+        .eq("id", upload_id);
+      return new Response(
+        JSON.stringify({ error: "Arquivo duplicado: todos os lançamentos já existem" }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { error: insertError } = await supabase.from("transactions").insert(deduped);
 
     if (insertError) {
       await supabase
@@ -463,8 +499,9 @@ Deno.serve(async (req) => {
       .from("uploads")
       .update({
         status: "parsed",
-        tx_total: transactions.length,
-        tx_pending: transactions.length,
+        tx_total: deduped.length,
+        tx_pending: deduped.length,
+        ...(duplicatesCount > 0 && { error_message: `${duplicatesCount} lançamento(s) duplicado(s) ignorado(s)` }),
       })
       .eq("id", upload_id);
 

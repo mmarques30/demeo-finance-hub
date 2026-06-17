@@ -259,13 +259,23 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < remainingForAI.length; i += BATCH_SIZE) {
       const batch = remainingForAI.slice(i, i + BATCH_SIZE);
-      const results = await classifyWithAI(
-        batch,
-        categoryNames,
-        clientName,
-        clientSegment,
-        topPatterns ?? []
-      );
+
+      let results: AIResult[] = [];
+      try {
+        results = await classifyWithAI(
+          batch,
+          categoryNames,
+          clientName,
+          clientSegment,
+          topPatterns ?? []
+        );
+      } catch (aiErr) {
+        // Falha de IA (timeout, API fora do ar, etc.): todas as transações do batch ficam
+        // como pending para revisão manual. O upload continua sem abortar.
+        console.error("[classify-batch] AI batch error, marking batch as pending:", aiErr);
+        aiPending += batch.length;
+        continue;
+      }
 
       for (const r of results) {
         const isKnownCategory = categoryNames.includes(r.cat);
@@ -291,7 +301,7 @@ Deno.serve(async (req) => {
     const totalApproved = approvedByRule.length + approvedByRecurrence.length;
     await supabase.from("uploads").update({
       status: "done",
-      tx_classified: 0,
+      tx_classified: totalApproved,
       tx_pending: aiPending,
     }).eq("id", upload_id);
 
@@ -301,13 +311,14 @@ Deno.serve(async (req) => {
       byRule: approvedByRule.length,
       byRecurrence: approvedByRecurrence.length,
       aiPending,
+      totalApproved,
     });
 
     return new Response(
       JSON.stringify({
         success: true,
         approved: totalApproved,
-        classified: 0,
+        classified: totalApproved,
         pending_manual: aiPending,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
