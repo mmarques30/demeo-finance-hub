@@ -2,6 +2,7 @@
 // gradient overlay sutil e badge institucional. Cores vivas, sem bege.
 import { AURORA_WHATSAPP } from "@/lib/supabase";
 import { BrandBackdrop } from "./motion/BrandBackdrop";
+import claudiaPhoto from "@/assets/claudia.jpg.asset.json";
 
 const INK = "#1C2D45";
 const STEEL = "#6D92A6";
