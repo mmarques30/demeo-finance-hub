@@ -247,9 +247,23 @@ function DFCPage() {
         {/* Projeção */}
         {tx.length > 0 && (
           <div className="aurora-card p-0 overflow-hidden">
-            <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)" }}>
-              <div className="aurora-cap mb-1">Próximos 90 dias</div>
-              <div className="aurora-serif text-[22px]">Projeção <em className="italic" style={{ color: "var(--green)" }}>baseada em recorrências</em></div>
+            <div className="px-6 py-4 flex items-end justify-between gap-4 flex-wrap" style={{ borderBottom: "1px solid var(--line)" }}>
+              <div>
+                <div className="aurora-cap mb-1">Próximos 90 dias</div>
+                <div className="aurora-serif text-[22px]">
+                  Projeção <em className="italic" style={{ color: "var(--green)" }}>de fluxo de caixa</em>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 inline-block rounded-sm" style={{ background: "var(--green)", opacity: 0.4 }} />
+                  Tendência histórica
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 inline-block rounded-sm" style={{ background: "var(--green)" }} />
+                  Confirmado (contas)
+                </span>
+              </div>
             </div>
             <table className="w-full">
               <thead>
@@ -262,12 +276,36 @@ function DFCPage() {
               <tbody>
                 {projecao.map((p, i) => {
                   const r = p.rec - p.des;
+                  const hasConfirmed = p.confirmedRec > 0 || p.confirmedDes > 0;
                   return (
                     <tr key={p.mes} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
-                      <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 500 }}>{p.mes}</td>
-                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--green)" }}>{brl(p.rec)}</td>
-                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--tan)" }}>{brl(p.des)}</td>
-                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 16, color: r >= 0 ? "var(--green)" : "var(--tan)" }}>{brl(r)}</td>
+                      <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 500 }}>
+                        {p.mes}
+                        {hasConfirmed && (
+                          <div className="text-[10px] mt-0.5" style={{ color: "var(--green)", letterSpacing: "0.5px" }}>
+                            com contas confirmadas
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--green)" }}>
+                        {brl(p.rec)}
+                        {p.confirmedRec > 0 && (
+                          <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: "inherit", fontWeight: 400 }}>
+                            {brl(p.confirmedRec)} confirmado
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--tan)" }}>
+                        {brl(p.des)}
+                        {p.confirmedDes > 0 && (
+                          <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: "inherit", fontWeight: 400 }}>
+                            {brl(p.confirmedDes)} confirmado
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 16, color: r >= 0 ? "var(--green)" : "var(--tan)" }}>
+                        {brl(r)}
+                      </td>
                     </tr>
                   );
                 })}
