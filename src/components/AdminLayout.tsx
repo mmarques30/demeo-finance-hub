@@ -31,6 +31,7 @@ const GROUPS: SidebarGroup[] = [
       { to: "/admin/importar", label: "Importar Extratos", icon: "↓" },
       { to: "/admin/pendentes", label: "Pendentes", icon: "⊙" },
       { to: "/admin/recorrencias", label: "Recorrências", icon: "↺" },
+      { to: "/admin/contas", label: "Contas", icon: "⊜" },
     ],
   },
   {
