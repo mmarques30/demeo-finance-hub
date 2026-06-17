@@ -99,6 +99,13 @@ function ImportarPage() {
       setError("Selecione um cliente antes de enviar o arquivo.");
       return;
     }
+    const MAX_FILE_MB = 15;
+    const oversized = fileList.filter((f) => f.size > MAX_FILE_MB * 1024 * 1024);
+    if (oversized.length > 0) {
+      setError(oversized.map((f) => `"${f.name}" excede o limite de ${MAX_FILE_MB} MB.`).join("\n"));
+      return;
+    }
+
     setFiles(fileList);
     setError(null);
     setCurrentFileIndex(0);

@@ -4,16 +4,13 @@
 // Opera com service_role para contornar RLS — chamado via anon key pelo frontend.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, handlePreflight } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const preflight = handlePreflight(req);
+  if (preflight) return preflight;
+
+  const cors = corsHeaders(req.headers.get("origin"));
 
   try {
     const supabase = createClient(
@@ -28,7 +25,7 @@ Deno.serve(async (req) => {
     if (!file_base64 || !filename || !client_id || !bank_name) {
       return new Response(
         JSON.stringify({ error: "Campos obrigatórios: file_base64, filename, client_id, bank_name" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
@@ -55,7 +52,7 @@ Deno.serve(async (req) => {
     if (!client) {
       return new Response(
         JSON.stringify({ error: "Cliente não encontrado" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 404, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
@@ -68,7 +65,7 @@ Deno.serve(async (req) => {
     if (storageError) {
       return new Response(
         JSON.stringify({ error: `Erro no Storage: ${storageError.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
@@ -93,7 +90,7 @@ Deno.serve(async (req) => {
     if (uploadError || !upload) {
       return new Response(
         JSON.stringify({ error: `Erro ao registrar upload: ${uploadError?.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
@@ -125,7 +122,7 @@ Deno.serve(async (req) => {
       const status = parseRes.status === 422 ? 422 : 500;
       return new Response(
         JSON.stringify({ error: parseResult.error ?? "Nenhum lançamento encontrado" }),
-        { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
@@ -186,14 +183,14 @@ Deno.serve(async (req) => {
         tx_count: parseResult.tx_count,
         transactions: transactions || [],
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...cors, "Content-Type": "application/json" } }
     );
 
   } catch (err) {
     console.error("create-upload error:", err);
     return new Response(
       JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
     );
   }
 });

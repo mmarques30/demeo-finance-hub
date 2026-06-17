@@ -145,7 +145,7 @@ export function useDFCForecast(clientId: string, currentPeriod: string): Forecas
 
   const histStart = new Date(yyyy, mm - 1 - 5, 1);
   const startDate = `${histStart.getFullYear()}-${String(histStart.getMonth() + 1).padStart(2, "0")}-01`;
-  const endDate = `${yyyy}-${String(mm).padStart(2, "0")}-31`;
+  const endDate = `${yyyy}-${String(mm).padStart(2, "0")}-${new Date(yyyy, mm, 0).getDate()}`;
 
   const { data: txs = [] } = useQuery<HistTx[]>({
     queryKey: ["dfc-forecast-history", clientId, currentPeriod],

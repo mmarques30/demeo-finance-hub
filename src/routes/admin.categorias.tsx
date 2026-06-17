@@ -105,7 +105,27 @@ function CategoriasPage() {
   }
 
   async function deleteCategory(id: string) {
-    await supabase().from("categories").delete().eq("id", id);
+    const cat = categories.find((c) => c.id === id);
+    if (!cat) return;
+
+    const { count } = await supabase()
+      .from("transactions")
+      .select("*", { count: "exact", head: true })
+      .eq("client_id", cat.client_id)
+      .eq("category", cat.name);
+
+    const msg =
+      count && count > 0
+        ? `Excluir "${cat.name}"? Esta categoria está vinculada a ${count} lançamento(s). Eles ficarão sem categoria na DFC.`
+        : `Excluir a categoria "${cat.name}"?`;
+
+    if (!confirm(msg)) return;
+
+    const { error: deleteError } = await supabase().from("categories").delete().eq("id", id);
+    if (deleteError) {
+      setError(`Erro ao excluir: ${deleteError.message}`);
+      return;
+    }
     setCategories((prev) => prev.filter((c) => c.id !== id));
   }
 
