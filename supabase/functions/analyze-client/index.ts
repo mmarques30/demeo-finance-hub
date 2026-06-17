@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
       max_tokens: 1024,
       messages: [{
         role: "user",
-        content: `Você é consultora financeira especialista em pequenas e médias empresas brasileiras.
+        content: `Você é parceira financeira especialista em pequenas e médias empresas brasileiras.
 
 Cliente: ${client.name}
 Setor: ${client.segment ?? "Empresa"}
