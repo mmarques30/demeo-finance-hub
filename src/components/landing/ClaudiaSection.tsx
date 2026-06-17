@@ -2,6 +2,7 @@
 // gradient overlay sutil e badge institucional. Cores vivas, sem bege.
 import { AURORA_WHATSAPP } from "@/lib/supabase";
 import { BrandBackdrop } from "./motion/BrandBackdrop";
+import claudiaPhoto from "@/assets/claudia.jpg.asset.json";
 
 const INK = "#1C2D45";
 const STEEL = "#6D92A6";
@@ -33,7 +34,7 @@ export function ClaudiaSection() {
           >
             {/* Foto da Claudia */}
             <img
-              src="/claudia.jpg"
+              src={claudiaPhoto.url}
               alt="Claudia De Meo, fundadora da Aurora"
               loading="lazy"
               decoding="async"
@@ -41,6 +42,7 @@ export function ClaudiaSection() {
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
+                objectPosition: "center 20%",
                 display: "block",
                 background: "#E8E8E8",
               }}
