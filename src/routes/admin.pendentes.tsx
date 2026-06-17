@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { brl, formatDatePtBR } from "@/lib/utils";
+import { brl, buildPattern, formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/pendentes")({
@@ -20,6 +20,12 @@ interface PendingTx {
   status: string;
 }
 
+interface InstallmentState {
+  enabled: boolean;
+  number: number;
+  total: number;
+}
+
 interface ClientInfo {
   id: string;
   name: string;
@@ -32,6 +38,7 @@ function PendentesPage() {
   const [categoriesMap, setCategoriesMap] = useState<Record<string, string[]>>({});
   const [cats, setCats] = useState<Record<string, string>>({});
   const [recurring, setRecurring] = useState<Record<string, boolean>>({});
+  const [installments, setInstallments] = useState<Record<string, InstallmentState>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -105,30 +112,40 @@ function PendentesPage() {
         const isRecurring = !!recurring[tx.id];
 
         // 1. Atualiza a transação
+        const inst = installments[tx.id];
+        const installmentFields =
+          inst?.enabled && inst.total > 0 && inst.number > 0
+            ? {
+                installment_number: inst.number,
+                installment_total: inst.total,
+                installment_group_id: crypto.randomUUID(),
+              }
+            : {};
+
         const { error: updateErr } = await supabase()
           .from("transactions")
           .update({
             category,
             status: "approved",
             is_recurring: isRecurring,
+            ...installmentFields,
           })
           .eq("id", tx.id);
 
         if (updateErr) throw new Error(`Transação ${tx.id}: ${updateErr.message}`);
 
-        // 2. Se "salvar como regra", insere em classification_rules
+        // 2. Se "salvar como regra", insere em classification_rules como regra ativa imediata
         if (isRecurring) {
-          const pattern = tx.description
-            .split(" ")
-            .slice(0, 3)
-            .join(" ")
-            .toUpperCase();
+          const pattern = buildPattern(tx.description);
           await supabase().from("classification_rules").upsert(
             {
               client_id: tx.client_id,
               pattern,
               category,
               is_recurring: true,
+              hits: 2,
+              source: "manual",
+              is_active: true,
             },
             { onConflict: "client_id,pattern" }
           );
@@ -229,7 +246,7 @@ function PendentesPage() {
               <table className="w-full">
                 <thead>
                   <tr>
-                    {["Data", "Descrição", "Valor", "Categoria", "Recorrente"].map((h) => (
+                    {["Data", "Descrição", "Valor", "Categoria", "Recorrente", "Parcelamento"].map((h) => (
                       <th
                         key={h}
                         className="text-left px-6 py-3 aurora-cap"
@@ -281,6 +298,52 @@ function PendentesPage() {
                           />
                           Salvar como regra
                         </label>
+                      </td>
+                      <td className="px-6 py-3">
+                        {(() => {
+                          const inst = installments[t.id] ?? { enabled: false, number: 1, total: 2 };
+                          return (
+                            <div className="flex flex-col gap-1.5">
+                              <label className="inline-flex items-center gap-2 cursor-pointer text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={inst.enabled}
+                                  onChange={(e) =>
+                                    setInstallments({ ...installments, [t.id]: { ...inst, enabled: e.target.checked } })
+                                  }
+                                />
+                                Parcelamento
+                              </label>
+                              {inst.enabled && (
+                                <div className="flex items-center gap-1 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                                  <span>Parcela</span>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={inst.total}
+                                    value={inst.number}
+                                    onChange={(e) =>
+                                      setInstallments({ ...installments, [t.id]: { ...inst, number: Math.max(1, Number(e.target.value)) } })
+                                    }
+                                    className="w-10 text-center text-[11px] px-1 py-0.5"
+                                    style={{ border: "1px solid var(--line)" }}
+                                  />
+                                  <span>de</span>
+                                  <input
+                                    type="number"
+                                    min={2}
+                                    value={inst.total}
+                                    onChange={(e) =>
+                                      setInstallments({ ...installments, [t.id]: { ...inst, total: Math.max(2, Number(e.target.value)) } })
+                                    }
+                                    className="w-10 text-center text-[11px] px-1 py-0.5"
+                                    style={{ border: "1px solid var(--line)" }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))}

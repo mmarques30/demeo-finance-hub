@@ -43,3 +43,38 @@ export function currentMonthStr(): string {
 export function currentMonthLabel(): string {
   return new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 }
+
+/** Espelha exatamente a lógica de buildPattern() do classify-batch edge function. */
+export function buildPattern(raw: string): string {
+  const normalized = raw
+    .toUpperCase()
+    .replace(/\d{2}\/\d{2}(\/\d{2,4})?/g, "")
+    .replace(/\b\d+\b/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return normalized.split(" ").filter(Boolean).slice(0, 3).join(" ");
+}
+
+/** Gera CSV com BOM UTF-8 (para Excel reconhecer acentos) e dispara download. */
+export function exportToCSV(rows: Record<string, unknown>[], filename: string): void {
+  if (rows.length === 0) return;
+  const headers = Object.keys(rows[0]);
+  const escape = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    return s.includes(",") || s.includes('"') || s.includes("\n")
+      ? `"${s.replace(/"/g, '""')}"`
+      : s;
+  };
+  const lines = [
+    headers.join(","),
+    ...rows.map((r) => headers.map((h) => escape(r[h])).join(",")),
+  ];
+  const bom = "﻿";
+  const blob = new Blob([bom + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

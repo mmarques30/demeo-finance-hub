@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/categorias")({
   component: CategoriasPage,
@@ -42,8 +42,13 @@ function CategoriasPage() {
   const [newType, setNewType] = useState<"receita" | "despesa" | "transferencia">("despesa");
   const [saving, setSaving] = useState(false);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editGroup, setEditGroup] = useState(GRUPOS[0]);
+  const [editType, setEditType] = useState<"receita" | "despesa" | "transferencia">("despesa");
+
   useEffect(() => {
-    supabase
+    supabase()
       .from("clients")
       .select("id, name")
       .order("name")
@@ -62,7 +67,7 @@ function CategoriasPage() {
 
   async function loadCategories() {
     setLoading(true);
-    const { data, error: err } = await supabase
+    const { data, error: err } = await supabase()
       .from("categories")
       .select("id, client_id, name, group_name, type, is_active, sort_order")
       .eq("client_id", clientId)
@@ -77,7 +82,7 @@ function CategoriasPage() {
     if (!newName.trim() || !clientId || saving) return;
     setSaving(true);
     const maxOrder = Math.max(0, ...categories.map((c) => c.sort_order));
-    const { error: err } = await supabase.from("categories").insert({
+    const { error: err } = await supabase().from("categories").insert({
       client_id: clientId,
       name: newName.trim(),
       group_name: newGroup,
@@ -93,15 +98,37 @@ function CategoriasPage() {
   }
 
   async function toggleActive(cat: Category) {
-    await supabase.from("categories").update({ is_active: !cat.is_active }).eq("id", cat.id);
+    await supabase().from("categories").update({ is_active: !cat.is_active }).eq("id", cat.id);
     setCategories((prev) =>
       prev.map((c) => (c.id === cat.id ? { ...c, is_active: !cat.is_active } : c))
     );
   }
 
   async function deleteCategory(id: string) {
-    await supabase.from("categories").delete().eq("id", id);
+    await supabase().from("categories").delete().eq("id", id);
     setCategories((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  function startEdit(cat: Category) {
+    setEditingId(cat.id);
+    setEditName(cat.name);
+    setEditGroup(cat.group_name);
+    setEditType(cat.type);
+  }
+
+  async function saveEdit(id: string) {
+    if (!editName.trim()) return;
+    const { error: err } = await supabase()
+      .from("categories")
+      .update({ name: editName.trim(), group_name: editGroup, type: editType })
+      .eq("id", id);
+    if (err) { setError(err.message); return; }
+    setCategories((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, name: editName.trim(), group_name: editGroup, type: editType } : c
+      )
+    );
+    setEditingId(null);
   }
 
   const grouped = categories.reduce<Record<string, Category[]>>((acc, c) => {
@@ -215,48 +242,105 @@ function CategoriasPage() {
               <div className="aurora-card p-0 overflow-hidden">
                 <table className="w-full">
                   <tbody>
-                    {items.map((cat, idx) => (
-                      <tr
-                        key={cat.id}
-                        style={{
-                          borderTop: idx > 0 ? "1px solid var(--line)" : undefined,
-                          opacity: cat.is_active ? 1 : 0.45,
-                        }}
-                      >
-                        <td className="px-6 py-3">
-                          <span className="text-[13px]" style={{ fontWeight: 500 }}>{cat.name}</span>
-                        </td>
-                        <td className="px-6 py-3">
-                          <TypeBadge type={cat.type} />
-                        </td>
-                        <td className="px-6 py-3 text-right">
-                          <div className="inline-flex items-center gap-3">
-                            <button
-                              onClick={() => toggleActive(cat)}
-                              className="text-[10px] uppercase px-3 py-1"
-                              style={{
-                                border: "1px solid var(--line)",
-                                color: cat.is_active ? "var(--green)" : "var(--muted-foreground)",
-                                letterSpacing: "1.5px",
-                              }}
-                            >
-                              {cat.is_active ? "Ativa" : "Inativa"}
-                            </button>
-                            <button
-                              onClick={() => deleteCategory(cat.id)}
-                              className="text-[10px] uppercase px-3 py-1"
-                              style={{
-                                border: "1px solid rgba(184,149,106,0.4)",
-                                color: "var(--tan)",
-                                letterSpacing: "1.5px",
-                              }}
-                            >
-                              Excluir
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {items.map((cat, idx) => {
+                      const isEditing = editingId === cat.id;
+                      return (
+                        <tr
+                          key={cat.id}
+                          style={{
+                            borderTop: idx > 0 ? "1px solid var(--line)" : undefined,
+                            opacity: cat.is_active ? 1 : 0.45,
+                          }}
+                        >
+                          <td className="px-6 py-3">
+                            {isEditing ? (
+                              <input
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                className="text-[13px] px-2 py-1"
+                                style={{ border: "1px solid var(--line)", minWidth: 180 }}
+                              />
+                            ) : (
+                              <span className="text-[13px]" style={{ fontWeight: 500 }}>{cat.name}</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-3">
+                            {isEditing ? (
+                              <div className="flex gap-2">
+                                <select
+                                  value={editGroup}
+                                  onChange={(e) => setEditGroup(e.target.value)}
+                                  className="text-[12px] px-2 py-1"
+                                  style={{ border: "1px solid var(--line)" }}
+                                >
+                                  {GRUPOS.map((g) => <option key={g}>{g}</option>)}
+                                </select>
+                                <select
+                                  value={editType}
+                                  onChange={(e) => setEditType(e.target.value as typeof editType)}
+                                  className="text-[12px] px-2 py-1"
+                                  style={{ border: "1px solid var(--line)" }}
+                                >
+                                  {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                </select>
+                              </div>
+                            ) : (
+                              <TypeBadge type={cat.type} />
+                            )}
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <div className="inline-flex items-center gap-2">
+                              {isEditing ? (
+                                <>
+                                  <button
+                                    onClick={() => saveEdit(cat.id)}
+                                    className="text-[10px] uppercase px-3 py-1"
+                                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px" }}
+                                  >
+                                    Salvar
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingId(null)}
+                                    className="text-[10px] uppercase px-3 py-1"
+                                    style={{ border: "1px solid var(--line)", letterSpacing: "1.5px" }}
+                                  >
+                                    Cancelar
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => startEdit(cat)}
+                                    className="text-[10px] uppercase px-3 py-1"
+                                    style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" }}
+                                  >
+                                    Editar
+                                  </button>
+                                  <button
+                                    onClick={() => toggleActive(cat)}
+                                    className="text-[10px] uppercase px-3 py-1"
+                                    style={{
+                                      border: "1px solid var(--line)",
+                                      color: cat.is_active ? "var(--green)" : "var(--muted-foreground)",
+                                      letterSpacing: "1.5px",
+                                    }}
+                                  >
+                                    {cat.is_active ? "Ativa" : "Inativa"}
+                                  </button>
+                                  <button
+                                    onClick={() => deleteCategory(cat.id)}
+                                    className="text-[10px] uppercase px-3 py-1"
+                                    style={{ border: "1px solid rgba(184,149,106,0.4)", color: "var(--tan)", letterSpacing: "1.5px" }}
+                                  >
+                                    Excluir
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

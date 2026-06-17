@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/regras")({
   component: RegrasPage,
@@ -36,9 +36,11 @@ function RegrasPage() {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<FilterMode>("all");
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCategory, setEditCategory] = useState("");
 
   useEffect(() => {
-    supabase
+    supabase()
       .from("clients")
       .select("id, name")
       .order("name")
@@ -57,7 +59,7 @@ function RegrasPage() {
 
   async function loadRules() {
     setLoading(true);
-    const { data, error: err } = await supabase
+    const { data, error: err } = await supabase()
       .from("classification_rules")
       .select("id, client_id, pattern, category, is_recurring, is_active, hits, last_used, source")
       .eq("client_id", clientId)
@@ -68,7 +70,7 @@ function RegrasPage() {
   }
 
   async function toggleActive(rule: Rule) {
-    await supabase
+    await supabase()
       .from("classification_rules")
       .update({ is_active: !rule.is_active })
       .eq("id", rule.id);
@@ -78,8 +80,19 @@ function RegrasPage() {
   }
 
   async function deleteRule(id: string) {
-    await supabase.from("classification_rules").delete().eq("id", id);
+    await supabase().from("classification_rules").delete().eq("id", id);
     setRules((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  async function saveRuleCategory(id: string) {
+    if (!editCategory.trim()) return;
+    const { error: err } = await supabase()
+      .from("classification_rules")
+      .update({ category: editCategory.trim() })
+      .eq("id", id);
+    if (err) { setError(err.message); return; }
+    setRules((prev) => prev.map((r) => (r.id === id ? { ...r, category: editCategory.trim() } : r)));
+    setEditingId(null);
   }
 
   const filtered = rules.filter((r) => {
@@ -204,7 +217,18 @@ function RegrasPage() {
                         {rule.pattern}
                       </code>
                     </td>
-                    <td className="px-6 py-3 text-[12px]">{rule.category}</td>
+                    <td className="px-6 py-3 text-[12px]">
+                      {editingId === rule.id ? (
+                        <input
+                          value={editCategory}
+                          onChange={(e) => setEditCategory(e.target.value)}
+                          className="text-[12px] px-2 py-1"
+                          style={{ border: "1px solid var(--line)", minWidth: 160 }}
+                        />
+                      ) : (
+                        rule.category
+                      )}
+                    </td>
                     <td className="px-6 py-3">
                       <SourceBadge source={rule.source} />
                     </td>
@@ -227,28 +251,48 @@ function RegrasPage() {
                     </td>
                     <td className="px-6 py-3 text-right">
                       <div className="inline-flex items-center gap-2">
-                        <button
-                          onClick={() => toggleActive(rule)}
-                          className="text-[10px] uppercase px-3 py-1"
-                          style={{
-                            border: "1px solid var(--line)",
-                            color: "var(--foreground)",
-                            letterSpacing: "1.5px",
-                          }}
-                        >
-                          {rule.is_active ? "Desativar" : "Ativar"}
-                        </button>
-                        <button
-                          onClick={() => deleteRule(rule.id)}
-                          className="text-[10px] uppercase px-3 py-1"
-                          style={{
-                            border: "1px solid rgba(184,149,106,0.4)",
-                            color: "var(--tan)",
-                            letterSpacing: "1.5px",
-                          }}
-                        >
-                          ×
-                        </button>
+                        {editingId === rule.id ? (
+                          <>
+                            <button
+                              onClick={() => saveRuleCategory(rule.id)}
+                              className="text-[10px] uppercase px-3 py-1"
+                              style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px" }}
+                            >
+                              Salvar
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="text-[10px] uppercase px-3 py-1"
+                              style={{ border: "1px solid var(--line)", letterSpacing: "1.5px" }}
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => { setEditingId(rule.id); setEditCategory(rule.category); }}
+                              className="text-[10px] uppercase px-3 py-1"
+                              style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" }}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => toggleActive(rule)}
+                              className="text-[10px] uppercase px-3 py-1"
+                              style={{ border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px" }}
+                            >
+                              {rule.is_active ? "Desativar" : "Ativar"}
+                            </button>
+                            <button
+                              onClick={() => deleteRule(rule.id)}
+                              className="text-[10px] uppercase px-3 py-1"
+                              style={{ border: "1px solid rgba(184,149,106,0.4)", color: "var(--tan)", letterSpacing: "1.5px" }}
+                            >
+                              ×
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
