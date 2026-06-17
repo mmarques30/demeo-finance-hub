@@ -21,7 +21,6 @@ const GROUPS: SidebarGroup[] = [
       { to: "/admin", label: "Dashboard", icon: "▦" },
       { to: "/admin/clientes", label: "Clientes", icon: "◷" },
       { to: "/admin/dfc", label: "DFC / DRE", icon: "◈" },
-      { to: "/admin/insights/analise", label: "Análise Financeira IA", icon: "✦" },
       { to: "/admin/relatorios", label: "Relatórios", icon: "≡" },
     ],
   },
@@ -607,7 +606,6 @@ const MODULE_MAP: Record<string, ModuleIdentity> = {
   "/admin/propostas": { icon: "✎", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
   "/admin/contratos": { icon: "❍", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
   "/admin/servicos": { icon: "◇", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Catálogo" },
-  "/admin/insights/analise": { icon: "✦", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Visão" },
   "/admin/insights/precificacao": { icon: "↗", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Catálogo" },
 };
 
