@@ -42,6 +42,7 @@ export function ClaudiaSection() {
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
+                objectPosition: "center 20%",
                 display: "block",
                 background: "#E8E8E8",
               }}
