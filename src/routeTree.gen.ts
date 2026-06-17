@@ -29,8 +29,6 @@ import { Route as AdminPropostasNovaRouteImport } from './routes/admin.propostas
 import { Route as AdminInsightsPrecificacaoRouteImport } from './routes/admin.insights.precificacao'
 import { Route as AdminContratosNovoRouteImport } from './routes/admin.contratos.novo'
 import { Route as AdminClientesClientIdRouteImport } from './routes/admin.clientes.$clientId'
-import { Route as AdminClientesClientIdRecorrenciasRouteImport } from './routes/admin.clientes.$clientId.recorrencias'
-import { Route as AdminClientesClientIdContasRouteImport } from './routes/admin.clientes.$clientId.contas'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -133,18 +131,6 @@ const AdminClientesClientIdRoute = AdminClientesClientIdRouteImport.update({
   path: '/$clientId',
   getParentRoute: () => AdminClientesRoute,
 } as any)
-const AdminClientesClientIdRecorrenciasRoute =
-  AdminClientesClientIdRecorrenciasRouteImport.update({
-    id: '/recorrencias',
-    path: '/recorrencias',
-    getParentRoute: () => AdminClientesClientIdRoute,
-  } as any)
-const AdminClientesClientIdContasRoute =
-  AdminClientesClientIdContasRouteImport.update({
-    id: '/contas',
-    path: '/contas',
-    getParentRoute: () => AdminClientesClientIdRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -162,13 +148,11 @@ export interface FileRoutesByFullPath {
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
   '/admin/': typeof AdminIndexRoute
-  '/admin/clientes/$clientId': typeof AdminClientesClientIdRouteWithChildren
+  '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
-  '/admin/clientes/$clientId/contas': typeof AdminClientesClientIdContasRoute
-  '/admin/clientes/$clientId/recorrencias': typeof AdminClientesClientIdRecorrenciasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -186,13 +170,11 @@ export interface FileRoutesByTo {
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
   '/admin': typeof AdminIndexRoute
-  '/admin/clientes/$clientId': typeof AdminClientesClientIdRouteWithChildren
+  '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
-  '/admin/clientes/$clientId/contas': typeof AdminClientesClientIdContasRoute
-  '/admin/clientes/$clientId/recorrencias': typeof AdminClientesClientIdRecorrenciasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -211,13 +193,11 @@ export interface FileRoutesById {
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
   '/admin/': typeof AdminIndexRoute
-  '/admin/clientes/$clientId': typeof AdminClientesClientIdRouteWithChildren
+  '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
-  '/admin/clientes/$clientId/contas': typeof AdminClientesClientIdContasRoute
-  '/admin/clientes/$clientId/recorrencias': typeof AdminClientesClientIdRecorrenciasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -242,8 +222,6 @@ export interface FileRouteTypes {
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
-    | '/admin/clientes/$clientId/contas'
-    | '/admin/clientes/$clientId/recorrencias'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -266,8 +244,6 @@ export interface FileRouteTypes {
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
-    | '/admin/clientes/$clientId/contas'
-    | '/admin/clientes/$clientId/recorrencias'
   id:
     | '__root__'
     | '/'
@@ -290,8 +266,6 @@ export interface FileRouteTypes {
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
-    | '/admin/clientes/$clientId/contas'
-    | '/admin/clientes/$clientId/recorrencias'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -456,45 +430,15 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminClientesClientIdRouteImport
       parentRoute: typeof AdminClientesRoute
     }
-    '/admin/clientes/$clientId/recorrencias': {
-      id: '/admin/clientes/$clientId/recorrencias'
-      path: '/recorrencias'
-      fullPath: '/admin/clientes/$clientId/recorrencias'
-      preLoaderRoute: typeof AdminClientesClientIdRecorrenciasRouteImport
-      parentRoute: typeof AdminClientesClientIdRoute
-    }
-    '/admin/clientes/$clientId/contas': {
-      id: '/admin/clientes/$clientId/contas'
-      path: '/contas'
-      fullPath: '/admin/clientes/$clientId/contas'
-      preLoaderRoute: typeof AdminClientesClientIdContasRouteImport
-      parentRoute: typeof AdminClientesClientIdRoute
-    }
   }
 }
 
-interface AdminClientesClientIdRouteChildren {
-  AdminClientesClientIdContasRoute: typeof AdminClientesClientIdContasRoute
-  AdminClientesClientIdRecorrenciasRoute: typeof AdminClientesClientIdRecorrenciasRoute
-}
-
-const AdminClientesClientIdRouteChildren: AdminClientesClientIdRouteChildren = {
-  AdminClientesClientIdContasRoute: AdminClientesClientIdContasRoute,
-  AdminClientesClientIdRecorrenciasRoute:
-    AdminClientesClientIdRecorrenciasRoute,
-}
-
-const AdminClientesClientIdRouteWithChildren =
-  AdminClientesClientIdRoute._addFileChildren(
-    AdminClientesClientIdRouteChildren,
-  )
-
 interface AdminClientesRouteChildren {
-  AdminClientesClientIdRoute: typeof AdminClientesClientIdRouteWithChildren
+  AdminClientesClientIdRoute: typeof AdminClientesClientIdRoute
 }
 
 const AdminClientesRouteChildren: AdminClientesRouteChildren = {
-  AdminClientesClientIdRoute: AdminClientesClientIdRouteWithChildren,
+  AdminClientesClientIdRoute: AdminClientesClientIdRoute,
 }
 
 const AdminClientesRouteWithChildren = AdminClientesRoute._addFileChildren(
