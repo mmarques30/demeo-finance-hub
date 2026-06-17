@@ -369,6 +369,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (!upload.filename || !upload.bank_name) {
+      await supabase
+        .from("uploads")
+        .update({ status: "error", error_message: "filename ou bank_name ausente no registro de upload" })
+        .eq("id", upload_id);
+      return new Response(JSON.stringify({ error: "filename ou bank_name ausente" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: fileData, error: storageError } = await supabase.storage
       .from("extratos")
       .download(upload.storage_path);

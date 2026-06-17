@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 export function useCategories(clientId: string): string[] {
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     if (!clientId) return;
-    supabase
+    supabase()
       .from("categories")
       .select("name")
       .eq("client_id", clientId)
