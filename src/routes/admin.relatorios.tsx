@@ -4,6 +4,7 @@ import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl, formatDatePtBR, monthRangeDates } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
+import { computeForecastMonths, type ForecastMonth } from "@/hooks/useDFCForecast";
 
 export const Route = createFileRoute("/admin/relatorios")({
   component: RelatoriosPage,
@@ -34,7 +35,6 @@ interface ReportData {
   fixos: number;
   variaveis: number;
   byCategory: { cat: string; total: number; isReceita: boolean }[];
-  projection: { offset: number; rec: number; des: number }[];
 }
 
 function computeReport(txs: Tx[]): ReportData {
@@ -57,28 +57,19 @@ function computeReport(txs: Tx[]): ReportData {
     .map(([cat, v]) => ({ cat, total: v.total, isReceita: v.isReceita }))
     .sort((a, b) => b.total - a.total);
 
-  const projection = [1, 2, 3].map((offset) => ({
-    offset,
-    rec: receitas * (1 + 0.03 * offset),
-    des: despesas * (1 + 0.02 * offset),
-  }));
-
-  return { receitas, despesas, resultado: receitas - despesas, fixos, variaveis, byCategory, projection };
+  return { receitas, despesas, resultado: receitas - despesas, fixos, variaveis, byCategory };
 }
 
-function openPrintReport(clientName: string, period: string, txs: Tx[]) {
+function openPrintReport(clientName: string, period: string, txs: Tx[], forecast: ForecastMonth[]) {
   const d = computeReport(txs);
   const today = new Date().toLocaleDateString("pt-BR");
-  const [mm, yyyy] = period.split("/").map(Number);
   const totalVol = (d.receitas + d.despesas) || 1;
 
-  const projRows = d.projection
+  const projRows = forecast
     .map((p) => {
-      const dt = new Date(yyyy, mm - 1 + p.offset, 1);
-      const mes = dt.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
       const r = p.rec - p.des;
       return `<tr>
-        <td>${mes}</td>
+        <td>${p.mes}</td>
         <td style="color:#8FA688">${brl(p.rec)}</td>
         <td style="color:#B8956A">${brl(p.des)}</td>
         <td style="color:${r >= 0 ? "#8FA688" : "#B8956A"};font-weight:bold">${brl(r)}</td>
@@ -194,9 +185,8 @@ function openPrintReport(clientName: string, period: string, txs: Tx[]) {
   win.onload = () => win.print();
 }
 
-function exportExcel(clientName: string, period: string, txs: Tx[]) {
+function exportExcel(clientName: string, period: string, txs: Tx[], forecast: ForecastMonth[]) {
   const d = computeReport(txs);
-  const [mm, yyyy] = period.split("/").map(Number);
   const wb = XLSX.utils.book_new();
 
   // Aba 1: Lançamentos
@@ -250,16 +240,12 @@ function exportExcel(clientName: string, period: string, txs: Tx[]) {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(instRows), "Parcelamentos");
 
   // Aba 5: Projeção
-  const projRows = d.projection.map((p) => {
-    const dt = new Date(yyyy, mm - 1 + p.offset, 1);
-    const mes = dt.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    return {
-      Mês: mes,
-      "Receitas Previstas": Math.round(p.rec * 100) / 100,
-      "Despesas Previstas": Math.round(p.des * 100) / 100,
-      "Resultado Previsto": Math.round((p.rec - p.des) * 100) / 100,
-    };
-  });
+  const projRows = forecast.map((p) => ({
+    Mês: p.mes,
+    "Receitas Previstas": Math.round(p.rec * 100) / 100,
+    "Despesas Previstas": Math.round(p.des * 100) / 100,
+    "Resultado Previsto": Math.round((p.rec - p.des) * 100) / 100,
+  }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projRows), "Projeção");
 
   XLSX.writeFile(wb, `Relatorio_${clientName.replace(/\s+/g, "_")}_${period.replace("/", "-")}.xlsx`);
@@ -335,23 +321,64 @@ function RelatoriosPage() {
     return (data ?? []) as Tx[];
   }
 
+  // Busca 6 meses históricos + parcelas e calcula projeção com a mesma lógica do useDFCForecast.
+  async function fetchForecast(clientId: string, period: string): Promise<ForecastMonth[]> {
+    const [mm, yyyy] = period.split("/").map(Number);
+    const histStart = new Date(yyyy, mm - 1 - 5, 1);
+    const startDate = `${histStart.getFullYear()}-${String(histStart.getMonth() + 1).padStart(2, "0")}-01`;
+    const endDate = `${yyyy}-${String(mm).padStart(2, "0")}-31`;
+
+    const [{ data: histData }, { data: instData }] = await Promise.all([
+      supabase()
+        .from("transactions")
+        .select("date, amount, is_recurring")
+        .eq("client_id", clientId)
+        .eq("status", "approved")
+        .gte("date", startDate)
+        .lte("date", endDate),
+      supabase()
+        .from("transactions")
+        .select("amount, installment_number, installment_total, date, installment_group_id")
+        .eq("client_id", clientId)
+        .eq("status", "approved")
+        .not("installment_group_id", "is", null),
+    ]);
+
+    // Deduplica parcelamentos por grupo (mantém parcela mais recente)
+    type InstRow = { amount: number; installment_number: number; installment_total: number; date: string; installment_group_id: string };
+    const rows = (instData ?? []) as InstRow[];
+    const groupMap = new Map<string, InstRow>();
+    for (const row of rows) {
+      const cur = groupMap.get(row.installment_group_id);
+      if (!cur || row.installment_number > cur.installment_number) groupMap.set(row.installment_group_id, row);
+    }
+    const installments = Array.from(groupMap.values()).filter((r) => r.installment_number < r.installment_total);
+
+    return computeForecastMonths(
+      (histData ?? []) as { date: string; amount: number; is_recurring: boolean }[],
+      installments,
+      mm,
+      yyyy
+    );
+  }
+
   async function handlePDF(clientId: string) {
     const period = selectedPeriod[clientId];
     if (!period) return;
     setExporting((e) => ({ ...e, [clientId]: "pdf" }));
-    const txs = await fetchTxs(clientId, period);
+    const [txs, forecast] = await Promise.all([fetchTxs(clientId, period), fetchForecast(clientId, period)]);
     const client = clients.find((c) => c.id === clientId)!;
     setExporting((e) => ({ ...e, [clientId]: null }));
-    openPrintReport(client.name, period, txs);
+    openPrintReport(client.name, period, txs, forecast);
   }
 
   async function handleExcel(clientId: string) {
     const period = selectedPeriod[clientId];
     if (!period) return;
     setExporting((e) => ({ ...e, [clientId]: "excel" }));
-    const txs = await fetchTxs(clientId, period);
+    const [txs, forecast] = await Promise.all([fetchTxs(clientId, period), fetchForecast(clientId, period)]);
     const client = clients.find((c) => c.id === clientId)!;
-    exportExcel(client.name, period, txs);
+    exportExcel(client.name, period, txs, forecast);
     setExporting((e) => ({ ...e, [clientId]: null }));
   }
 
