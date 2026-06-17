@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
+import { ClientTabs } from "@/components/ClientTabs";
 import { StatusBadge } from "./admin.index";
 import { brl, formatDatePtBR, monthOptions, monthRangeDates } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -135,6 +136,8 @@ function ClientePage() {
           </div>
         }
       />
+
+      <ClientTabs clientId={clientId} />
 
       <div className="px-8 lg:px-12 pb-12 flex flex-col gap-8">
         {/* Cabeçalho do cliente */}

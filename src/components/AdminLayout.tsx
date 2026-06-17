@@ -30,8 +30,6 @@ const GROUPS: SidebarGroup[] = [
     items: [
       { to: "/admin/importar", label: "Importar Extratos", icon: "↓" },
       { to: "/admin/pendentes", label: "Pendentes", icon: "⊙" },
-      { to: "/admin/recorrencias", label: "Recorrências", icon: "↺" },
-      { to: "/admin/contas", label: "Contas", icon: "⊜" },
     ],
   },
   {
@@ -86,15 +84,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       return count ?? 0;
     },
     refetchInterval: 60_000,
-  });
-
-  const { data: recorrenciasCount = 0 } = useQuery({
-    queryKey: ["recorrencias", "count"],
-    queryFn: async () => {
-      const { data } = await supabase().rpc("pending_recurrences_total");
-      return (data as number) ?? 0;
-    },
-    refetchInterval: 120_000,
   });
 
   const [getCollapsed, setCollapsed] = useLocalStorage<boolean>("aurora.admin.collapsed", false);
@@ -161,7 +150,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           onToggleCollapsed={toggleCollapsed}
           onToggleGroup={toggleGroup}
           pendentesCount={pendentesCount}
-          recorrenciasCount={recorrenciasCount}
         />
       </aside>
 
@@ -190,7 +178,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               onToggleCollapsed={() => setDrawerOpen(false)}
               onToggleGroup={toggleGroup}
               pendentesCount={pendentesCount}
-              recorrenciasCount={recorrenciasCount}
               mobile
             />
           </aside>
@@ -344,7 +331,6 @@ function SidebarContent({
   onToggleCollapsed,
   onToggleGroup,
   pendentesCount = 0,
-  recorrenciasCount = 0,
   mobile = false,
 }: {
   path: string;
@@ -353,7 +339,6 @@ function SidebarContent({
   onToggleCollapsed: () => void;
   onToggleGroup: (id: string) => void;
   pendentesCount?: number;
-  recorrenciasCount?: number;
   mobile?: boolean;
 }) {
   return (
@@ -478,9 +463,7 @@ function SidebarContent({
                   const badge =
                     item.to === "/admin/pendentes"
                       ? pendentesCount
-                      : item.to === "/admin/recorrencias"
-                        ? recorrenciasCount
-                        : 0;
+                      : 0;
                   return (
                     <Link
                       key={item.to}
@@ -618,11 +601,11 @@ type ModuleIdentity = {
 const MODULE_MAP: Record<string, ModuleIdentity> = {
   "/admin": { icon: "▦", accent: "var(--navy)", accentSoft: "rgba(27,57,77,0.10)", group: "Visão" },
   "/admin/clientes": { icon: "◷", accent: "var(--sage)", accentSoft: "rgba(143,166,136,0.12)", group: "Visão" },
+  "/admin/clientes/": { icon: "◷", accent: "var(--sage)", accentSoft: "rgba(143,166,136,0.12)", group: "Visão" },
   "/admin/dfc": { icon: "◈", accent: "var(--navy)", accentSoft: "rgba(27,57,77,0.10)", group: "Visão" },
   "/admin/relatorios": { icon: "≡", accent: "var(--navy)", accentSoft: "rgba(27,57,77,0.10)", group: "Visão" },
   "/admin/importar": { icon: "↓", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Operação" },
   "/admin/pendentes": { icon: "⊙", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Operação" },
-  "/admin/recorrencias": { icon: "↺", accent: "var(--sage)", accentSoft: "rgba(143,166,136,0.12)", group: "Operação" },
   "/admin/pipeline": { icon: "⋯", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
   "/admin/propostas": { icon: "✎", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
   "/admin/contratos": { icon: "❍", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
