@@ -18,7 +18,7 @@ const GROUPS: SidebarGroup[] = [
     id: "visao",
     label: "Visão",
     items: [
-      { to: "/admin", label: "Dashboard", icon: "▦" },
+      { to: "/admin/", label: "Dashboard", icon: "▦" },
       { to: "/admin/clientes", label: "Clientes", icon: "◷" },
       { to: "/admin/dfc", label: "DFC / DRE", icon: "◈" },
       { to: "/admin/relatorios", label: "Relatórios", icon: "≡" },
@@ -54,7 +54,7 @@ const GROUPS: SidebarGroup[] = [
 const ALL_ITEMS = GROUPS.flatMap((g) => g.items);
 
 function isActive(pathname: string, to: string) {
-  if (to === "/admin") return pathname === "/admin";
+  if (to === "/admin/") return pathname === "/admin/" || pathname === "/admin";
   return pathname.startsWith(to);
 }
 
@@ -139,7 +139,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         className="hidden lg:flex flex-col shrink-0 sticky top-0 h-screen transition-[width] duration-300"
         style={{
           width: collapsed ? 76 : 260,
-          background: "linear-gradient(180deg, #1C2D45 0%, #142235 100%)",
+          background: "linear-gradient(180deg, #1C2D45 0%, #111E2E 100%)",
           color: "#fff",
         }}
       >
@@ -165,7 +165,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             className="h-full overflow-y-auto"
             style={{
               width: 280,
-              background: "linear-gradient(180deg, var(--navy) 0%, #15303F 100%)",
+              background: "linear-gradient(180deg, var(--navy) 0%, #111E2E 100%)",
               color: "#fff",
               animation: "aurora-slide-in 0.28s cubic-bezier(.22,.61,.36,1) both",
             }}
@@ -211,7 +211,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
             {/* Breadcrumb dinâmico */}
             <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-              <span className="hidden sm:inline">Aurora</span>
+              <Link
+                to="/admin/"
+                className="hidden sm:inline hover:opacity-70 transition-opacity"
+                style={{ color: "var(--muted-foreground)", textDecoration: "none" }}
+              >
+                Aurora
+              </Link>
               <span className="hidden sm:inline" style={{ color: "rgba(0,0,0,0.2)" }}>/</span>
               <span style={{ color: "var(--foreground)", fontWeight: 500 }}>
                 {ALL_ITEMS.find((i) => isActive(path, i.to))?.label ?? "Painel"}
@@ -350,7 +356,7 @@ function SidebarContent({
       >
         {/* Só o ícone da logo — sem texto "Aurora" nem "Gestão financeira" */}
         <Link
-          to={"/admin" as string}
+          to={"/admin/" as string}
           aria-label="Aurora · ir para Dashboard"
           className={`inline-flex items-center text-white ${collapsed ? "justify-center w-full" : ""}`}
         >
@@ -647,7 +653,6 @@ export function PageHeader({
       className="px-6 lg:px-10 py-6 flex items-center justify-between gap-4 flex-wrap"
       style={{
         background: "#FFFFFF",
-        borderBottom: "1px solid var(--line)",
       }}
     >
       <h1
