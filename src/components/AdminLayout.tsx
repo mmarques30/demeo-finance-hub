@@ -49,6 +49,14 @@ const GROUPS: SidebarGroup[] = [
       { to: "/admin/insights/precificacao", label: "Precificação", icon: "↗" },
     ],
   },
+  {
+    id: "configuracao",
+    label: "Configuração",
+    items: [
+      { to: "/admin/categorias", label: "Categorias", icon: "⊞" },
+      { to: "/admin/regras", label: "Regras de Classificação", icon: "⊟" },
+    ],
+  },
 ];
 
 const ALL_ITEMS = GROUPS.flatMap((g) => g.items);
@@ -617,6 +625,8 @@ const MODULE_MAP: Record<string, ModuleIdentity> = {
   "/admin/contratos": { icon: "❍", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
   "/admin/servicos": { icon: "◇", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Catálogo" },
   "/admin/insights/precificacao": { icon: "↗", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Catálogo" },
+  "/admin/categorias": { icon: "⊞", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
+  "/admin/regras": { icon: "⊟", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
 };
 
 function resolveModule(pathname: string): ModuleIdentity {
