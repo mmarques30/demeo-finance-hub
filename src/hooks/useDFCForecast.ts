@@ -76,8 +76,10 @@ export function computeForecastMonths(
   if (months.length >= 3) {
     const first = months[0][1];
     const n = months.length;
-    if (first.rec > 0) growthRec = clampGrowth((last.rec - first.rec) / first.rec / n);
-    if (first.des > 0) growthDes = clampGrowth((last.des - first.des) / first.des / n);
+    // Taxa geométrica composta: (last/first)^(1/(n-1)) - 1
+    // n-1 intervalos entre n pontos mensais
+    if (first.rec > 0) growthRec = clampGrowth(Math.pow(last.rec / first.rec, 1 / (n - 1)) - 1);
+    if (first.des > 0) growthDes = clampGrowth(Math.pow(last.des / first.des, 1 / (n - 1)) - 1);
   }
 
   // 2. Âncora de custo fixo: média mensal real das despesas recorrentes no histórico.
