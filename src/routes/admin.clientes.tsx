@@ -189,6 +189,14 @@ function ClientesPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center gap-4 justify-end">
+                      <Link
+                        to={"/admin/dfc" as never}
+                        search={{ clientId: c.id } as never}
+                        className="inline-flex items-center text-[10px] uppercase transition-opacity hover:opacity-80"
+                        style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "1.5px", fontWeight: 500, padding: "4px 12px", borderRadius: "999px" }}
+                      >
+                        Ver Painel →
+                      </Link>
                       <button
                         onClick={() => setEditClient(c)}
                         className="inline-flex items-center text-[10px] uppercase transition-opacity hover:opacity-80"
@@ -203,14 +211,6 @@ function ClientesPage() {
                       >
                         Excluir
                       </button>
-                      <Link
-                        to={"/admin/dfc" as never}
-                        search={{ clientId: c.id } as never}
-                        className="inline-flex items-center text-[10px] uppercase transition-opacity hover:opacity-80"
-                        style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "1.5px", fontWeight: 500, padding: "4px 12px", borderRadius: "999px" }}
-                      >
-                        Ver Painel →
-                      </Link>
                     </div>
                   </td>
                 </tr>
