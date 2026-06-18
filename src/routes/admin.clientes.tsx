@@ -6,6 +6,9 @@ import { StatusBadge } from "./admin.index";
 import { formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { SEGMENT_BENCHMARKS } from "@/lib/healthScore";
+
+const SEGMENT_OPTIONS = Object.keys(SEGMENT_BENCHMARKS).filter((k) => k !== "default");
 
 export const Route = createFileRoute("/admin/clientes")({
   component: ClientesPage,
@@ -24,6 +27,7 @@ interface ClientRow {
   owner_name: string;
   cnpj: string | null;
   status: string;
+  segment: string | null;
   last_upload_at: string | null;
   created_at: string;
   monthly_closing_day: number | null;
@@ -255,6 +259,7 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
   const [nome, setNome] = useState("");
   const [responsavel, setResponsavel] = useState("");
   const [cnpj, setCnpj] = useState("");
+  const [segment, setSegment] = useState("");
   const [closingDay, setClosingDay] = useState("");
   const [bancos, setBancos] = useState<string[]>([]);
   const [bancosInput, setBancosInput] = useState("");
@@ -264,7 +269,7 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
       const day = closingDay ? Number(closingDay) : null;
       const { data: client, error: clientErr } = await supabase()
         .from("clients")
-        .insert({ name: nome.trim(), owner_name: responsavel.trim(), cnpj: cnpj.trim() || null, monthly_closing_day: day })
+        .insert({ name: nome.trim(), owner_name: responsavel.trim(), cnpj: cnpj.trim() || null, monthly_closing_day: day, segment: segment || null })
         .select("id")
         .single();
 
@@ -319,6 +324,7 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
       <NomeField value={nome} onChange={setNome} />
       <ResponsavelField value={responsavel} onChange={setResponsavel} />
       <CnpjField value={cnpj} onChange={setCnpj} />
+      <SegmentField value={segment} onChange={setSegment} />
       <ClosingDayField value={closingDay} onChange={setClosingDay} />
       <BancosField
         bancos={bancos}
@@ -333,13 +339,14 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
 
 // ─── modal editar cliente ─────────────────────────────────────────────────────
 
-function EditarClienteModal({ client, onClose }: { client: { id: string; name: string; owner_name: string; cnpj: string | null; status: string; monthly_closing_day: number | null; client_banks: { bank_name: string }[] }; onClose: () => void }) {
+function EditarClienteModal({ client, onClose }: { client: { id: string; name: string; owner_name: string; cnpj: string | null; status: string; segment: string | null; monthly_closing_day: number | null; client_banks: { bank_name: string }[] }; onClose: () => void }) {
   const qc = useQueryClient();
 
   const [nome, setNome] = useState(client.name);
   const [responsavel, setResponsavel] = useState(client.owner_name);
   const [cnpj, setCnpj] = useState(client.cnpj ?? "");
   const [status, setStatus] = useState(client.status);
+  const [segment, setSegment] = useState(client.segment ?? "");
   const [closingDay, setClosingDay] = useState(String(client.monthly_closing_day ?? ""));
   const [bancos, setBancos] = useState<string[]>(client.client_banks.map((b) => b.bank_name));
   const [bancosInput, setBancosInput] = useState("");
@@ -358,7 +365,7 @@ function EditarClienteModal({ client, onClose }: { client: { id: string; name: s
       const day = closingDay ? Number(closingDay) : null;
       const { error: err2 } = await supabase()
         .from("clients")
-        .update({ monthly_closing_day: day })
+        .update({ monthly_closing_day: day, segment: segment || null })
         .eq("id", client.id);
       if (err2) throw err2;
     },
@@ -402,6 +409,7 @@ function EditarClienteModal({ client, onClose }: { client: { id: string; name: s
       <NomeField value={nome} onChange={setNome} />
       <ResponsavelField value={responsavel} onChange={setResponsavel} />
       <CnpjField value={cnpj} onChange={setCnpj} />
+      <SegmentField value={segment} onChange={setSegment} />
       <ClosingDayField value={closingDay} onChange={setClosingDay} />
 
       {/* Status */}
@@ -554,6 +562,17 @@ function CnpjField({ value, onChange }: { value: string; onChange: (v: string) =
   return (
     <Field label="CNPJ" hint="opcional">
       <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder="00.000.000/0001-00" style={inputStyle} />
+    </Field>
+  );
+}
+
+function SegmentField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Field label="Segmento de atuação" hint="opcional">
+      <select value={value} onChange={(e) => onChange(e.target.value)} style={inputStyle}>
+        <option value="">Selecionar segmento</option>
+        {SEGMENT_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+      </select>
     </Field>
   );
 }
