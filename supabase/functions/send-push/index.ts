@@ -8,16 +8,13 @@
 //   3. Conectar este endpoint ao workflow n8n como step paralelo ao e-mail
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders as getCorsHeaders, handlePreflight } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const preflightRes = handlePreflight(req);
+  if (preflightRes) return preflightRes;
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
 
   const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
   const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");

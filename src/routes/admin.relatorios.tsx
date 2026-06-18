@@ -233,11 +233,16 @@ function openPrintReport(
 </body>
 </html>`;
 
-  const win = window.open("", "_blank", "width=900,height=1100");
-  if (!win) { alert("Habilite popups para gerar o PDF."); return; }
-  win.document.write(html);
-  win.document.close();
-  win.onload = () => win.print();
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;border:none";
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument ?? iframe.contentWindow!.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+  iframe.contentWindow!.focus();
+  iframe.contentWindow!.print();
+  setTimeout(() => document.body.removeChild(iframe), 1000);
 }
 
 function exportExcel(
