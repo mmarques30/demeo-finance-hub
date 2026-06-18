@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { formatDatePtBR } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface RecorrenciaRow {
   pattern: string;
@@ -56,7 +57,14 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
       );
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pending-recorrencias", clientId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pending-recorrencias", clientId] });
+      toast.success("Regra salva com sucesso");
+    },
+    onError: (err: Error) => {
+      console.error("[RecorrenciasPanel] confirm failed:", err);
+      toast.error("Erro ao salvar regra");
+    },
   });
 
   const rejectMutation = useMutation({
@@ -75,11 +83,19 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
       );
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pending-recorrencias", clientId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pending-recorrencias", clientId] });
+      toast.success("Lançamento rejeitado");
+    },
+    onError: (err: Error) => {
+      console.error("[RecorrenciasPanel] reject failed:", err);
+      toast.error("Erro ao rejeitar");
+    },
   });
 
   function handleConfirm(row: RecorrenciaRow) {
     const category = editingCategory[row.pattern] ?? row.modal_category;
+    if (!category.trim()) return;
     confirmMutation.mutate({ pattern: row.pattern, category });
   }
 
