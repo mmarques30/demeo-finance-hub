@@ -201,10 +201,8 @@ function ClientePage() {
           )}
         </div>
 
-        {/* Alerta de saúde financeira — só exibe quando há dados do período */}
-        {health !== "sem_dados" && (
-          <HealthAlertCard health={health} margem={margem} segment={client.segment} period={period} />
-        )}
+        {/* Alerta de saúde financeira */}
+        <HealthAlertCard health={health} margem={margem} segment={client.segment} period={period} />
 
         {/* Abas */}
         <div style={{ borderBottom: "2px solid var(--line)", marginBottom: -8 }}>
@@ -452,10 +450,15 @@ function HealthAlertCard({
       label: "Saúde Financeira · Crítico",
       message: `Margem líquida de ${margem.toFixed(1)}% está abaixo do mínimo recomendado para ${segLabel} (≥ ${bench.caution}%). Ação imediata: revise despesas e receitas deste período.`,
     },
-    sem_dados: null,
+    sem_dados: {
+      borderColor: "var(--line)",
+      bg: "rgba(0,0,0,0.02)",
+      color: "var(--muted-foreground)",
+      icon: "◌",
+      label: "Saúde Financeira · Sem dados",
+      message: `Nenhuma movimentação aprovada em ${period}. Selecione um período com lançamentos para ver a análise de saúde financeira.`,
+    },
   }[health];
-
-  if (!config) return null;
 
   return (
     <div
