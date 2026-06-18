@@ -99,8 +99,13 @@ function openPrintReport(
   periodoLabel: string,
   txs: Tx[],
   forecast: ForecastMonth[],
-  catMap: Map<string, CatInfo>
+  catMap: Map<string, CatInfo>,
+  format: ReportFormat = "DFC + DRE (Completo)"
 ) {
+  const showDFC = format !== "DRE";
+  const showDRE = format === "DRE" || format === "DFC + DRE (Completo)";
+  const showProjecao = format !== "DRE";
+  const dfcTitle = format === "DFC Gerencial" ? "DFC Gerencial — Demonstrativo Executivo" : "Demonstrativo de Fluxo de Caixa";
   const d = computeReport(txs);
   const dre = computeDRE(txs, catMap);
   const today = new Date().toLocaleDateString("pt-BR");
@@ -183,29 +188,25 @@ function openPrintReport(
   <h1>${clientName}</h1>
   <div class="sub">Período: ${periodoLabel} &nbsp;·&nbsp; Gerado em ${today}</div>
 
-  <div class="sec">
-    <div class="sec-title">Demonstrativo de Fluxo de Caixa</div>
+  ${showDFC ? `<div class="sec">
+    <div class="sec-title">${dfcTitle}</div>
     <div class="g4">
       <div class="card"><div class="card-lbl">Receitas</div><div class="card-val" style="color:#8FA688">${brl(d.receitas)}</div></div>
       <div class="card"><div class="card-lbl">Despesas</div><div class="card-val" style="color:#B8956A">${brl(d.despesas)}</div></div>
       <div class="card"><div class="card-lbl">Saldo do Período</div><div class="card-val" style="color:${d.resultado >= 0 ? "#8FA688" : "#B8956A"}">${brl(d.resultado)}</div></div>
       <div class="card"><div class="card-lbl">Lançamentos</div><div class="card-val" style="color:#1B3950">${txs.length}</div></div>
     </div>
-  </div>
+  </div>` : ""}
 
-  ${
-    d.despesas > 0
-      ? `<div class="sec">
+  ${showDFC && d.despesas > 0 ? `<div class="sec">
     <div class="sec-title">Composição das Despesas</div>
     <div class="g2">
       <div class="card"><div class="card-lbl">Despesas Fixas</div><div class="card-val" style="color:#1B3950">${brl(d.fixos)}</div><div class="card-sub">${fixosPct}% das despesas</div></div>
       <div class="card"><div class="card-lbl">Despesas Variáveis</div><div class="card-val" style="color:#B8956A">${brl(d.variaveis)}</div><div class="card-sub">${varPct}% das despesas</div></div>
     </div>
-  </div>`
-      : ""
-  }
+  </div>` : ""}
 
-  <div class="sec">
+  ${showDRE ? `<div class="sec">
     <div class="sec-title">DRE — Demonstrativo do Resultado do Exercício</div>
     <table>
       <thead><tr><th>Conta</th><th style="text-align:right">Valor</th></tr></thead>
@@ -217,15 +218,15 @@ function openPrintReport(
         </tr>
       </tbody>
     </table>
-  </div>
+  </div>` : ""}
 
-  <div class="sec">
+  ${showProjecao ? `<div class="sec">
     <div class="sec-title">Projeção — Próximos 90 dias</div>
     <table>
       <thead><tr><th>Mês</th><th>Receitas Previstas</th><th>Despesas Previstas</th><th>Resultado Previsto</th></tr></thead>
       <tbody>${projRows}</tbody>
     </table>
-  </div>
+  </div>` : ""}
 
   <div style="margin-top:48px;padding-top:16px;border-top:1px solid #E8E3D9;font-size:11px;color:#aaa;font-family:sans-serif">
     Aurora · ${today}
@@ -252,8 +253,12 @@ function exportExcel(
   endDate: string,
   txs: Tx[],
   forecast: ForecastMonth[],
-  catMap: Map<string, CatInfo>
+  catMap: Map<string, CatInfo>,
+  format: ReportFormat = "DFC + DRE (Completo)"
 ) {
+  const showDFC = format !== "DRE";
+  const showDRE = format === "DRE" || format === "DFC + DRE (Completo)";
+  const showProjecao = format !== "DRE";
   const d = computeReport(txs);
   const dre = computeDRE(txs, catMap);
   const wb = XLSX.utils.book_new();
@@ -270,33 +275,37 @@ function exportExcel(
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lancamentos), "Lançamentos");
 
-  const dfcRows = [
-    { Indicador: "Período", Valor: periodoLabel },
-    { Indicador: "Receitas", Valor: d.receitas },
-    { Indicador: "Despesas", Valor: d.despesas },
-    { Indicador: "Saldo do Período", Valor: d.resultado },
-    { Indicador: "Despesas Fixas", Valor: d.fixos },
-    { Indicador: "Despesas Variáveis", Valor: d.variaveis },
-    { Indicador: "Nº de Lançamentos", Valor: txs.length },
-  ];
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dfcRows), "DFC");
-
-  const dreXlsx: { Linha: string; Categoria: string; Valor: number | string }[] = [];
-  for (const g of dre.groups) {
-    const prefix = g.isExpense ? "(−) " : "";
-    dreXlsx.push({ Linha: `${prefix}${g.name.toUpperCase()}`, Categoria: "", Valor: "" });
-    for (const l of g.lines) {
-      dreXlsx.push({ Linha: "", Categoria: l.cat, Valor: g.isExpense ? -l.total : l.total });
-    }
-    dreXlsx.push({ Linha: `Subtotal ${g.name}`, Categoria: "", Valor: g.isExpense ? -g.subtotal : g.subtotal });
-    dreXlsx.push({ Linha: "", Categoria: "", Valor: "" });
-    if (g.name === "Despesa Variável") {
-      dreXlsx.push({ Linha: "= RESULTADO OPERACIONAL (EBITDA)", Categoria: "", Valor: dre.ebitda });
-      dreXlsx.push({ Linha: "", Categoria: "", Valor: "" });
-    }
+  if (showDFC) {
+    const dfcRows = [
+      { Indicador: "Período", Valor: periodoLabel },
+      { Indicador: "Receitas", Valor: d.receitas },
+      { Indicador: "Despesas", Valor: d.despesas },
+      { Indicador: "Saldo do Período", Valor: d.resultado },
+      { Indicador: "Despesas Fixas", Valor: d.fixos },
+      { Indicador: "Despesas Variáveis", Valor: d.variaveis },
+      { Indicador: "Nº de Lançamentos", Valor: txs.length },
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dfcRows), format === "DFC Gerencial" ? "DFC Gerencial" : "DFC");
   }
-  dreXlsx.push({ Linha: "= RESULTADO LÍQUIDO DO PERÍODO", Categoria: "", Valor: dre.resultadoLiquido });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dreXlsx), "DRE");
+
+  if (showDRE) {
+    const dreXlsx: { Linha: string; Categoria: string; Valor: number | string }[] = [];
+    for (const g of dre.groups) {
+      const prefix = g.isExpense ? "(−) " : "";
+      dreXlsx.push({ Linha: `${prefix}${g.name.toUpperCase()}`, Categoria: "", Valor: "" });
+      for (const l of g.lines) {
+        dreXlsx.push({ Linha: "", Categoria: l.cat, Valor: g.isExpense ? -l.total : l.total });
+      }
+      dreXlsx.push({ Linha: `Subtotal ${g.name}`, Categoria: "", Valor: g.isExpense ? -g.subtotal : g.subtotal });
+      dreXlsx.push({ Linha: "", Categoria: "", Valor: "" });
+      if (g.name === "Despesa Variável") {
+        dreXlsx.push({ Linha: "= RESULTADO OPERACIONAL (EBITDA)", Categoria: "", Valor: dre.ebitda });
+        dreXlsx.push({ Linha: "", Categoria: "", Valor: "" });
+      }
+    }
+    dreXlsx.push({ Linha: "= RESULTADO LÍQUIDO DO PERÍODO", Categoria: "", Valor: dre.resultadoLiquido });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dreXlsx), "DRE");
+  }
 
   const instTxs = txs.filter((t) => t.installment_group_id);
   const instRows = instTxs.length > 0
@@ -312,13 +321,15 @@ function exportExcel(
     : [{ Data: "", Descrição: "Nenhum parcelamento neste período", "Valor Parcela": "", "Parcela Nº": "", "Total Parcelas": "", "Parcelas Restantes": "", Grupo: "" }];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(instRows), "Parcelamentos");
 
-  const projRows = forecast.map((p) => ({
-    Mês: p.mes,
-    "Receitas Previstas": Math.round(p.rec * 100) / 100,
-    "Despesas Previstas": Math.round(p.des * 100) / 100,
-    "Resultado Previsto": Math.round((p.rec - p.des) * 100) / 100,
-  }));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projRows), "Projeção");
+  if (showProjecao) {
+    const projRows = forecast.map((p) => ({
+      Mês: p.mes,
+      "Receitas Previstas": Math.round(p.rec * 100) / 100,
+      "Despesas Previstas": Math.round(p.des * 100) / 100,
+      "Resultado Previsto": Math.round((p.rec - p.des) * 100) / 100,
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projRows), "Projeção");
+  }
 
   XLSX.writeFile(wb, `Relatorio_${clientName.replace(/\s+/g, "_")}_${startDate}_${endDate}.xlsx`);
 }
@@ -334,10 +345,14 @@ interface ExportRecord {
   end_date: string;
   exported_at: string;
   forecast_json: ForecastMonth[] | null;
+  report_format: string | null;
 }
 
 // ─── componente principal ─────────────────────────────────────────────────────
 type RelTab = "exportar" | "historico";
+
+const REPORT_FORMATS = ["DFC", "DRE", "DFC + DRE (Completo)", "DFC Gerencial"] as const;
+type ReportFormat = typeof REPORT_FORMATS[number];
 
 function RelatoriosPage() {
   const [activeTab, setActiveTab] = useState<RelTab>("exportar");
@@ -349,6 +364,7 @@ function RelatoriosPage() {
   const [histLoading, setHistLoading] = useState(false);
   const [histFilter, setHistFilter] = useState<string>("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [formats, setFormats] = useState<Record<string, ReportFormat>>({});
 
   useEffect(() => {
     supabase()
@@ -379,7 +395,7 @@ function RelatoriosPage() {
 
   useEffect(() => { loadHistory(); }, []);
 
-  async function saveExportRecord(clientId: string, clientName: string, type: "pdf" | "xlsx", p: ClientPeriod, forecast: ForecastMonth[]) {
+  async function saveExportRecord(clientId: string, clientName: string, type: "pdf" | "xlsx", p: ClientPeriod, forecast: ForecastMonth[], format: ReportFormat) {
     await supabase().from("report_exports").insert({
       client_id: clientId,
       client_name: clientName,
@@ -388,6 +404,7 @@ function RelatoriosPage() {
       start_date: p.start,
       end_date: p.end,
       forecast_json: forecast,
+      report_format: format,
     });
     loadHistory();
   }
@@ -467,9 +484,10 @@ function RelatoriosPage() {
     setExporting((e) => ({ ...e, [clientId]: "pdf" }));
     const [txs, forecast, catMap] = await Promise.all([fetchTxs(clientId, p), fetchForecast(clientId, p), fetchCategories(clientId)]);
     const client = clients.find((c) => c.id === clientId)!;
+    const format = formats[clientId] ?? "DFC + DRE (Completo)";
     setExporting((e) => ({ ...e, [clientId]: null }));
-    openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, catMap);
-    saveExportRecord(clientId, client.name, "pdf", p, forecast);
+    openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, catMap, format);
+    saveExportRecord(clientId, client.name, "pdf", p, forecast, format);
   }
 
   async function handleExcel(clientId: string) {
@@ -478,9 +496,10 @@ function RelatoriosPage() {
     setExporting((e) => ({ ...e, [clientId]: "excel" }));
     const [txs, forecast, catMap] = await Promise.all([fetchTxs(clientId, p), fetchForecast(clientId, p), fetchCategories(clientId)]);
     const client = clients.find((c) => c.id === clientId)!;
-    exportExcel(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, p.start, p.end, txs, forecast, catMap);
+    const format = formats[clientId] ?? "DFC + DRE (Completo)";
+    exportExcel(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, p.start, p.end, txs, forecast, catMap, format);
     setExporting((e) => ({ ...e, [clientId]: null }));
-    saveExportRecord(clientId, client.name, "xlsx", p, forecast);
+    saveExportRecord(clientId, client.name, "xlsx", p, forecast, format);
   }
 
   const [reexporting, setReexporting] = useState<string | null>(null);
@@ -488,12 +507,13 @@ function RelatoriosPage() {
   async function handleReexport(r: ExportRecord) {
     setReexporting(r.id);
     const p: ClientPeriod = { start: r.start_date, end: r.end_date };
+    const format = (r.report_format ?? "DFC + DRE (Completo)") as ReportFormat;
     const [txs, catMap] = await Promise.all([fetchTxs(r.client_id, p), fetchCategories(r.client_id)]);
     const forecast = r.forecast_json ?? await fetchForecast(r.client_id, p);
     if (r.type === "pdf") {
-      openPrintReport(r.client_name, r.period_label, txs, forecast, catMap);
+      openPrintReport(r.client_name, r.period_label, txs, forecast, catMap, format);
     } else {
-      exportExcel(r.client_name, r.period_label, r.start_date, r.end_date, txs, forecast, catMap);
+      exportExcel(r.client_name, r.period_label, r.start_date, r.end_date, txs, forecast, catMap, format);
     }
     setReexporting(null);
   }
@@ -602,7 +622,14 @@ function RelatoriosPage() {
                     </td>
                     <td className="px-6 py-4">
                       {hasData ? (
-                        <span className="aurora-badge aurora-badge--ok text-[11px]">DFC + Gerencial</span>
+                        <select
+                          value={formats[c.id] ?? "DFC + DRE (Completo)"}
+                          onChange={(e) => setFormats((prev) => ({ ...prev, [c.id]: e.target.value as ReportFormat }))}
+                          className="text-[11px] px-2 py-1.5 outline-none"
+                          style={{ border: "1px solid var(--line)", background: "#fff", color: "var(--foreground)" }}
+                        >
+                          {REPORT_FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+                        </select>
                       ) : (
                         <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Sem dados</span>
                       )}
@@ -654,7 +681,7 @@ function RelatoriosPage() {
             <table className="w-full">
               <thead>
                 <tr style={{ background: "var(--linen)" }}>
-                  {["Cliente", "Período", "Tipo", "Exportado em", ""].map((h) => (
+                  {["Cliente", "Período", "Tipo", "Formato", "Exportado em", ""].map((h) => (
                     <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
                       {h}
                     </th>
@@ -663,10 +690,10 @@ function RelatoriosPage() {
               </thead>
               <tbody>
                 {histLoading && (
-                  <tr><td colSpan={5} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando...</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando...</td></tr>
                 )}
                 {!histLoading && filteredHistory.length === 0 && (
-                  <tr><td colSpan={5} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Nenhum relatório exportado ainda.</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Nenhum relatório exportado ainda.</td></tr>
                 )}
                 {!histLoading && filteredHistory.map((r, i) => (
                   <tr key={r.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
@@ -683,6 +710,19 @@ function RelatoriosPage() {
                         }}
                       >
                         {r.type === "pdf" ? "PDF" : "Excel"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3">
+                      <span
+                        className="text-[10px] px-2 py-0.5"
+                        style={{
+                          border: "1px solid var(--line)",
+                          color: "var(--muted-foreground)",
+                          borderRadius: "4px",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        {r.report_format ?? "DFC + DRE (Completo)"}
                       </span>
                     </td>
                     <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>

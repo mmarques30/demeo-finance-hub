@@ -254,7 +254,7 @@ function DFCPage() {
 
       {activeTab === "recorrencias" && <RecorrenciasPanel clientId={clientId} />}
       {activeTab === "contas" && <ContasPanel clientId={clientId} openTrigger={contasTrigger} />}
-      {activeTab === "extratos" && <ExtratosPanel clientId={clientId} />}
+      {activeTab === "extratos" && <ExtratosPanel clientId={clientId} startDate={startDate} endDate={endDate} />}
 
       {activeTab === "dre" && (
         <div className="px-8 lg:px-12 pb-12 grid gap-8 pt-6">
