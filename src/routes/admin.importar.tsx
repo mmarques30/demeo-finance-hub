@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { brl, formatDatePtBR } from "@/lib/utils";
+import { brl } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useCategories } from "@/hooks/useCategories";
 
@@ -28,15 +28,6 @@ interface ClientOption {
   name: string;
 }
 
-interface UploadRecord {
-  id: string;
-  filename: string;
-  bank_name: string;
-  status: string;
-  tx_total: number;
-  created_at: string;
-  clients: { name: string } | null;
-}
 
 function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -66,10 +57,6 @@ function ImportarPage() {
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [awaitingConfirm, setAwaitingConfirm] = useState(false);
-  const [recentUploads, setRecentUploads] = useState<UploadRecord[]>([]);
-  const [undoTarget, setUndoTarget] = useState<UploadRecord | null>(null);
-  const [undoing, setUndoing] = useState(false);
-  const [uploadsRefresh, setUploadsRefresh] = useState(0);
 
   const CATEGORIAS = useCategories(clientId);
 
@@ -104,31 +91,6 @@ function ImportarPage() {
     loadClients();
   }, []);
 
-  useEffect(() => {
-    supabase()
-      .from("uploads")
-      .select("id, filename, bank_name, status, tx_total, created_at, clients(name)")
-      .order("created_at", { ascending: false })
-      .limit(10)
-      .then(({ data }) => setRecentUploads((data ?? []) as unknown as UploadRecord[]));
-  }, [uploadsRefresh]);
-
-  async function handleUndoUpload(upload: UploadRecord) {
-    setUndoing(true);
-    const { error: err } = await supabase().from("uploads").delete().eq("id", upload.id);
-    setUndoing(false);
-    if (err) {
-      setError(`Erro ao desfazer importação: ${err.message}`);
-    } else {
-      setUndoTarget(null);
-      setUploadsRefresh((v) => v + 1);
-      if (stage === "done") {
-        setStage("idle");
-        setTransactions([]);
-        setFiles([]);
-      }
-    }
-  }
 
   async function handleUpload(fileList: File[], uploadClientId = clientId) {
     if (!fileList.length) return;
@@ -203,7 +165,6 @@ function ImportarPage() {
     // n8n notificado pela Edge Function create-upload (N8N_WEBHOOK_URL) — não duplicar aqui
     setTransactions(allTransactions);
     setStage("done");
-    setUploadsRefresh((v) => v + 1);
   }
 
   function onDrop(e: React.DragEvent) {
@@ -563,53 +524,6 @@ function ImportarPage() {
           </div>
         )}
 
-        {/* Importações recentes */}
-        {recentUploads.length > 0 && (
-          <div className="aurora-card p-0 overflow-hidden">
-            <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
-              <div className="aurora-cap mb-0.5">Histórico</div>
-              <div className="aurora-serif text-[16px]">Importações recentes</div>
-            </div>
-            <table className="w-full">
-              <thead>
-                <tr style={{ background: "#FAFAF8" }}>
-                  {["Data", "Cliente", "Arquivo", "Banco", "Lançamentos", ""].map((h) => (
-                    <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {recentUploads.map((u, idx) => (
-                  <tr key={u.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: idx > 0 ? "1px solid var(--line)" : undefined }}>
-                    <td className="px-5 py-3 text-[12px]" style={{ color: "var(--muted-foreground)", whiteSpace: "nowrap" }}>
-                      {formatDatePtBR(u.created_at)}
-                    </td>
-                    <td className="px-5 py-3 text-[12px]" style={{ fontWeight: 500 }}>
-                      {u.clients?.name ?? "—"}
-                    </td>
-                    <td className="px-5 py-3 text-[12px]" style={{ color: "var(--muted-foreground)", maxWidth: 200 }}>
-                      {u.filename}
-                    </td>
-                    <td className="px-5 py-3 text-[12px]">{u.bank_name}</td>
-                    <td className="px-5 py-3 text-[12px]">{u.tx_total ?? "—"}</td>
-                    <td className="px-5 py-3 text-right">
-                      <button
-                        onClick={() => setUndoTarget(u)}
-                        className="text-[10px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70"
-                        style={{ border: "1px solid var(--tan)", color: "var(--tan)", letterSpacing: "1.5px", fontWeight: 500 }}
-                      >
-                        Desfazer
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
         {/* Manual entry */}
         <div className="aurora-card p-0 overflow-hidden">
           <button
@@ -794,18 +708,10 @@ function ImportarPage() {
           files={files}
           bank={bank}
           onConfirm={() => { setAwaitingConfirm(false); handleUpload(files); }}
-          onCancel={() => { setAwaitingConfirm(false); setFiles([]); setClientId(""); }}
+          onCancel={() => { setAwaitingConfirm(false); setFiles([]); setError(null); if (inputRef.current) inputRef.current.value = ""; }}
         />
       )}
 
-      {undoTarget && (
-        <UndoImportModal
-          upload={undoTarget}
-          undoing={undoing}
-          onConfirm={() => handleUndoUpload(undoTarget)}
-          onCancel={() => setUndoTarget(null)}
-        />
-      )}
     </AdminLayout>
   );
 }
@@ -878,74 +784,6 @@ function ConfirmUploadModal({
   );
 }
 
-function UndoImportModal({
-  upload, undoing, onConfirm, onCancel,
-}: {
-  upload: UploadRecord;
-  undoing: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.45)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
-    >
-      <div className="w-full max-w-md bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(184,149,106,0.12)", borderBottom: "1px solid var(--line)" }}>
-          <div>
-            <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>
-            <div className="aurora-serif text-[20px]">Desfazer importação</div>
-          </div>
-          <button onClick={onCancel} className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100">×</button>
-        </div>
-        <div className="px-6 py-5 flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex justify-between text-[13px]">
-              <span style={{ color: "var(--muted-foreground)" }}>Cliente</span>
-              <span style={{ fontWeight: 500 }}>{upload.clients?.name ?? "—"}</span>
-            </div>
-            <div className="flex justify-between text-[13px]">
-              <span style={{ color: "var(--muted-foreground)" }}>Arquivo</span>
-              <span>{upload.filename}</span>
-            </div>
-            <div className="flex justify-between text-[13px]">
-              <span style={{ color: "var(--muted-foreground)" }}>Lançamentos</span>
-              <span>{upload.tx_total ?? "—"}</span>
-            </div>
-          </div>
-          <div
-            className="text-[12px] px-4 py-3"
-            style={{ background: "rgba(184,149,106,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}
-          >
-            Todos os lançamentos desta importação serão removidos permanentemente. Essa ação não pode ser desfeita.
-          </div>
-          <div className="flex justify-end gap-3 pt-1">
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={undoing}
-              className="text-[10px] uppercase px-5 py-3 transition-opacity disabled:opacity-40"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={undoing}
-              className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
-              style={{ background: "var(--tan)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
-            >
-              {undoing ? "Removendo..." : "Sim, remover"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 interface EditTxProps {
   tx: Transaction;
