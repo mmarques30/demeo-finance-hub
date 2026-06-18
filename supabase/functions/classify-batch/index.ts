@@ -9,7 +9,21 @@ import Anthropic from "npm:@anthropic-ai/sdk";
 import { z } from "npm:zod@3";
 import { corsHeaders as getCorsHeaders, handlePreflight } from "../_shared/cors.ts";
 
-// Replica normalize_description do banco em TypeScript
+// Retry helper: retries fn up to maxAttempts with exponential backoff (1s, 2s, ...)
+async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === maxAttempts) throw err;
+      console.error(`[classify-batch] attempt ${attempt} failed, retrying in ${2 ** (attempt - 1)}s:`, err);
+      await new Promise(r => setTimeout(r, 1000 * 2 ** (attempt - 1)));
+    }
+  }
+  throw new Error("unreachable");
+}
+
+// MUST stay in sync with src/lib/utils.ts buildPattern() — same normalization logic
 function normalizeDescription(raw: string): string {
   return raw
     .toUpperCase()
@@ -72,13 +86,14 @@ async function classifyWithAI(
     valor: t.amount,
   }));
 
-  const { content } = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 2048,
-    messages: [
-      {
-        role: "user",
-        content: `Você é um classificador financeiro especialista em pequenas empresas brasileiras.
+  const { content } = await withRetry(() =>
+    anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 2048,
+      messages: [
+        {
+          role: "user",
+          content: `Você é um classificador financeiro especialista em pequenas empresas brasileiras.
 Cliente: ${clientName}
 Setor: ${segment}
 ${contextPatterns ? `\nPadrões frequentes deste cliente:\n${contextPatterns}\n` : ""}
@@ -92,9 +107,10 @@ Formato: [{"id":"...","cat":"Categoria · Subcategoria","rec":true/false,"conf":
 
 Lançamentos:
 ${JSON.stringify(payload)}`,
-      },
-    ],
-  });
+        },
+      ],
+    })
+  );
 
   const raw = content[0].type === "text" ? content[0].text.trim() : "[]";
   const match = raw.match(/\[[\s\S]*\]/);
@@ -301,15 +317,18 @@ Deno.serve(async (req) => {
           topPatterns ?? []
         );
       } catch (aiErr) {
-        // Falha de IA (timeout, API fora do ar, etc.): todas as transações do batch ficam
-        // como pending para revisão manual. O upload continua sem abortar.
-        console.error("[classify-batch] AI batch error, marking batch as pending:", aiErr);
+        // Falha de IA após 3 tentativas (timeout, API fora do ar, etc.): transações do batch
+        // ficam como pending para revisão manual. O upload continua sem abortar.
+        console.error("[classify-batch] AI batch failed after 3 retries, marking as pending:", aiErr);
         aiPending += batch.length;
         continue;
       }
 
       for (const r of results) {
         const isKnownCategory = categoryNames.includes(r.cat);
+        if (!isKnownCategory) {
+          console.error(`[classify-batch] AI hallucinated category "${r.cat}" for tx ${r.id} — not in client categories, saving null`);
+        }
         // Camada 3 (AI) apenas sugere categoria — status sempre "pending" para revisão manual
         await supabase.from("transactions").update({
           category: isKnownCategory ? r.cat : null,
