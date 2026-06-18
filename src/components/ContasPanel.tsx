@@ -322,13 +322,17 @@ function NovoLancamentoModal({
   );
 }
 
-export function ContasPanel({ clientId }: { clientId: string }) {
+export function ContasPanel({ clientId, openTrigger }: { clientId: string; openTrigger?: number }) {
   const [view, setView] = useState<FilterView>("pendentes");
   const [payables, setPayables] = useState<Payable[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [marking, setMarking] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    if (openTrigger) setShowModal(true);
+  }, [openTrigger]);
 
   async function loadPayables() {
     setLoading(true);
@@ -410,13 +414,6 @@ export function ContasPanel({ clientId }: { clientId: string }) {
             <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>receber − pagar pendentes</div>
           </div>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="text-[10px] uppercase px-4 py-2.5 mt-1 shrink-0"
-          style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
-        >
-          + Novo
-        </button>
       </div>
 
       {error && (

@@ -75,6 +75,7 @@ function DFCPage() {
   const [tx, setTx] = useState<Tx[]>([]);
   const [prevTx, setPrevTx] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(false);
+  const [contasTrigger, setContasTrigger] = useState(0);
   const [saldoInicial, setSaldoInicial] = useState(0);
   const [catMap, setCatMap] = useState<Map<string, CatInfo>>(new Map());
 
@@ -211,6 +212,15 @@ function DFCPage() {
               onStartChange={setStartDate}
               onEndChange={setEndDate}
             />
+            {activeTab === "contas" && (
+              <button
+                onClick={() => setContasTrigger((n) => n + 1)}
+                className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
+                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+              >
+                + Novo
+              </button>
+            )}
           </div>
         }
       />
@@ -243,7 +253,7 @@ function DFCPage() {
       )}
 
       {activeTab === "recorrencias" && <RecorrenciasPanel clientId={clientId} />}
-      {activeTab === "contas" && <ContasPanel clientId={clientId} />}
+      {activeTab === "contas" && <ContasPanel clientId={clientId} openTrigger={contasTrigger} />}
       {activeTab === "extratos" && <ExtratosPanel clientId={clientId} />}
 
       {activeTab === "dre" && (
