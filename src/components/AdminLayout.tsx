@@ -18,7 +18,7 @@ const GROUPS: SidebarGroup[] = [
     id: "visao",
     label: "Visão",
     items: [
-      { to: "/admin", label: "Dashboard", icon: "▦" },
+      { to: "/admin/", label: "Dashboard", icon: "▦" },
       { to: "/admin/clientes", label: "Clientes", icon: "◷" },
       { to: "/admin/dfc", label: "DFC / DRE", icon: "◈" },
       { to: "/admin/relatorios", label: "Relatórios", icon: "≡" },
@@ -54,7 +54,7 @@ const GROUPS: SidebarGroup[] = [
 const ALL_ITEMS = GROUPS.flatMap((g) => g.items);
 
 function isActive(pathname: string, to: string) {
-  if (to === "/admin") return pathname === "/admin";
+  if (to === "/admin/") return pathname === "/admin/" || pathname === "/admin";
   return pathname.startsWith(to);
 }
 
@@ -139,7 +139,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         className="hidden lg:flex flex-col shrink-0 sticky top-0 h-screen transition-[width] duration-300"
         style={{
           width: collapsed ? 76 : 260,
-          background: "linear-gradient(180deg, #1C2D45 0%, #142235 100%)",
+          background: "linear-gradient(180deg, #1C2D45 0%, #111E2E 100%)",
           color: "#fff",
         }}
       >
@@ -165,7 +165,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             className="h-full overflow-y-auto"
             style={{
               width: 280,
-              background: "linear-gradient(180deg, var(--navy) 0%, #15303F 100%)",
+              background: "linear-gradient(180deg, var(--navy) 0%, #111E2E 100%)",
               color: "#fff",
               animation: "aurora-slide-in 0.28s cubic-bezier(.22,.61,.36,1) both",
             }}
@@ -211,7 +211,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
             {/* Breadcrumb dinâmico */}
             <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-              <span className="hidden sm:inline">Aurora</span>
+              <Link
+                to="/admin/"
+                className="hidden sm:inline hover:opacity-70 transition-opacity"
+                style={{ color: "var(--muted-foreground)", textDecoration: "none" }}
+              >
+                Aurora
+              </Link>
               <span className="hidden sm:inline" style={{ color: "rgba(0,0,0,0.2)" }}>/</span>
               <span style={{ color: "var(--foreground)", fontWeight: 500 }}>
                 {ALL_ITEMS.find((i) => isActive(path, i.to))?.label ?? "Painel"}
@@ -245,7 +251,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                     background: "linear-gradient(135deg, var(--green), var(--green2))",
                     color: "#fff",
                     letterSpacing: "1px",
-                    boxShadow: "0 4px 12px -4px rgba(74,103,65,0.45)",
+                    boxShadow: "0 4px 12px -4px rgba(40,76,43,0.45)",
                   }}
                 >
                   {adminInitials}
@@ -270,7 +276,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                     background: "#fff",
                     border: "1px solid #EFEFEF",
                     borderRadius: 16,
-                    boxShadow: "0 1px 2px rgba(27,57,77,0.04), 0 24px 48px -16px rgba(74,103,65,0.22)",
+                    boxShadow: "0 1px 2px rgba(28,45,69,0.04), 0 24px 48px -16px rgba(40,76,43,0.22)",
                     animation: "aurora-pop 0.18s cubic-bezier(.22,.61,.36,1) both",
                   }}
                 >
@@ -350,7 +356,7 @@ function SidebarContent({
       >
         {/* Só o ícone da logo — sem texto "Aurora" nem "Gestão financeira" */}
         <Link
-          to={"/admin" as string}
+          to={"/admin/" as string}
           aria-label="Aurora · ir para Dashboard"
           className={`inline-flex items-center text-white ${collapsed ? "justify-center w-full" : ""}`}
         >
@@ -475,7 +481,7 @@ function SidebarContent({
                         justifyContent: collapsed ? "center" : undefined,
                         color: active ? "#fff" : "rgba(255,255,255,.78)",
                         background: active
-                          ? "linear-gradient(135deg, rgba(143,166,136,0.28), rgba(143,166,136,0.10))"
+                          ? "linear-gradient(135deg, rgba(153,169,137,0.28), rgba(153,169,137,0.10))"
                           : "transparent",
                         borderRadius: 10,
                         fontWeight: active ? 500 : 400,
@@ -495,7 +501,7 @@ function SidebarContent({
                             height: 22,
                             background: "var(--sage)",
                             borderRadius: 999,
-                            boxShadow: "0 0 12px rgba(143,166,136,0.6)",
+                            boxShadow: "0 0 12px rgba(153,169,137,0.6)",
                           }}
                         />
                       )}
@@ -599,16 +605,16 @@ type ModuleIdentity = {
 };
 
 const MODULE_MAP: Record<string, ModuleIdentity> = {
-  "/admin": { icon: "▦", accent: "var(--navy)", accentSoft: "rgba(27,57,77,0.10)", group: "Visão" },
-  "/admin/clientes": { icon: "◷", accent: "var(--sage)", accentSoft: "rgba(143,166,136,0.12)", group: "Visão" },
-  "/admin/clientes/": { icon: "◷", accent: "var(--sage)", accentSoft: "rgba(143,166,136,0.12)", group: "Visão" },
-  "/admin/dfc": { icon: "◈", accent: "var(--navy)", accentSoft: "rgba(27,57,77,0.10)", group: "Visão" },
-  "/admin/relatorios": { icon: "≡", accent: "var(--navy)", accentSoft: "rgba(27,57,77,0.10)", group: "Visão" },
+  "/admin": { icon: "▦", accent: "var(--navy)", accentSoft: "rgba(28,45,69,0.10)", group: "Visão" },
+  "/admin/clientes": { icon: "◷", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Visão" },
+  "/admin/clientes/": { icon: "◷", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Visão" },
+  "/admin/dfc": { icon: "◈", accent: "var(--navy)", accentSoft: "rgba(28,45,69,0.10)", group: "Visão" },
+  "/admin/relatorios": { icon: "≡", accent: "var(--navy)", accentSoft: "rgba(28,45,69,0.10)", group: "Visão" },
   "/admin/importar": { icon: "↓", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Operação" },
   "/admin/pendentes": { icon: "⊙", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Operação" },
-  "/admin/pipeline": { icon: "⋯", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
-  "/admin/propostas": { icon: "✎", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
-  "/admin/contratos": { icon: "❍", accent: "var(--green)", accentSoft: "rgba(74,103,65,0.12)", group: "Comercial" },
+  "/admin/pipeline": { icon: "⋯", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
+  "/admin/propostas": { icon: "✎", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
+  "/admin/contratos": { icon: "❍", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
   "/admin/servicos": { icon: "◇", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Catálogo" },
   "/admin/insights/precificacao": { icon: "↗", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Catálogo" },
 };
@@ -647,7 +653,6 @@ export function PageHeader({
       className="px-6 lg:px-10 py-6 flex items-center justify-between gap-4 flex-wrap"
       style={{
         background: "#FFFFFF",
-        borderBottom: "1px solid var(--line)",
       }}
     >
       <h1
