@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     // Valida existência do cliente antes de processar
     const { data: client } = await supabase
       .from("clients")
-      .select("id")
+      .select("id, name")
       .eq("id", client_id)
       .maybeSingle();
 
@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           upload_id: upload.id,
           client_id,
+          client_name: (client as { id: string; name: string }).name ?? "Cliente desconhecido",
           tx_count: parseResult.tx_count ?? 0,
           classified: classifyData.classified ?? 0,
           pending_manual: classifyData.pending_manual ?? 0,
