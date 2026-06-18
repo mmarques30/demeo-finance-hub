@@ -17,7 +17,7 @@ interface Rule {
   is_active: boolean;
   hits: number | null;
   last_used: string | null;
-  source: "manual" | "approval" | "ai" | "import" | null;
+  source: "manual" | "approval" | "ai" | "import" | "rejected" | null;
 }
 
 interface ClientOption {
@@ -312,6 +312,7 @@ function SourceBadge({ source }: { source: string | null }) {
     approval: { label: "Aprendida", color: "var(--green)" },
     ai:       { label: "IA",       color: "var(--tan)" },
     import:   { label: "Importada", color: "var(--muted-foreground)" },
+    rejected: { label: "Rejeitada", color: "var(--expense)" },
   };
   const { label, color } = map[source ?? ""] ?? { label: source ?? "—", color: "var(--muted-foreground)" };
   return (

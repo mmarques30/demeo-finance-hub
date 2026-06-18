@@ -6,6 +6,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk";
+import { z } from "npm:zod@3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,12 +47,14 @@ interface RecurrencePattern {
   occurrences: number;
 }
 
-interface AIResult {
-  id: string;
-  cat: string;
-  rec: boolean;
-  conf: number;
-}
+const AIResultSchema = z.array(z.object({
+  id: z.string(),
+  cat: z.string(),
+  rec: z.boolean(),
+  conf: z.number().min(0).max(100),
+}));
+
+type AIResult = z.infer<typeof AIResultSchema>[number];
 
 async function classifyWithAI(
   transactions: TxRow[],
@@ -99,7 +102,15 @@ ${JSON.stringify(payload)}`,
 
   const raw = content[0].type === "text" ? content[0].text.trim() : "[]";
   const match = raw.match(/\[[\s\S]*\]/);
-  return match ? JSON.parse(match[0]) : [];
+  if (!match) return [];
+  let parsed: unknown;
+  try { parsed = JSON.parse(match[0]); } catch { return []; }
+  const validated = AIResultSchema.safeParse(parsed);
+  if (!validated.success) {
+    console.warn("[classify-batch] schema inválido na resposta da IA:", validated.error.message);
+    return [];
+  }
+  return validated.data;
 }
 
 Deno.serve(async (req) => {

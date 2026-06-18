@@ -126,6 +126,12 @@ function CategoriasPage() {
       setError(`Erro ao excluir: ${deleteError.message}`);
       return;
     }
+    // Desvincula lançamentos que referenciavam esta categoria (transactions.category é TEXT, sem FK)
+    await supabase()
+      .from("transactions")
+      .update({ category: null })
+      .eq("client_id", cat.client_id)
+      .eq("category", cat.name);
     setCategories((prev) => prev.filter((c) => c.id !== id));
   }
 
