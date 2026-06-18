@@ -45,6 +45,8 @@ function PendentesPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadData(page);
@@ -200,6 +202,38 @@ function PendentesPage() {
 
   const clientCount = Object.keys(grouped).length;
 
+  type Priority = "alta" | "media" | "baixa";
+  const PRIORITY_DOT: Record<Priority, string> = {
+    alta: "#C0392B",
+    media: "var(--tan)",
+    baixa: "var(--green)",
+  };
+
+  const sortedEntries = Object.entries(grouped).sort(
+    ([, a], [, b]) => sortOrder === "desc" ? b.length - a.length : a.length - b.length
+  );
+
+  const priorityMap: Record<string, Priority> = (() => {
+    const sorted = Object.keys(grouped).sort((a, b) => grouped[b].length - grouped[a].length);
+    const N = sorted.length;
+    const res: Record<string, Priority> = {};
+    sorted.forEach((cid, idx) => {
+      if (idx < Math.ceil(N / 3)) res[cid] = "alta";
+      else if (idx >= N - Math.ceil(N / 3)) res[cid] = "baixa";
+      else res[cid] = "media";
+    });
+    return res;
+  })();
+
+  function toggleExpanded(cid: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(cid)) next.delete(cid);
+      else next.add(cid);
+      return next;
+    });
+  }
+
   return (
     <AdminLayout>
       <PageHeader
@@ -255,33 +289,63 @@ function PendentesPage() {
           </div>
         )}
 
-        {Object.entries(grouped).map(([cid, items]) => {
+        {/* Ordenação */}
+        {!loading && clientCount > 1 && (
+          <div className="flex items-center justify-end">
+            <button
+              onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
+              className="text-[10px] uppercase px-3 py-1.5 transition-colors"
+              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px", fontWeight: 500, borderRadius: "999px" }}
+            >
+              {sortOrder === "desc" ? "↓ Mais pendentes" : "↑ Menos pendentes"}
+            </button>
+          </div>
+        )}
+
+        {sortedEntries.map(([cid, items]) => {
           const client = clientMap[cid];
           const isSaving = saving === cid;
+          const isExpanded = expanded.has(cid);
+          const priority = priorityMap[cid] ?? "media";
           return (
             <div key={cid} className="aurora-card p-0 overflow-hidden">
               <div
-                className="px-6 py-4 flex items-center justify-between"
-                style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}
+                className="px-6 py-4 flex items-center justify-between cursor-pointer"
+                style={{ background: "var(--linen)", borderBottom: isExpanded ? "1px solid var(--line)" : "none" }}
+                onClick={() => toggleExpanded(cid)}
               >
-                <div>
-                  <div className="aurora-cap mb-1">Cliente</div>
-                  <div className="aurora-serif text-[20px]">
-                    {client?.name ?? cid}{" "}
-                    <em className="italic" style={{ color: "var(--green)" }}>
-                      · {items.length} pendentes
-                    </em>
+                <div className="flex items-center gap-3">
+                  <span
+                    title={priority}
+                    style={{ width: 8, height: 8, borderRadius: 999, background: PRIORITY_DOT[priority], flexShrink: 0, display: "inline-block" }}
+                  />
+                  <div>
+                    <div className="aurora-cap mb-1">Cliente</div>
+                    <div className="aurora-serif text-[20px]">
+                      {client?.name ?? cid}{" "}
+                      <em className="italic" style={{ color: "var(--green)" }}>
+                        · {items.length} pendentes
+                      </em>
+                    </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => saveClient(cid)}
-                  disabled={isSaving}
-                  className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-50"
-                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
-                >
-                  {isSaving ? "Salvando..." : "Salvar classificação"}
-                </button>
+                <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => saveClient(cid)}
+                    disabled={isSaving}
+                    className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-50"
+                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                  >
+                    {isSaving ? "Salvando..." : "Salvar classificação"}
+                  </button>
+                  <span
+                    style={{ fontSize: 9, color: "var(--muted-foreground)", transition: "transform 0.2s", transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block" }}
+                  >
+                    ▶
+                  </span>
+                </div>
               </div>
+              {isExpanded && (
               <table className="w-full">
                 <thead>
                   <tr>
@@ -305,7 +369,7 @@ function PendentesPage() {
                       </td>
                       <td
                         className="px-6 py-3 aurora-serif text-[14px]"
-                        style={{ color: t.amount >= 0 ? "var(--green)" : "var(--navy)" }}
+                        style={{ color: t.amount >= 0 ? "var(--green)" : "var(--expense)", fontWeight: 600 }}
                       >
                         {t.amount >= 0 ? "+" : ""}
                         {brl(t.amount)}
@@ -388,6 +452,7 @@ function PendentesPage() {
                   ))}
                 </tbody>
               </table>
+              )}
             </div>
           );
         })}

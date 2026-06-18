@@ -14,8 +14,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-export const Route = createFileRoute("/admin/")(
-  {
+export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
   head: () => ({ meta: [{ title: "Dashboard · Aurora" }] }),
 });
@@ -116,12 +115,14 @@ function AdminDashboard() {
       { data: banksData },
     ] = await Promise.all([
       supabase().from("clients").select("id, name, status, last_upload_at").order("name"),
+      // Somente o mês atual — evita carregar todo o histórico
       supabase()
         .from("transactions")
         .select("client_id, amount, status")
         .eq("status", "approved")
         .gte("date", start)
         .lte("date", end),
+      // Pendentes de todos os meses — Claudia precisa ver tudo que falta classificar
       supabase()
         .from("transactions")
         .select("client_id")
@@ -134,16 +135,19 @@ function AdminDashboard() {
     const pendingList = pendingData ?? [];
     const banksList = banksData ?? [];
 
+    // Agrupa bancos por cliente
     const banksMap: Record<string, string[]> = {};
     for (const b of banksList) {
       (banksMap[b.client_id] ||= []).push(b.bank_name);
     }
 
+    // Indexa transações aprovadas do mês por cliente
     const txByClient: Record<string, typeof txList> = {};
     for (const t of txList) {
       (txByClient[t.client_id] ||= []).push(t);
     }
 
+    // Indexa contagem de pendentes por cliente
     const pendingByClient: Record<string, number> = {};
     for (const t of pendingList) {
       pendingByClient[t.client_id] = (pendingByClient[t.client_id] ?? 0) + 1;
@@ -295,7 +299,7 @@ function AdminDashboard() {
                   Entradas
                 </span>
                 <span className="flex items-center gap-2 text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--navy)", display: "inline-block" }} />
+                  <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--expense)", display: "inline-block" }} />
                   Saídas
                 </span>
               </div>
@@ -392,7 +396,7 @@ function AdminDashboard() {
                   <td colSpan={5} className="px-7 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando...</td>
                 </tr>
               )}
-              {!loading && clientes.map((c) => (
+              {!loading && clientes.map((c, idx) => (
                 <tr
                   key={c.id}
                   style={{ borderTop: "1px solid var(--line)", transition: "background 0.15s" }}
@@ -405,7 +409,7 @@ function AdminDashboard() {
                   <td className="px-7 lg:px-9 py-5 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
                     {c.banks.join(" · ") || "—"}
                   </td>
-                  <td className="px-7 lg:px-9 py-5 aurora-serif" style={{ fontSize: 20, fontWeight: 300, color: c.saldo >= 0 ? "var(--navy)" : "var(--tan)", letterSpacing: "-0.3px" }}>
+                  <td className="px-7 lg:px-9 py-5 aurora-serif" style={{ fontSize: 20, fontWeight: 300, color: c.saldo >= 0 ? "var(--navy)" : "var(--expense)", letterSpacing: "-0.3px" }}>
                     {brl(c.saldo)}
                   </td>
                   <td className="px-7 lg:px-9 py-5">
@@ -471,8 +475,8 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
             <stop offset="95%" stopColor="#284C2B" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="trendFillDes" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%"  stopColor="#1C2D45" stopOpacity={0.08} />
-            <stop offset="95%" stopColor="#1C2D45" stopOpacity={0} />
+            <stop offset="5%"  stopColor="#C0392B" stopOpacity={0.08} />
+            <stop offset="95%" stopColor="#C0392B" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
@@ -515,12 +519,12 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
         <Area
           type="monotone"
           dataKey="des"
-          stroke="#1C2D45"
+          stroke="#C0392B"
           strokeWidth={1.5}
           strokeDasharray="5 3"
           fill="url(#trendFillDes)"
-          dot={{ fill: "#1C2D45", r: 3, strokeWidth: 0 }}
-          activeDot={{ r: 4, fill: "#1C2D45", strokeWidth: 0 }}
+          dot={{ fill: "#C0392B", r: 3, strokeWidth: 0 }}
+          activeDot={{ r: 4, fill: "#C0392B", strokeWidth: 0 }}
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -528,13 +532,12 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const tone =
-    status === "Fechado" ? { bg: "rgba(74,103,65,0.10)", color: "var(--green)" }
-    : status === "Pendente" ? { bg: "rgba(184,149,106,0.15)", color: "var(--tan)" }
-    : { bg: "rgba(27,57,77,0.10)", color: "var(--navy)" };
+  const bg =
+    status === "Fechado" ? "var(--green)"
+    : status === "Pendente" ? "var(--tan)"
+    : "var(--navy)";
   return (
-    <span className="inline-flex items-center gap-2 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: tone.bg, color: tone.color, padding: "5px 12px", borderRadius: "999px", whiteSpace: "nowrap" }}>
-      <span style={{ width: 6, height: 6, borderRadius: 999, background: tone.color }} />
+    <span className="inline-flex items-center text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: bg, color: "#fff", padding: "4px 10px", borderRadius: "4px", whiteSpace: "nowrap" }}>
       {status}
     </span>
   );

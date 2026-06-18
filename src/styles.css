@@ -66,39 +66,41 @@
   --color-navy: var(--navy);
   --color-tan: var(--tan);
   --color-tan2: var(--tan2);
+  --color-expense: var(--expense);
   --color-line: var(--line);
 }
 
 :root {
   --radius: 14px;
 
-  /* Brand palette v1 (kept for admin backward compat) */
-  --linen:   #F7F1E8;
-  --linen2:  #FDF9F4;
-  --green:   #4A6741;
-  --green2:  #3D5636;
-  --sage:    #8FA688;
-  --navy:    #1B394D;
-  --tan:     #B8956A;
-  --tan2:    #D4B896;
-  --line:    #E8DFD2;
-  --line-soft: rgba(74,103,65,0.08);
+  /* Brand palette v2 — nova paleta De Meo (jun 2026) */
+  --linen:   #E0E4D6;   /* Areia Fria — section backgrounds */
+  --linen2:  #FDF9F4;   /* mantido — near-white de card */
+  --green:   #284C2B;   /* Verde Floresta — primary brand */
+  --green2:  #1E3B21;   /* Verde Floresta escuro — hover / gradient */
+  --sage:    #99A989;   /* Sálvia Média — charts, tags, ícones */
+  --navy:    #1C2D45;   /* Azul Noite — sidebar, headers, dados */
+  --tan:     #B8956A;   /* mantido — alertas, pendências, âmbar */
+  --tan2:    #D4B896;   /* mantido — bordas cálidas, biscoito */
+  --expense: #C0392B;   /* vermelho despesas — saídas, valores negativos */
+  --line:    #E8DFD2;   /* mantido — linha divisora cálida */
+  --line-soft: rgba(40,76,43,0.08);
 
-  /* ==== Aurora v3 — Paleta AICMA ==== */
-  --ink:     #1C2D45;   /* Navy escuro: texto, sidebar, navbar, overlays */
-  --steel:   #6D92A6;   /* Aço/azul: links, charts, interações */
-  --mist:    #FFFFFF;   /* Background, cards, sections */
-  --sage-v3: #99A989;   /* Tags, labels, ícones */
-  --forest:  #284C2B;   /* Marca, CTAs, receitas, logo */
-  --cream:   #FFFFFF;   /* Backgrounds suaves */
-  --ink-2:   rgba(28,45,69,0.08);  /* Border / divider */
-  --ink-6:   rgba(28,45,69,0.6);   /* Texto secundário */
+  /* ==== Aurora v3 — alinhado à nova paleta De Meo ==== */
+  --ink:     #1C2D45;   /* = --navy */
+  --steel:   #6D92A6;   /* Azul Ardósia: links, charts, interações */
+  --mist:    #FFFFFF;
+  --sage-v3: #99A989;   /* = --sage */
+  --forest:  #284C2B;   /* = --green */
+  --cream:   #FFFFFF;
+  --ink-2:   rgba(28,45,69,0.08);
+  --ink-6:   rgba(28,45,69,0.6);
 
-  /* Shadows — multi-layer pra dar profundidade leve */
-  --shadow-soft: 0 1px 2px rgba(27,57,77,0.04), 0 8px 24px -12px rgba(74,103,65,0.12);
-  --shadow-card: 0 1px 2px rgba(27,57,77,0.04), 0 12px 32px -16px rgba(74,103,65,0.18), 0 4px 12px -6px rgba(27,57,77,0.06);
-  --shadow-float: 0 1px 2px rgba(27,57,77,0.04), 0 24px 64px -32px rgba(74,103,65,0.28), 0 12px 32px -12px rgba(27,57,77,0.08);
-  --shadow-glow: 0 0 0 1px rgba(74,103,65,0.06), 0 40px 80px -32px rgba(74,103,65,0.35), 0 16px 48px -16px rgba(143,166,136,0.25);
+  /* Shadows */
+  --shadow-soft: 0 1px 2px rgba(28,45,69,0.04), 0 8px 24px -12px rgba(40,76,43,0.12);
+  --shadow-card: 0 1px 2px rgba(28,45,69,0.04), 0 12px 32px -16px rgba(40,76,43,0.18), 0 4px 12px -6px rgba(28,45,69,0.06);
+  --shadow-float: 0 1px 2px rgba(28,45,69,0.04), 0 24px 64px -32px rgba(40,76,43,0.28), 0 12px 32px -12px rgba(28,45,69,0.08);
+  --shadow-glow: 0 0 0 1px rgba(40,76,43,0.06), 0 40px 80px -32px rgba(40,76,43,0.35), 0 16px 48px -16px rgba(153,169,137,0.25);
 
   /* Semantic mapping */
   --background: #FFFFFF;
@@ -107,7 +109,7 @@
   --card-foreground: #1C1C19;
   --popover: #FFFFFF;
   --popover-foreground: #1C1C19;
-  --primary: #4A6741;
+  --primary: #284C2B;
   --primary-foreground: #FFFFFF;
   --secondary: #F4F6F2;
   --secondary-foreground: #1C1C19;
@@ -119,20 +121,20 @@
   --destructive-foreground: #FFFFFF;
   --border: #E5E7E2;
   --input: #E5E7E2;
-  --ring: #4A6741;
-  --chart-1: #4A6741;
-  --chart-2: #8FA688;
-  --chart-3: #1B394D;
+  --ring: #284C2B;
+  --chart-1: #284C2B;
+  --chart-2: #99A989;
+  --chart-3: #1C2D45;
   --chart-4: #B8956A;
   --chart-5: #D4B896;
-  --sidebar: #1B394D;
+  --sidebar: #1C2D45;
   --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #8FA688;
+  --sidebar-primary: #99A989;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(143,166,136,0.20);
+  --sidebar-accent: rgba(153,169,137,0.20);
   --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: #8FA688;
+  --sidebar-ring: #99A989;
 }
 
 @layer base {
@@ -161,7 +163,7 @@
   }
 
   ::selection {
-    background: rgba(74,103,65,0.18);
+    background: rgba(40,76,43,0.18);
     color: var(--green2);
   }
 }
@@ -194,7 +196,7 @@
   .aurora-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-card);
-    border-color: rgba(74,103,65,0.18);
+    border-color: rgba(40,76,43,0.18);
   }
 
   /* Card silencioso (sem hover) — para conteúdo "vivo" */
@@ -227,9 +229,9 @@
     padding: 5px 12px;
     border-radius: 999px;
   }
-  .aurora-badge--ok   { background: rgba(74,103,65,0.12); color: var(--green); }
+  .aurora-badge--ok   { background: rgba(40,76,43,0.12); color: var(--green); }
   .aurora-badge--pnd  { background: rgba(184,149,106,0.15); color: var(--tan); }
-  .aurora-badge--prog { background: rgba(27,57,77,0.10); color: var(--navy); }
+  .aurora-badge--prog { background: rgba(28,45,69,0.10); color: var(--navy); }
   .aurora-badge--mute { background: rgba(122,114,96,0.10); color: var(--muted-foreground); }
 
   .aurora-link {
@@ -255,7 +257,7 @@
   }
   .aurora-input:focus {
     border-color: var(--green);
-    box-shadow: 0 0 0 4px rgba(74,103,65,0.08);
+    box-shadow: 0 0 0 4px rgba(40,76,43,0.08);
   }
   .aurora-input[aria-invalid="true"] { border-color: var(--destructive); }
 
@@ -273,7 +275,7 @@
     text-transform: uppercase;
     font-weight: 500;
     border-radius: 999px;
-    box-shadow: 0 14px 32px -16px rgba(74,103,65,0.55), 0 2px 6px rgba(74,103,65,0.18);
+    box-shadow: 0 14px 32px -16px rgba(40,76,43,0.55), 0 2px 6px rgba(40,76,43,0.18);
     transition: transform 0.35s cubic-bezier(.22,.61,.36,1), box-shadow 0.35s, filter 0.2s;
     overflow: hidden;
     isolation: isolate;
@@ -287,7 +289,7 @@
   }
   .aurora-cta:hover {
     transform: translateY(-2px) scale(1.01);
-    box-shadow: 0 22px 48px -20px rgba(74,103,65,0.7), 0 4px 12px rgba(74,103,65,0.22);
+    box-shadow: 0 22px 48px -20px rgba(40,76,43,0.7), 0 4px 12px rgba(40,76,43,0.22);
     filter: brightness(1.03);
   }
 
@@ -321,14 +323,14 @@
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: rgba(74,103,65,0.06);
+    background: rgba(40,76,43,0.06);
     color: var(--green);
     border-radius: 999px;
     font-size: 10px;
     letter-spacing: 2px;
     text-transform: uppercase;
     font-weight: 500;
-    border: 1px solid rgba(74,103,65,0.08);
+    border: 1px solid rgba(40,76,43,0.08);
   }
 }
 
@@ -350,8 +352,8 @@
     border-radius: 999px;
     z-index: 0;
   }
-  .aurora-blob--sage  { background: radial-gradient(circle, rgba(143,166,136,0.55), transparent 60%); }
-  .aurora-blob--green { background: radial-gradient(circle, rgba(74,103,65,0.45), transparent 60%); }
+  .aurora-blob--sage  { background: radial-gradient(circle, rgba(153,169,137,0.55), transparent 60%); }
+  .aurora-blob--green { background: radial-gradient(circle, rgba(40,76,43,0.45), transparent 60%); }
   .aurora-blob--tan   { background: radial-gradient(circle, rgba(212,184,150,0.5),  transparent 60%); }
   .aurora-blob--linen { background: radial-gradient(circle, rgba(247,241,232,0.9),  transparent 65%); }
 
@@ -377,7 +379,7 @@
     position: absolute;
     inset: -40px;
     background:
-      radial-gradient(60% 50% at 50% 50%, rgba(143,166,136,0.35), transparent 70%),
+      radial-gradient(60% 50% at 50% 50%, rgba(153,169,137,0.35), transparent 70%),
       radial-gradient(40% 40% at 30% 30%, rgba(212,184,150,0.25), transparent 70%);
     z-index: -1;
     pointer-events: none;
@@ -386,7 +388,7 @@
 
   /* Linhas finas verticais decorativas (organização editorial moderna) */
   .aurora-rule {
-    background: linear-gradient(90deg, transparent, rgba(74,103,65,0.18) 20%, rgba(74,103,65,0.18) 80%, transparent);
+    background: linear-gradient(90deg, transparent, rgba(40,76,43,0.18) 20%, rgba(40,76,43,0.18) 80%, transparent);
     height: 1px;
   }
 
@@ -417,7 +419,7 @@
     content: "";
     position: absolute;
     inset: -50%;
-    background: conic-gradient(from 0deg, transparent, rgba(143,166,136,0.4), transparent 30%);
+    background: conic-gradient(from 0deg, transparent, rgba(153,169,137,0.4), transparent 30%);
     animation: aurora-rotate 6s linear infinite;
     pointer-events: none;
   }
@@ -443,13 +445,13 @@
     border: 1px solid var(--line);
     border-radius: 4px;
     padding: 28px;
-    box-shadow: 0 1px 0 rgba(74,103,65,0.05);
+    box-shadow: 0 1px 0 rgba(40,76,43,0.05);
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   }
   .bento-card:hover {
     transform: translateY(-2px);
     border-color: var(--green);
-    box-shadow: 0 1px 0 rgba(74,103,65,0.05), 0 0 0 1px var(--green);
+    box-shadow: 0 1px 0 rgba(40,76,43,0.05), 0 0 0 1px var(--green);
   }
 
   /* Skip link a11y */
@@ -543,7 +545,7 @@
   }
   .motion-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 28px 56px -32px rgba(27,57,77,0.28);
+    box-shadow: 0 28px 56px -32px rgba(28,45,69,0.28);
   }
   .motion-card:hover::after {
     box-shadow: 0 0 0 1px var(--green);

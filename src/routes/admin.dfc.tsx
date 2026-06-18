@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { brl, monthOptions, monthRangeDates } from "@/lib/utils";
+import { brl } from "@/lib/utils";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { supabase } from "@/lib/supabase";
 import { useDFCForecast } from "@/hooks/useDFCForecast";
 import { RecorrenciasPanel } from "@/components/RecorrenciasPanel";
@@ -18,10 +19,24 @@ export const Route = createFileRoute("/admin/dfc")({
 interface ClientOption { id: string; name: string; }
 interface Tx { id: string; date: string; description: string; amount: number; category: string | null; is_recurring: boolean; }
 
-function prevPeriod(mmyyyy: string): string {
-  const [mm, yyyy] = mmyyyy.split("/").map(Number);
-  const d = new Date(yyyy, mm - 2, 1);
-  return `${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+function dfcTodayISO() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function dfcFirstOfMonthISO() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+function prevRange(s: string, e: string) {
+  const sMs = new Date(s + "T12:00:00").getTime();
+  const eMs = new Date(e + "T12:00:00").getTime();
+  const dur = eMs - sMs;
+  const pEndMs = sMs - 86400000;
+  const pStartMs = pEndMs - dur;
+  const fmt = (ms: number) => new Date(ms).toISOString().split("T")[0];
+  return { pStart: fmt(pStartMs), pEnd: fmt(pEndMs) };
 }
 
 function deltaPct(curr: number, prev: number): string | null {
@@ -29,8 +44,6 @@ function deltaPct(curr: number, prev: number): string | null {
   const pct = ((curr - prev) / prev) * 100;
   return (pct >= 0 ? "▲ +" : "▼ ") + pct.toFixed(1) + "%";
 }
-
-const PERIODS = monthOptions(12);
 
 type DFCTab = "dfc" | "recorrencias" | "contas";
 
@@ -44,7 +57,8 @@ function DFCPage() {
   const { clientId: preselectedId } = Route.useSearch();
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientId, setClientId] = useState(preselectedId ?? "");
-  const [period, setPeriod] = useState(PERIODS[0]);
+  const [startDate, setStartDate] = useState(dfcFirstOfMonthISO());
+  const [endDate, setEndDate] = useState(dfcTodayISO());
   const [activeTab, setActiveTab] = useState<DFCTab>("dfc");
   const [tx, setTx] = useState<Tx[]>([]);
   const [prevTx, setPrevTx] = useState<Tx[]>([]);
@@ -64,9 +78,7 @@ function DFCPage() {
   // Recarrega transações do período atual e anterior em paralelo
   useEffect(() => {
     if (!clientId) return;
-    const { start, end } = monthRangeDates(period);
-    const prev = prevPeriod(period);
-    const { start: pStart, end: pEnd } = monthRangeDates(prev);
+    const { pStart, pEnd } = prevRange(startDate, endDate);
     setLoading(true);
     Promise.all([
       supabase()
@@ -74,8 +86,8 @@ function DFCPage() {
         .select("id, date, description, amount, category, is_recurring")
         .eq("client_id", clientId)
         .eq("status", "approved")
-        .gte("date", start)
-        .lte("date", end)
+        .gte("date", startDate)
+        .lte("date", endDate)
         .order("date"),
       supabase()
         .from("transactions")
@@ -89,7 +101,7 @@ function DFCPage() {
       setPrevTx((prev ?? []) as Tx[]);
       setLoading(false);
     });
-  }, [clientId, period]);
+  }, [clientId, startDate, endDate]);
 
   const receitas = useMemo(() => tx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0), [tx]);
   const despesas = useMemo(() => tx.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0), [tx]);
@@ -131,8 +143,12 @@ function DFCPage() {
   }, [tx]);
   const maxBar = Math.max(...semanas.map((s) => Math.max(s.rec, s.des)), 1);
 
-  const projecao = useDFCForecast(clientId, period);
+  const periodForForecast = `${endDate.split("-")[1]}/${endDate.split("-")[0]}`;
+  const projecao = useDFCForecast(clientId, periodForForecast);
   const clienteName = clients.find((c) => c.id === clientId)?.name ?? "Cliente";
+  const periodoLabel = startDate === endDate
+    ? new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR")
+    : `${new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} – ${new Date(endDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}`;
 
   return (
     <AdminLayout>
@@ -142,24 +158,14 @@ function DFCPage() {
         emphasis="de fluxo de caixa"
         description="Análise consolidada do período com comparativo, drill-down por categoria e projeção dos próximos 3 meses."
         right={
-          <div className="flex gap-2 flex-wrap items-center">
-            <select
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="bg-white px-3 py-2.5 text-[12px]"
-              style={{ border: "1px solid var(--line)" }}
-            >
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              className="bg-white px-3 py-2.5 text-[12px]"
-              style={{ border: "1px solid var(--line)" }}
-            >
-              {PERIODS.map((p) => <option key={p}>{p}</option>)}
-            </select>
-          </div>
+          <select
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            className="bg-white px-3 py-2.5 text-[12px]"
+            style={{ border: "1px solid var(--line)" }}
+          >
+            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
         }
       />
 
@@ -189,6 +195,17 @@ function DFCPage() {
 
       {activeTab === "dfc" && (
       <div className="px-8 lg:px-12 pb-12 grid gap-8">
+        {/* Filtro De / Até */}
+        <div className="flex justify-end pt-6">
+          <DateRangeFilter
+            startDate={startDate}
+            endDate={endDate}
+            maxDate={dfcTodayISO()}
+            onStartChange={setStartDate}
+            onEndChange={setEndDate}
+          />
+        </div>
+
         {loading && (
           <div className="aurora-card flex items-center gap-3">
             <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
@@ -199,17 +216,17 @@ function DFCPage() {
         {/* Resumo */}
         <div className="grid md:grid-cols-4 gap-5">
           <Resumo label="Receitas" value={brl(receitas)} tone="green" delta={deltaPct(receitas, prevReceitas)} />
-          <Resumo label="Despesas" value={brl(despesas)} tone="tan" delta={deltaPct(despesas, prevDespesas)} />
-          <Resumo label="Resultado" value={brl(resultado)} tone={resultado >= 0 ? "green" : "tan"} />
+          <Resumo label="Despesas" value={brl(despesas)} tone="expense" delta={deltaPct(despesas, prevDespesas)} />
+          <Resumo label="Resultado" value={brl(resultado)} tone={resultado >= 0 ? "green" : "expense"} />
           <Resumo label="Lançamentos" value={String(tx.length)} tone="navy" />
         </div>
 
         {/* Fixos vs Variáveis */}
         {despesas > 0 && (
           <div className="grid md:grid-cols-2 gap-5">
-            <Resumo label="Despesas Fixas" value={brl(fixos)} tone="navy"
+            <Resumo label="Despesas Fixas" value={brl(fixos)} tone="expense"
               sub={`${((fixos / despesas) * 100).toFixed(1)}% das despesas`} />
-            <Resumo label="Despesas Variáveis" value={brl(variaveis)} tone="tan"
+            <Resumo label="Despesas Variáveis" value={brl(variaveis)} tone="expense"
               sub={`${((variaveis / despesas) * 100).toFixed(1)}% das despesas`} />
           </div>
         )}
@@ -218,7 +235,7 @@ function DFCPage() {
         <div className="aurora-card">
           <div className="aurora-cap mb-1">Gráfico</div>
           <div className="aurora-serif text-[22px] mb-7">
-            Fluxo semanal <em className="italic" style={{ color: "var(--green)" }}>· {period}</em>
+            Fluxo semanal <em className="italic" style={{ color: "var(--green)" }}>· {periodoLabel}</em>
           </div>
           {tx.length === 0 ? (
             <div className="text-[12px] text-center py-8" style={{ color: "var(--muted-foreground)" }}>
@@ -231,7 +248,7 @@ function DFCPage() {
                   <div key={s.lbl} className="h-full flex flex-col justify-end gap-2">
                     <div className="flex gap-1.5 items-end h-full">
                       <div className="flex-1 transition-all" style={{ height: `${(s.rec / maxBar) * 100}%`, background: "var(--green)", borderRadius: "3px 3px 0 0" }} title={brl(s.rec)} />
-                      <div className="flex-1 transition-all" style={{ height: `${(s.des / maxBar) * 100}%`, background: "var(--tan)", borderRadius: "3px 3px 0 0" }} title={brl(s.des)} />
+                      <div className="flex-1 transition-all" style={{ height: `${(s.des / maxBar) * 100}%`, background: "var(--expense)", borderRadius: "3px 3px 0 0" }} title={brl(s.des)} />
                     </div>
                     <div className="text-[10px] uppercase text-center" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>{s.lbl}</div>
                   </div>
@@ -239,7 +256,7 @@ function DFCPage() {
               </div>
               <div className="flex gap-5 mt-5 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
                 <span className="flex items-center gap-2"><span className="w-3 h-3 inline-block" style={{ background: "var(--green)" }} /> Receitas</span>
-                <span className="flex items-center gap-2"><span className="w-3 h-3 inline-block" style={{ background: "var(--tan)" }} /> Despesas</span>
+                <span className="flex items-center gap-2"><span className="w-3 h-3 inline-block" style={{ background: "var(--expense)" }} /> Despesas</span>
               </div>
             </>
           )}
@@ -331,7 +348,7 @@ function DFCPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--tan)" }}>
+                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--expense)" }}>
                         {brl(p.des)}
                         {p.confirmedDes > 0 && (
                           <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: "inherit", fontWeight: 400 }}>
@@ -339,7 +356,7 @@ function DFCPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 16, color: r >= 0 ? "var(--green)" : "var(--tan)" }}>
+                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 16, color: r >= 0 ? "var(--green)" : "var(--expense)" }}>
                         {brl(r)}
                       </td>
                     </tr>
@@ -364,12 +381,12 @@ function Resumo({
 }: {
   label: string;
   value: string;
-  tone: "green" | "tan" | "navy";
+  tone: "green" | "tan" | "navy" | "expense";
   delta?: string | null;
   sub?: string;
 }) {
-  const color = tone === "green" ? "var(--green)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
-  const deltaColor = delta?.startsWith("▲") ? "var(--green)" : "var(--tan)";
+  const color = tone === "green" ? "var(--green)" : tone === "expense" ? "var(--expense)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
+  const deltaColor = delta?.startsWith("▲") ? "var(--green)" : "var(--expense)";
   return (
     <div className="aurora-card">
       <div className="aurora-cap mb-3">{label}</div>
