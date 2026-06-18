@@ -133,7 +133,7 @@ function ClientesPage() {
             <thead>
               <tr style={{ background: "var(--linen)" }}>
                 {["Empresa", "Responsável", "Bancos", "Status", "Último extrato", ""].map((h) => (
-                  <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
+                  <th key={h} className="text-left px-6 py-3 text-[11px] uppercase" style={{ fontWeight: 600, letterSpacing: "2px", color: "var(--muted-foreground)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -164,8 +164,8 @@ function ClientesPage() {
                     <Link
                       to={"/admin/clientes/$clientId" as never}
                       params={{ clientId: c.id } as never}
-                      className="text-[13px] aurora-link"
-                      style={{ fontWeight: 500 }}
+                      className="text-[15px] aurora-link"
+                      style={{ fontWeight: 700 }}
                     >
                       {c.name}
                     </Link>

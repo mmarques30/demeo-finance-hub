@@ -57,6 +57,9 @@ function ImportarPage() {
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [awaitingConfirm, setAwaitingConfirm] = useState(false);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [canceling, setCanceling] = useState(false);
+  const [cancelUploadOpen, setCancelUploadOpen] = useState(false);
 
   const CATEGORIAS = useCategories(clientId);
 
@@ -186,16 +189,20 @@ function ImportarPage() {
     if (!ids.length) return;
     setApproving(true);
 
-    const { error: err } = await supabase()
+    const { data: updated, error: err } = await supabase()
       .from("transactions")
       .update({ status: "approved" })
-      .in("id", ids);
+      .in("id", ids)
+      .select("id");
 
     if (err) {
       setError(`Erro ao aprovar: ${err.message}`);
+    } else if (!updated?.length) {
+      setError("Nenhum lançamento foi aprovado. Verifique sua sessão e tente novamente.");
     } else {
+      const approvedIds = (updated as { id: string }[]).map((r) => r.id);
       setTransactions((prev) =>
-        prev.map((t) => (ids.includes(t.id) ? { ...t, status: "approved" } : t))
+        prev.map((t) => (approvedIds.includes(t.id) ? { ...t, status: "approved" } : t))
       );
       setSelected(new Set());
     }
@@ -213,6 +220,28 @@ function ImportarPage() {
 
   function approveOne(id: string) {
     approveTransactions([id]);
+  }
+
+  async function handleCancelTx(id: string) {
+    const removedIdx = transactions.findIndex((t) => t.id === id);
+    setCanceling(true);
+    const { error: err } = await supabase().from("transactions").delete().eq("id", id);
+    setCanceling(false);
+    if (err) {
+      setError(`Erro ao cancelar: ${err.message}`);
+      setCancelingId(null);
+      return;
+    }
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
+    setSelected((prev) => {
+      const s = new Set<number>();
+      prev.forEach((idx) => {
+        if (idx < removedIdx) s.add(idx);
+        else if (idx > removedIdx) s.add(idx - 1);
+      });
+      return s;
+    });
+    setCancelingId(null);
   }
 
   async function handleManualEntry(e: React.FormEvent) {
@@ -406,6 +435,14 @@ function ImportarPage() {
               </div>
               <div className="flex gap-2">
                 <button
+                  onClick={() => setCancelUploadOpen(true)}
+                  disabled={approving}
+                  className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
+                  style={{ border: "1px solid var(--tan)", color: "var(--tan)", letterSpacing: "2px" }}
+                >
+                  Cancelar envio
+                </button>
+                <button
                   onClick={approveSelected}
                   disabled={approving || selected.size === 0}
                   className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
@@ -502,7 +539,35 @@ function ImportarPage() {
                             Aprovar
                           </button>
                         )}
-                        <button className="aurora-link" onClick={() => setEditTx(tx)}>Editar</button>
+                        <button className="aurora-link mr-3" onClick={() => setEditTx(tx)}>Editar</button>
+                        {cancelingId === tx.id ? (
+                          <span className="inline-flex items-center gap-2">
+                            <span className="text-[10px]" style={{ color: "var(--tan)" }}>Confirmar?</span>
+                            <button
+                              onClick={() => handleCancelTx(tx.id)}
+                              disabled={canceling}
+                              className="aurora-link text-[10px] disabled:opacity-40"
+                              style={{ color: "var(--tan)" }}
+                            >
+                              {canceling ? "..." : "Sim"}
+                            </button>
+                            <button
+                              onClick={() => setCancelingId(null)}
+                              className="aurora-link text-[10px]"
+                              style={{ color: "var(--muted-foreground)" }}
+                            >
+                              Não
+                            </button>
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => setCancelingId(tx.id)}
+                            className="text-[10px] transition-opacity hover:opacity-70"
+                            style={{ color: "var(--tan)" }}
+                          >
+                            Cancelar
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -544,7 +609,7 @@ function ImportarPage() {
           </button>
 
           {manualOpen && (
-            <form onSubmit={handleManualEntry} className="px-6 py-5 grid gap-4">
+            <form onSubmit={handleManualEntry} className="px-8 py-6 grid gap-5">
               <div className="grid lg:grid-cols-2 gap-4">
                 {/* Cliente */}
                 <label className="block">
@@ -702,6 +767,26 @@ function ImportarPage() {
         />
       )}
 
+      {cancelUploadOpen && (
+        <CancelUploadModal
+          count={transactions.length}
+          onCancel={() => setCancelUploadOpen(false)}
+          onConfirm={async () => {
+            const ids = transactions.map((t) => t.id);
+            if (ids.length > 0) {
+              await supabase().from("transactions").delete().in("id", ids);
+            }
+            setCancelUploadOpen(false);
+            setStage("idle");
+            setTransactions([]);
+            setFiles([]);
+            setSelected(new Set());
+            setError(null);
+            if (inputRef.current) inputRef.current.value = "";
+          }}
+        />
+      )}
+
       {awaitingConfirm && clientId && files.length > 0 && (
         <ConfirmUploadModal
           clientName={clients.find((c) => c.id === clientId)?.name ?? ""}
@@ -713,6 +798,65 @@ function ImportarPage() {
       )}
 
     </AdminLayout>
+  );
+}
+
+function CancelUploadModal({
+  count, onConfirm, onCancel,
+}: {
+  count: number;
+  onConfirm: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleConfirm() {
+    setDeleting(true);
+    await onConfirm();
+    setDeleting(false);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={(e) => { if (e.target === e.currentTarget && !deleting) onCancel(); }}
+    >
+      <div className="w-full max-w-md bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+          <div>
+            <div className="aurora-cap mb-0.5">Cancelar envio</div>
+            <div className="aurora-serif text-[20px]">Descartar lançamentos</div>
+          </div>
+          <button onClick={onCancel} disabled={deleting} className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100">×</button>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <p className="text-[13px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.6 }}>
+            Todos os <strong>{count} lançamentos</strong> deste envio serão excluídos permanentemente. Esta ação não pode ser desfeita.
+          </p>
+          <div className="flex justify-end gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={deleting}
+              className="text-[10px] uppercase px-5 py-3 transition-opacity disabled:opacity-50"
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+            >
+              Manter
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={deleting}
+              className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
+              style={{ background: "var(--tan)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+            >
+              {deleting ? "Excluindo..." : "Excluir tudo"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
