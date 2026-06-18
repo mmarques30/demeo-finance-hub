@@ -30,6 +30,16 @@ interface Tx {
   status: string;
 }
 
+interface UploadHistory {
+  id: string;
+  period: string;
+  bank_name: string;
+  tx_classified: number;
+  tx_pending: number;
+  status: string;
+  created_at: string;
+}
+
 const PERIODS = monthOptions(12);
 
 function ClientePage() {
@@ -41,6 +51,8 @@ function ClientePage() {
   const [loading, setLoading] = useState(true);
   const [txLoading, setTxLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploads, setUploads] = useState<UploadHistory[]>([]);
+  const [uploadsLoading, setUploadsLoading] = useState(true);
 
   // Carrega dados do cliente uma vez
   useEffect(() => {
@@ -53,6 +65,20 @@ function ClientePage() {
         if (err) setError(err.message);
         else setClient(data as ClientDetail);
         setLoading(false);
+      });
+  }, [clientId]);
+
+  // Carrega histórico de uploads do cliente
+  useEffect(() => {
+    if (!clientId) return;
+    supabase()
+      .from("uploads")
+      .select("id, period, bank_name, tx_classified, tx_pending, status, created_at")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setUploads((data ?? []) as UploadHistory[]);
+        setUploadsLoading(false);
       });
   }, [clientId]);
 
@@ -237,6 +263,78 @@ function ClientePage() {
             </table>
           )}
         </div>
+
+        {/* Histórico de importações */}
+        <div className="aurora-card p-0 overflow-hidden">
+          <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
+            <div>
+              <div className="aurora-cap mb-0.5">Importações</div>
+              <div className="aurora-serif text-[20px]">
+                Histórico{" "}
+                <em className="italic" style={{ color: "var(--green)" }}>
+                  completo
+                </em>
+              </div>
+            </div>
+          </div>
+
+          {uploadsLoading ? (
+            <div className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+              Carregando histórico…
+            </div>
+          ) : uploads.length === 0 ? (
+            <div className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+              Nenhuma importação encontrada.
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr style={{ background: "#FAFAF8" }}>
+                  {["Período", "Banco", "Classificados", "Pendentes", "Cobertura", "Status", "Importado em"].map((h) => (
+                    <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {uploads.map((u, idx) => {
+                  const classified = u.tx_classified ?? 0;
+                  const pending = u.tx_pending ?? 0;
+                  const total = classified + pending;
+                  const pct = total > 0 ? Math.round((classified / total) * 100) : 0;
+                  return (
+                    <tr key={u.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                      <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 600 }}>{u.period}</td>
+                      <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{u.bank_name}</td>
+                      <td className="px-6 py-3 aurora-value" style={{ fontSize: 14, color: "var(--green)" }}>{classified}</td>
+                      <td className="px-6 py-3 aurora-value" style={{ fontSize: 14, color: pending > 0 ? "var(--tan)" : "var(--muted-foreground)" }}>{pending}</td>
+                      <td className="px-6 py-3">
+                        <span
+                          className="text-[11px] uppercase px-2.5 py-1"
+                          style={{
+                            background: pct >= 80 ? "rgba(74,103,65,0.10)" : pct >= 50 ? "rgba(184,149,106,0.12)" : "rgba(192,57,43,0.08)",
+                            color: pct >= 80 ? "var(--green)" : pct >= 50 ? "var(--tan)" : "#C0392B",
+                            letterSpacing: "1.5px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {pct}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-3">
+                        <UploadStatusBadge status={u.status} />
+                      </td>
+                      <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                        {formatDatePtBR(u.created_at)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </AdminLayout>
   );
@@ -259,6 +357,24 @@ function TxStatusBadge({ status }: { status: string }) {
       : status === "pending"
       ? { bg: "rgba(184,149,106,0.15)", color: "var(--tan)", label: "Pendente" }
       : { bg: "rgba(27,57,77,0.10)", color: "var(--navy)", label: status };
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-[10px] uppercase"
+      style={{ letterSpacing: "1.5px", fontWeight: 600, background: tone.bg, color: tone.color, padding: "4px 10px" }}
+    >
+      <span style={{ width: 5, height: 5, borderRadius: 999, background: tone.color }} />
+      {tone.label}
+    </span>
+  );
+}
+
+function UploadStatusBadge({ status }: { status: string }) {
+  const tone =
+    status === "done"
+      ? { bg: "rgba(74,103,65,0.10)",  color: "var(--green)", label: "Concluído"   }
+      : status === "processing"
+      ? { bg: "rgba(27,57,77,0.10)",   color: "var(--navy)",  label: "Processando" }
+      : { bg: "rgba(184,149,106,0.15)", color: "var(--tan)",   label: status         };
   return (
     <span
       className="inline-flex items-center gap-1.5 text-[10px] uppercase"
