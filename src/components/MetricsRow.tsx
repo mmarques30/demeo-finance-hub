@@ -55,12 +55,22 @@ export function MetricsRow() {
 
 function Metric({ label, value, tone }: { label: string; value: string; tone: "green" | "tan" | "navy" }) {
   const color = tone === "green" ? "var(--green)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
+  const bg    = tone === "green" ? "rgba(40,76,43,0.08)" : tone === "tan" ? "rgba(184,149,106,0.10)" : "rgba(28,45,69,0.08)";
   return (
-    <div className="aurora-card">
-      <div className="aurora-cap mb-3">{label}</div>
-      <div className="aurora-serif" style={{ fontSize: 30, color, lineHeight: 1, letterSpacing: "-1px" }}>
+    <div
+      className="aurora-card"
+      style={{ transition: "transform 0.3s cubic-bezier(.22,.61,.36,1), box-shadow 0.3s" }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "var(--shadow-card)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <span style={{ width: 6, height: 6, borderRadius: 999, background: color, display: "inline-block", flexShrink: 0 }} />
+        <div className="aurora-cap" style={{ margin: 0 }}>{label}</div>
+      </div>
+      <div className="aurora-serif" style={{ fontSize: 36, color, lineHeight: 1, letterSpacing: "-1.5px", marginBottom: 6 }}>
         {value}
       </div>
+      <div style={{ height: 2, borderRadius: 999, background: bg, marginTop: 12 }} />
     </div>
   );
 }
