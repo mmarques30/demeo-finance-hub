@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl } from "@/lib/utils";
@@ -516,6 +516,19 @@ function ImportarPage() {
             </table>
           </div>
         )}
+
+        {stage === "done" && clientId && (
+          <div className="flex justify-end">
+            <Link
+              to={"/admin/dfc" as never}
+              search={{ clientId, tab: "extratos" } as never}
+              className="aurora-link text-[12px]"
+            >
+              Ver Histórico de Extratos →
+            </Link>
+          </div>
+        )}
+
         {/* Manual entry */}
         <div className="aurora-card p-0 overflow-hidden">
           <button
