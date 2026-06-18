@@ -4,7 +4,7 @@ import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl, formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
-import { computeForecastMonths, type ForecastMonth } from "@/hooks/useDFCForecast";
+import { computeForecastMonths, type ForecastMonth, type PayableProjection } from "@/hooks/useDFCForecast";
 import { computeDRE, type CatInfo, type DREData } from "@/lib/dre";
 
 export const Route = createFileRoute("/admin/relatorios")({
@@ -415,7 +415,7 @@ function RelatoriosPage() {
     const histStart = new Date(yyyy, mm - 1 - 5, 1);
     const histStartStr = `${histStart.getFullYear()}-${String(histStart.getMonth() + 1).padStart(2, "0")}-01`;
 
-    const [{ data: histData }, { data: instData }] = await Promise.all([
+    const [{ data: histData }, { data: instData }, { data: payablesData }] = await Promise.all([
       supabase()
         .from("transactions")
         .select("date, amount, is_recurring")
@@ -429,6 +429,11 @@ function RelatoriosPage() {
         .eq("client_id", clientId)
         .eq("status", "approved")
         .not("installment_group_id", "is", null),
+      supabase()
+        .from("payables")
+        .select("type, amount, due_date")
+        .eq("client_id", clientId)
+        .is("paid_at", null),
     ]);
 
     type InstRow = { amount: number; installment_number: number; installment_total: number; date: string; installment_group_id: string };
@@ -444,7 +449,8 @@ function RelatoriosPage() {
       (histData ?? []) as { date: string; amount: number; is_recurring: boolean }[],
       installments,
       mm,
-      yyyy
+      yyyy,
+      (payablesData ?? []) as PayableProjection[],
     );
   }
 

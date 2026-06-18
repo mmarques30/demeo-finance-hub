@@ -48,6 +48,10 @@ function ImportarPage() {
   const [clientId, setClientId] = useState("");
   const [clientsLoading, setClientsLoading] = useState(true);
   const [bank, setBank] = useState("Itaú");
+  const [uploadPeriod, setUploadPeriod] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -150,6 +154,7 @@ function ImportarPage() {
             filename: file.name,
             client_id: uploadClientId,
             bank_name: bank,
+            period: uploadPeriod.split("-").reverse().join("/"), // "YYYY-MM" → "MM/YYYY"
           }),
         });
 
@@ -382,6 +387,16 @@ function ImportarPage() {
                   <option key={b}>{b}</option>
                 ))}
               </select>
+            </div>
+            <div className="aurora-card">
+              <div className="aurora-cap mb-3">Período do extrato</div>
+              <input
+                type="month"
+                value={uploadPeriod}
+                onChange={(e) => setUploadPeriod(e.target.value)}
+                className="w-full bg-white px-3 py-2.5 text-[13px]"
+                style={{ border: "1px solid var(--line)" }}
+              />
             </div>
           </div>
         )}
