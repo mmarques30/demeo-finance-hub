@@ -384,8 +384,8 @@ function PendentesPage() {
                         {t.description}
                       </td>
                       <td
-                        className="px-6 py-3 aurora-serif text-[14px]"
-                        style={{ color: t.amount >= 0 ? "var(--green)" : "var(--expense)", fontWeight: 600 }}
+                        className="px-6 py-3 aurora-value text-[14px]"
+                        style={{ color: t.amount >= 0 ? "var(--green)" : "var(--expense)" }}
                       >
                         {t.amount >= 0 ? "+" : ""}
                         {brl(t.amount)}

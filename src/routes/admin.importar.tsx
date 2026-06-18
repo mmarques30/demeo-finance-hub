@@ -506,8 +506,8 @@ function ImportarPage() {
                         )}
                       </td>
                       <td
-                        className="px-5 py-3 text-[12px] aurora-serif"
-                        style={{ color: tx.amount >= 0 ? "var(--green)" : "var(--navy)", fontSize: 14 }}
+                        className="px-5 py-3 aurora-value"
+                        style={{ fontSize: 14, color: tx.amount >= 0 ? "var(--green)" : "var(--navy)" }}
                       >
                         {tx.amount >= 0 ? "+" : ""}
                         {brl(tx.amount)}

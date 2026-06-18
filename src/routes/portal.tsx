@@ -145,7 +145,7 @@ function PortalPage() {
 
         <div className="aurora-card p-10">
           <div className="aurora-cap mb-3">Saldo atual consolidado</div>
-          <div className="aurora-serif" style={{ fontSize: "clamp(48px, 7vw, 88px)", color: "var(--navy)", lineHeight: 1, letterSpacing: "-2px" }}>
+          <div className="aurora-value" style={{ fontSize: "clamp(48px, 7vw, 88px)", color: "var(--navy)" }}>
             {brl(saldo)}
           </div>
           <div className="text-[12px] mt-3" style={{ color: "var(--muted-foreground)" }}>
@@ -156,11 +156,11 @@ function PortalPage() {
         <div className="grid md:grid-cols-2 gap-5">
           <div className="aurora-card">
             <div className="aurora-cap mb-3">Receitas · {mesLabelCap}</div>
-            <div className="aurora-serif" style={{ fontSize: 44, color: "var(--green)", lineHeight: 1, letterSpacing: "-1.5px" }}>{brl(receitas)}</div>
+            <div className="aurora-value" style={{ fontSize: 44, color: "var(--green)" }}>{brl(receitas)}</div>
           </div>
           <div className="aurora-card">
             <div className="aurora-cap mb-3">Despesas · {mesLabelCap}</div>
-            <div className="aurora-serif" style={{ fontSize: 44, color: "var(--tan)", lineHeight: 1, letterSpacing: "-1.5px" }}>{brl(despesas)}</div>
+            <div className="aurora-value" style={{ fontSize: 44, color: "var(--tan)" }}>{brl(despesas)}</div>
           </div>
         </div>
 
@@ -194,7 +194,7 @@ function PortalPage() {
               {despList.map(([cat, val]) => (
                 <div key={cat} className="flex items-center justify-between gap-4 pb-3" style={{ borderBottom: "1px solid var(--line)" }}>
                   <div className="text-[13px]">{cat}</div>
-                  <div className="aurora-serif text-[18px]" style={{ color: "var(--navy)" }}>{brl(val)}</div>
+                  <div className="aurora-value text-[18px]" style={{ color: "var(--navy)" }}>{brl(val)}</div>
                 </div>
               ))}
             </div>

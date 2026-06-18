@@ -209,7 +209,7 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
                     <tr key={tx.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
                       <td className="px-5 py-3 text-[12px] whitespace-nowrap">{formatDatePtBR(tx.date)}</td>
                       <td className="px-5 py-3 text-[12px]">{tx.description}</td>
-                      <td className="px-5 py-3 aurora-serif text-[13px] whitespace-nowrap"
+                      <td className="px-5 py-3 aurora-value text-[14px] whitespace-nowrap"
                         style={{ color: tx.amount >= 0 ? "var(--green)" : "var(--expense)" }}>
                         {tx.amount >= 0 ? "+" : ""}{brl(tx.amount)}
                       </td>

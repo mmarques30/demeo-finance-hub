@@ -67,7 +67,7 @@ function Metric({ label, value, tone }: { label: string; value: string; tone: "g
         <span style={{ width: 6, height: 6, borderRadius: 999, background: color, display: "inline-block", flexShrink: 0 }} />
         <div className="aurora-cap" style={{ margin: 0 }}>{label}</div>
       </div>
-      <div className="aurora-serif" style={{ fontSize: 36, color, lineHeight: 1, letterSpacing: "-1.5px", marginBottom: 6 }}>
+      <div className="aurora-value" style={{ fontSize: 36, color, marginBottom: 6 }}>
         {value}
       </div>
       <div style={{ height: 2, borderRadius: 999, background: bg, marginTop: 12 }} />

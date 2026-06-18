@@ -80,7 +80,7 @@ function PayableSection({
       >
         <div>
           <div className="aurora-cap mb-1">{title}</div>
-          <div className="aurora-serif text-[20px]" style={{ color: accentColor }}>
+          <div className="aurora-value text-[22px]" style={{ color: accentColor }}>
             {brl(subtotal)}
           </div>
         </div>
@@ -132,7 +132,7 @@ function PayableSection({
                   <td className="px-5 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     {p.category ?? "—"}
                   </td>
-                  <td className="px-5 py-3 aurora-serif text-[14px]" style={{ color: accentColor, whiteSpace: "nowrap" }}>
+                  <td className="px-5 py-3 aurora-value text-[14px]" style={{ color: accentColor, whiteSpace: "nowrap" }}>
                     {brl(p.amount)}
                   </td>
                   <td className="px-5 py-3">
@@ -390,21 +390,21 @@ export function ContasPanel({ clientId }: { clientId: string }) {
         <div className="grid grid-cols-3 gap-4 flex-1">
           <div className="aurora-card">
             <div className="aurora-cap mb-2">A Receber</div>
-            <div className="aurora-serif text-[28px]" style={{ color: "var(--green)" }}>{brl(totalReceber)}</div>
+            <div className="aurora-value text-[32px]" style={{ color: "var(--green)" }}>{brl(totalReceber)}</div>
             <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
               {pending.filter((p) => p.type === "receber").length} pendentes
             </div>
           </div>
           <div className="aurora-card">
             <div className="aurora-cap mb-2">A Pagar</div>
-            <div className="aurora-serif text-[28px]" style={{ color: "var(--navy)" }}>{brl(totalPagar)}</div>
+            <div className="aurora-value text-[32px]" style={{ color: "var(--navy)" }}>{brl(totalPagar)}</div>
             <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
               {pending.filter((p) => p.type === "pagar").length} pendentes
             </div>
           </div>
           <div className="aurora-card">
             <div className="aurora-cap mb-2">Saldo Previsto</div>
-            <div className="aurora-serif text-[28px]" style={{ color: saldoPrevisto >= 0 ? "var(--green)" : "#B06040" }}>
+            <div className="aurora-value text-[32px]" style={{ color: saldoPrevisto >= 0 ? "var(--green)" : "#B06040" }}>
               {brl(saldoPrevisto)}
             </div>
             <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>receber − pagar pendentes</div>

@@ -319,9 +319,9 @@ function AdminDashboard() {
               </div>
               <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 300, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
                 {periodoLabel} ·{" "}
-                <em className="italic" style={{ color: "var(--green)" }}>
+                <span style={{ color: "var(--green)" }}>
                   {brl(totalReceita).replace(",00", "")}
-                </em>
+                </span>
               </h2>
             </div>
             <div className="text-[11px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)", fontWeight: 500 }}>
@@ -340,7 +340,7 @@ function AdminDashboard() {
                   const height = (c.receita / maxReceita) * 100;
                   return (
                     <div key={c.id} className="flex flex-col items-stretch gap-4 h-full justify-end" style={{ flex: 1 }}>
-                      <div className="aurora-serif text-center" style={{ fontSize: 20, fontWeight: 300, color: c.receita > 0 ? "var(--green)" : "var(--muted-foreground)", letterSpacing: "-0.5px", lineHeight: 1 }}>
+                      <div className="aurora-value text-center" style={{ fontSize: 22, color: c.receita > 0 ? "var(--green)" : "var(--muted-foreground)" }}>
                         {brl(c.receita).replace(",00", "")}
                       </div>
                       <div className="w-full flex items-end justify-center" style={{ flex: 1 }}>
@@ -409,7 +409,7 @@ function AdminDashboard() {
                   <td className="px-7 lg:px-9 py-5 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
                     {c.banks.join(" · ") || "—"}
                   </td>
-                  <td className="px-7 lg:px-9 py-5 aurora-serif" style={{ fontSize: 20, fontWeight: 300, color: c.saldo >= 0 ? "var(--navy)" : "var(--expense)", letterSpacing: "-0.3px" }}>
+                  <td className="px-7 lg:px-9 py-5 aurora-value" style={{ fontSize: 22, color: c.saldo >= 0 ? "var(--navy)" : "var(--expense)" }}>
                     {brl(c.saldo)}
                   </td>
                   <td className="px-7 lg:px-9 py-5">
@@ -450,7 +450,7 @@ function KpiCard({ icon, label, value, sub, tone, footer }: {
         <div className="text-[12px] uppercase" style={{ letterSpacing: "2.5px", color: "var(--foreground)", fontWeight: 600, lineHeight: 1.4 }}>{label}</div>
         <div aria-hidden className="inline-flex items-center justify-center shrink-0" style={{ width: 40, height: 40, background: bg, color, fontSize: 18, borderRadius: "var(--radius-md)" }}>{icon}</div>
       </header>
-      <div className="aurora-serif" style={{ fontSize: 64, fontWeight: 300, color, lineHeight: 1, letterSpacing: "-2px" }}>{value}</div>
+      <div className="aurora-value" style={{ fontSize: 64, color }}>{value}</div>
       <div className="text-[13px]" style={{ color: "var(--foreground)", lineHeight: 1.5 }}>{sub}</div>
       {footer && (
         <div className="mt-2 pt-4 text-[11px]" style={{ color: "var(--muted-foreground)", borderTop: "1px solid var(--line)", lineHeight: 1.5 }}>{footer}</div>
