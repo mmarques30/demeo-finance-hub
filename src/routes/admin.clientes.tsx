@@ -137,7 +137,7 @@ function ClientesPage() {
           <table className="w-full">
             <thead>
               <tr style={{ background: "var(--linen)" }}>
-                {["Empresa", "Responsável", "Bancos", "Status", "Último extrato", ""].map((h) => (
+                {["Empresa", "Bancos", "Fechamento", "Status", "Último extrato", ""].map((h) => (
                   <th key={h} className="text-left px-6 py-3 text-[11px] uppercase" style={{ fontWeight: 600, letterSpacing: "2px", color: "var(--muted-foreground)" }}>{h}</th>
                 ))}
               </tr>
@@ -174,17 +174,16 @@ function ClientesPage() {
                     >
                       {c.name}
                     </Link>
-                    {c.cnpj && (
-                      <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)", letterSpacing: "0.5px" }}>
-                        {c.cnpj}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                    {c.owner_name}
+                    <div className="text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+                      {c.owner_name}
+                      {c.cnpj && ` · ${c.cnpj}`}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     {c.client_banks.map((b) => b.bank_name).join(", ") || "—"}
+                  </td>
+                  <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                    {c.monthly_closing_day ? `Dia ${c.monthly_closing_day}` : "—"}
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge status={c.status} />

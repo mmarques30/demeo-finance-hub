@@ -154,7 +154,7 @@ function ImportarPage() {
             filename: file.name,
             client_id: uploadClientId,
             bank_name: bank,
-            period: uploadPeriod.split("-").reverse().join("/"), // "YYYY-MM" → "MM/YYYY"
+            period: uploadPeriod.split("-").reverse().join("/"),
           }),
         });
 
@@ -343,7 +343,7 @@ function ImportarPage() {
 
         {/* File preview + form */}
         {files.length > 0 && (
-          <div className="grid lg:grid-cols-3 gap-5">
+          <div className={`grid ${stage === "idle" ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-5`}>
             <div className="aurora-card">
               <div className="aurora-cap mb-3">Arquivos enviados</div>
               <ul className="flex flex-col gap-2">
@@ -388,16 +388,18 @@ function ImportarPage() {
                 ))}
               </select>
             </div>
-            <div className="aurora-card">
-              <div className="aurora-cap mb-3">Período do extrato</div>
-              <input
-                type="month"
-                value={uploadPeriod}
-                onChange={(e) => setUploadPeriod(e.target.value)}
-                className="w-full bg-white px-3 py-2.5 text-[13px]"
-                style={{ border: "1px solid var(--line)" }}
-              />
-            </div>
+            {stage === "idle" && (
+              <div className="aurora-card">
+                <div className="aurora-cap mb-3">Período do extrato</div>
+                <input
+                  type="month"
+                  value={uploadPeriod}
+                  onChange={(e) => setUploadPeriod(e.target.value)}
+                  className="w-full bg-white px-3 py-2.5 text-[13px]"
+                  style={{ border: "1px solid var(--line)" }}
+                />
+              </div>
+            )}
           </div>
         )}
 

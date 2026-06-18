@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { brl, formatDatePtBR } from "@/lib/utils";
-import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { useCategories } from "@/hooks/useCategories";
 
 interface UploadRecord {
@@ -26,19 +25,7 @@ interface TxRecord {
   bank: string;
 }
 
-function todayISO() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
-
-function firstOfMonthISO() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
-export function ExtratosPanel({ clientId }: { clientId: string }) {
-  const [startDate, setStartDate] = useState(firstOfMonthISO());
-  const [endDate, setEndDate] = useState(todayISO());
+export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: string; startDate: string; endDate: string }) {
   const [uploads, setUploads] = useState<UploadRecord[]>([]);
   const [txMap, setTxMap] = useState<Record<string, TxRecord[] | undefined>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -116,16 +103,6 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
 
   return (
     <div className="px-8 lg:px-12 pb-12 pt-6 grid gap-6">
-      <div className="flex justify-end">
-        <DateRangeFilter
-          startDate={startDate}
-          endDate={endDate}
-          maxDate={todayISO()}
-          onStartChange={setStartDate}
-          onEndChange={setEndDate}
-        />
-      </div>
-
       {loading && (
         <div className="aurora-card flex items-center gap-3">
           <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
