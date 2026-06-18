@@ -532,12 +532,13 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const bg =
-    status === "Fechado" ? "var(--green)"
-    : status === "Pendente" ? "var(--tan)"
-    : "var(--navy)";
+  const tone =
+    status === "Fechado" ? { bg: "rgba(74,103,65,0.10)", color: "var(--green)" }
+    : status === "Pendente" ? { bg: "rgba(184,149,106,0.15)", color: "var(--tan)" }
+    : { bg: "rgba(27,57,77,0.10)", color: "var(--navy)" };
   return (
-    <span className="inline-flex items-center text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: bg, color: "#fff", padding: "4px 10px", borderRadius: "4px", whiteSpace: "nowrap" }}>
+    <span className="inline-flex items-center gap-2 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: tone.bg, color: tone.color, padding: "5px 12px", borderRadius: "999px", whiteSpace: "nowrap" }}>
+      <span style={{ width: 6, height: 6, borderRadius: 999, background: tone.color }} />
       {status}
     </span>
   );
