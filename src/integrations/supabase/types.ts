@@ -143,6 +143,7 @@ export type Database = {
           created_at: string | null
           id: string
           last_upload_at: string | null
+          monthly_closing_day: number | null
           name: string
           owner_name: string
           portal_features: Json | null
@@ -154,6 +155,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           last_upload_at?: string | null
+          monthly_closing_day?: number | null
           name: string
           owner_name: string
           portal_features?: Json | null
@@ -165,6 +167,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           last_upload_at?: string | null
+          monthly_closing_day?: number | null
           name?: string
           owner_name?: string
           portal_features?: Json | null
