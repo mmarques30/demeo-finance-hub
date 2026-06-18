@@ -452,10 +452,10 @@ function HealthAlertCard({
     },
     sem_dados: {
       borderColor: "var(--line)",
-      bg: "rgba(0,0,0,0.02)",
+      bg: "#FAFAF8",
       color: "var(--muted-foreground)",
       icon: "◌",
-      label: "Saúde Financeira · Sem dados",
+      label: "Saúde Financeira · Sem dados no período",
       message: `Nenhuma movimentação aprovada em ${period}. Selecione um período com lançamentos para ver a análise de saúde financeira.`,
     },
   }[health];

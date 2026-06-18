@@ -1,4 +1,11 @@
 export const SEGMENT_BENCHMARKS: Record<string, { healthy: number; caution: number }> = {
+  // ── Clientes cadastrados ──────────────────────────────────────────────────
+  "Clínica Médica e Cirúrgica":           { healthy: 25, caution: 12 },
+  "Agência de Viagens e Turismo":         { healthy: 20, caution: 8  },
+  "Comércio de Peças e Acessórios Automotivos": { healthy: 18, caution: 7 },
+  "Padaria, Confeitaria e Lanchonete":    { healthy: 15, caution: 6  },
+  "Advocacia e Consultoria Jurídica":     { healthy: 35, caution: 18 },
+  // ── Genéricos ─────────────────────────────────────────────────────────────
   "Serviços":   { healthy: 30, caution: 15 },
   "Comércio":   { healthy: 20, caution: 8  },
   "Indústria":  { healthy: 18, caution: 7  },
