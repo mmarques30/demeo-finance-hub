@@ -5,6 +5,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handlePreflight } from "../_shared/cors.ts";
+import { reportError } from "../_shared/report-error.ts";
 
 Deno.serve(async (req) => {
   const preflight = handlePreflight(req);
@@ -190,7 +191,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (err) {
-    console.error("create-upload error:", err);
+    reportError(err, { fn: "create-upload" });
     return new Response(
       JSON.stringify({ error: String(err) }),
       { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
