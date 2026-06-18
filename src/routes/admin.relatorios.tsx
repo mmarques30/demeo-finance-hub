@@ -328,6 +328,7 @@ interface ExportRecord {
   start_date: string;
   end_date: string;
   exported_at: string;
+  forecast_json: ForecastMonth[] | null;
 }
 
 // ─── componente principal ─────────────────────────────────────────────────────
@@ -373,7 +374,7 @@ function RelatoriosPage() {
 
   useEffect(() => { loadHistory(); }, []);
 
-  async function saveExportRecord(clientId: string, clientName: string, type: "pdf" | "xlsx", p: ClientPeriod) {
+  async function saveExportRecord(clientId: string, clientName: string, type: "pdf" | "xlsx", p: ClientPeriod, forecast: ForecastMonth[]) {
     await supabase().from("report_exports").insert({
       client_id: clientId,
       client_name: clientName,
@@ -381,6 +382,7 @@ function RelatoriosPage() {
       period_label: `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`,
       start_date: p.start,
       end_date: p.end,
+      forecast_json: forecast,
     });
     loadHistory();
   }
@@ -462,7 +464,7 @@ function RelatoriosPage() {
     const client = clients.find((c) => c.id === clientId)!;
     setExporting((e) => ({ ...e, [clientId]: null }));
     openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, catMap);
-    saveExportRecord(clientId, client.name, "pdf", p);
+    saveExportRecord(clientId, client.name, "pdf", p, forecast);
   }
 
   async function handleExcel(clientId: string) {
@@ -473,7 +475,7 @@ function RelatoriosPage() {
     const client = clients.find((c) => c.id === clientId)!;
     exportExcel(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, p.start, p.end, txs, forecast, catMap);
     setExporting((e) => ({ ...e, [clientId]: null }));
-    saveExportRecord(clientId, client.name, "xlsx", p);
+    saveExportRecord(clientId, client.name, "xlsx", p, forecast);
   }
 
   const [reexporting, setReexporting] = useState<string | null>(null);
@@ -481,7 +483,8 @@ function RelatoriosPage() {
   async function handleReexport(r: ExportRecord) {
     setReexporting(r.id);
     const p: ClientPeriod = { start: r.start_date, end: r.end_date };
-    const [txs, forecast, catMap] = await Promise.all([fetchTxs(r.client_id, p), fetchForecast(r.client_id, p), fetchCategories(r.client_id)]);
+    const [txs, catMap] = await Promise.all([fetchTxs(r.client_id, p), fetchCategories(r.client_id)]);
+    const forecast = r.forecast_json ?? await fetchForecast(r.client_id, p);
     if (r.type === "pdf") {
       openPrintReport(r.client_name, r.period_label, txs, forecast, catMap);
     } else {
