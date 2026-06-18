@@ -44,7 +44,6 @@ interface UploadHistory {
 }
 
 const PERIODS = monthOptions(12);
-const UPLOAD_PERIODS = monthOptions(3);
 
 type ActiveTab = "lancamentos" | "importacoes";
 
@@ -74,14 +73,12 @@ function ClientePage() {
       });
   }, [clientId]);
 
-  // Uploads dos últimos 3 meses
   useEffect(() => {
     if (!clientId) return;
     supabase()
       .from("uploads")
       .select("id, period, bank_name, tx_classified, tx_pending, status, created_at")
       .eq("client_id", clientId)
-      .in("period", UPLOAD_PERIODS)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         setUploads((data ?? []) as UploadHistory[]);
@@ -210,7 +207,7 @@ function ClientePage() {
           <div className="flex">
             {(["lancamentos", "importacoes"] as const).map((tab) => {
               const isActive = activeTab === tab;
-              const label = tab === "lancamentos" ? "Lançamentos" : "Importações · 3 meses";
+              const label = tab === "lancamentos" ? "Lançamentos" : "Importações";
               return (
                 <button
                   key={tab}
@@ -338,7 +335,7 @@ function ClientePage() {
         {activeTab === "importacoes" && (
           <div className="aurora-card p-0 overflow-hidden">
             <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
-              <div className="aurora-cap mb-0.5">Documentos importados · últimos 3 meses</div>
+              <div className="aurora-cap mb-0.5">Histórico de importações</div>
               <div className="aurora-serif text-[20px]">
                 Histórico{" "}
                 <em className="italic" style={{ color: "var(--green)" }}>
@@ -353,7 +350,7 @@ function ClientePage() {
               </div>
             ) : uploads.length === 0 ? (
               <div className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                Nenhuma importação nos últimos 3 meses.
+                Nenhuma importação registrada.
               </div>
             ) : (
               <table className="w-full">

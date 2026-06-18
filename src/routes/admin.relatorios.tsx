@@ -318,12 +318,31 @@ function exportExcel(
   XLSX.writeFile(wb, `Relatorio_${clientName.replace(/\s+/g, "_")}_${startDate}_${endDate}.xlsx`);
 }
 
+// ─── tipos para histórico ─────────────────────────────────────────────────────
+interface ExportRecord {
+  id: string;
+  client_id: string;
+  client_name: string;
+  type: "pdf" | "xlsx";
+  period_label: string;
+  start_date: string;
+  end_date: string;
+  exported_at: string;
+}
+
 // ─── componente principal ─────────────────────────────────────────────────────
+type RelTab = "exportar" | "historico";
+
 function RelatoriosPage() {
+  const [activeTab, setActiveTab] = useState<RelTab>("exportar");
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [periods, setPeriods] = useState<Record<string, ClientPeriod>>({});
   const [exporting, setExporting] = useState<Record<string, "pdf" | "excel" | null>>({});
+  const [history, setHistory] = useState<ExportRecord[]>([]);
+  const [histLoading, setHistLoading] = useState(false);
+  const [histFilter, setHistFilter] = useState<string>("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase()
@@ -339,6 +358,39 @@ function RelatoriosPage() {
         setLoading(false);
       });
   }, []);
+
+  function loadHistory() {
+    setHistLoading(true);
+    supabase()
+      .from("report_exports")
+      .select("*")
+      .order("exported_at", { ascending: false })
+      .then(({ data }) => {
+        setHistory((data ?? []) as ExportRecord[]);
+        setHistLoading(false);
+      });
+  }
+
+  useEffect(() => { loadHistory(); }, []);
+
+  async function saveExportRecord(clientId: string, clientName: string, type: "pdf" | "xlsx", p: ClientPeriod) {
+    await supabase().from("report_exports").insert({
+      client_id: clientId,
+      client_name: clientName,
+      type,
+      period_label: `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`,
+      start_date: p.start,
+      end_date: p.end,
+    });
+    loadHistory();
+  }
+
+  async function deleteExportRecord(id: string) {
+    setDeletingId(id);
+    await supabase().from("report_exports").delete().eq("id", id);
+    setHistory((prev) => prev.filter((r) => r.id !== id));
+    setDeletingId(null);
+  }
 
   function setPeriod(clientId: string, field: "start" | "end", value: string) {
     setPeriods((prev) => ({ ...prev, [clientId]: { ...prev[clientId], [field]: value } }));
@@ -404,6 +456,7 @@ function RelatoriosPage() {
     const client = clients.find((c) => c.id === clientId)!;
     setExporting((e) => ({ ...e, [clientId]: null }));
     openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, catMap);
+    saveExportRecord(clientId, client.name, "pdf", p);
   }
 
   async function handleExcel(clientId: string) {
@@ -414,7 +467,12 @@ function RelatoriosPage() {
     const client = clients.find((c) => c.id === clientId)!;
     exportExcel(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, p.start, p.end, txs, forecast, catMap);
     setExporting((e) => ({ ...e, [clientId]: null }));
+    saveExportRecord(clientId, client.name, "xlsx", p);
   }
+
+  const filteredHistory = histFilter
+    ? history.filter((r) => r.client_id === histFilter)
+    : history;
 
   return (
     <AdminLayout>
@@ -422,11 +480,35 @@ function RelatoriosPage() {
         cap="Entregas aos clientes"
         title="Relatórios"
         emphasis="financeiros"
-        description="Defina o período por cliente e exporte DFC + DFC Gerencial."
+        description="Exporte DFC + DFC Gerencial por cliente e consulte o histórico de documentos gerados."
       />
-      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-6">
 
-        {/* Tabela de clientes */}
+      {/* Tab bar */}
+      <div className="flex gap-1 px-8 lg:px-12 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
+        {([{ key: "exportar", label: "Exportar" }, { key: "historico", label: "Histórico" }] as { key: RelTab; label: string }[]).map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className="px-4 py-2 text-[11px] uppercase transition-all"
+            style={{
+              letterSpacing: "2px",
+              fontWeight: 600,
+              borderRadius: "999px",
+              background: activeTab === tab.key ? "var(--green)" : "transparent",
+              color: activeTab === tab.key ? "#fff" : "var(--muted-foreground)",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-6 pt-6">
+
+        {/* ── Aba: Exportar ─────────────────────────────────────────────────────── */}
+        {activeTab === "exportar" && (
         <div className="aurora-card p-0 overflow-hidden">
           <table className="w-full">
             <thead>
@@ -523,6 +605,77 @@ function RelatoriosPage() {
             </tbody>
           </table>
         </div>
+        )}
+
+        {/* ── Aba: Histórico ────────────────────────────────────────────────────── */}
+        {activeTab === "historico" && (
+          <div className="aurora-card p-0 overflow-hidden">
+            {/* Filtro por cliente */}
+            <div className="px-6 py-4 flex items-center gap-3" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
+              <span className="aurora-cap">Filtrar por cliente</span>
+              <select
+                value={histFilter}
+                onChange={(e) => setHistFilter(e.target.value)}
+                className="bg-white px-3 py-1.5 text-[12px]"
+                style={{ border: "1px solid var(--line)", minWidth: 200 }}
+              >
+                <option value="">Todos os clientes</option>
+                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <table className="w-full">
+              <thead>
+                <tr style={{ background: "var(--linen)" }}>
+                  {["Cliente", "Período", "Tipo", "Exportado em", ""].map((h) => (
+                    <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {histLoading && (
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando...</td></tr>
+                )}
+                {!histLoading && filteredHistory.length === 0 && (
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Nenhum relatório exportado ainda.</td></tr>
+                )}
+                {!histLoading && filteredHistory.map((r, i) => (
+                  <tr key={r.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                    <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 500 }}>{r.client_name}</td>
+                    <td className="px-6 py-3 text-[12px]">{r.period_label}</td>
+                    <td className="px-6 py-3">
+                      <span
+                        className="text-[10px] uppercase px-2 py-0.5"
+                        style={{
+                          border: `1px solid ${r.type === "pdf" ? "var(--navy)" : "var(--green)"}`,
+                          color: r.type === "pdf" ? "var(--navy)" : "var(--green)",
+                          borderRadius: "4px",
+                          letterSpacing: "1.5px",
+                        }}
+                      >
+                        {r.type === "pdf" ? "PDF" : "Excel"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                      {new Date(r.exported_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      <button
+                        onClick={() => deleteExportRecord(r.id)}
+                        disabled={deletingId === r.id}
+                        className="text-[11px] transition-opacity hover:opacity-70 disabled:opacity-40"
+                        style={{ color: "var(--tan)" }}
+                      >
+                        {deletingId === r.id ? "..." : "Excluir"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
