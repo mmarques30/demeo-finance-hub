@@ -369,7 +369,7 @@ function PendentesPage() {
                       </td>
                       <td
                         className="px-6 py-3 aurora-serif text-[14px]"
-                        style={{ color: t.amount >= 0 ? "var(--green)" : "var(--navy)", fontWeight: 600 }}
+                        style={{ color: t.amount >= 0 ? "var(--green)" : "var(--expense)", fontWeight: 600 }}
                       >
                         {t.amount >= 0 ? "+" : ""}
                         {brl(t.amount)}

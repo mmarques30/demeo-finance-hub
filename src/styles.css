@@ -66,6 +66,7 @@
   --color-navy: var(--navy);
   --color-tan: var(--tan);
   --color-tan2: var(--tan2);
+  --color-expense: var(--expense);
   --color-line: var(--line);
 }
 
@@ -81,6 +82,7 @@
   --navy:    #1C2D45;   /* Azul Noite — sidebar, headers, dados */
   --tan:     #B8956A;   /* mantido — alertas, pendências, âmbar */
   --tan2:    #D4B896;   /* mantido — bordas cálidas, biscoito */
+  --expense: #C0392B;   /* vermelho despesas — saídas, valores negativos */
   --line:    #E8DFD2;   /* mantido — linha divisora cálida */
   --line-soft: rgba(40,76,43,0.08);
 

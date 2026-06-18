@@ -4,6 +4,15 @@ import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { brl } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
@@ -23,6 +32,14 @@ interface ClientSummary extends ClientRow {
   pendentes: number;
   banks: string[];
 }
+
+interface TrendPoint {
+  mes: string;
+  rec: number;
+  des: number;
+}
+
+const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 function todayISO() {
   const now = new Date();
@@ -60,6 +77,34 @@ function AdminDashboard() {
   const [startDate, setStartDate] = useState(firstOfMonthISO(0));
   const [endDate, setEndDate] = useState(todayISO());
   const [activePreset, setActivePreset] = useState<string>("Este mês");
+  const [trendData, setTrendData] = useState<TrendPoint[]>([]);
+
+  useEffect(() => {
+    const fetchTrend = async () => {
+      const { data } = await supabase()
+        .from("transactions")
+        .select("date, amount")
+        .eq("status", "approved")
+        .gte("date", firstOfMonthISO(-5))
+        .lte("date", todayISO());
+      const map: Record<string, { rec: number; des: number }> = {};
+      for (const row of (data ?? []) as Array<{ date: string; amount: number }>) {
+        const key = row.date.slice(0, 7);
+        if (!map[key]) map[key] = { rec: 0, des: 0 };
+        if (row.amount > 0) map[key].rec += row.amount;
+        else map[key].des += Math.abs(row.amount);
+      }
+      setTrendData(
+        Object.entries(map)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, v]) => ({
+            mes: MONTH_LABELS[parseInt(key.slice(5, 7)) - 1],
+            ...v,
+          }))
+      );
+    };
+    fetchTrend();
+  }, []);
 
   const loadDashboard = useCallback(async (start: string, end: string) => {
 
@@ -235,6 +280,36 @@ function AdminDashboard() {
           />
         </div>
 
+        {/* Gráfico de tendência — últimos 6 meses */}
+        {trendData.length > 0 && (
+          <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
+            <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)" }}>
+              <div>
+                <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "var(--sage)", fontWeight: 600 }}>
+                  Histórico · Últimos 6 meses
+                </div>
+                <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 300, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
+                  Entradas e{" "}
+                  <em className="italic" style={{ color: "var(--navy)" }}>saídas</em>
+                </h2>
+              </div>
+              <div className="flex items-center gap-6">
+                <span className="flex items-center gap-2 text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--green)", display: "inline-block" }} />
+                  Entradas
+                </span>
+                <span className="flex items-center gap-2 text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--expense)", display: "inline-block" }} />
+                  Saídas
+                </span>
+              </div>
+            </header>
+            <div className="px-7 lg:px-9 py-8">
+              <TrendChart data={trendData} />
+            </div>
+          </section>
+        )}
+
         {/* Receita por cliente */}
         <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
           <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)" }}>
@@ -325,7 +400,7 @@ function AdminDashboard() {
                 <tr
                   key={c.id}
                   style={{ borderTop: "1px solid var(--line)", transition: "background 0.15s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(74,103,65,0.05)")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(40,76,43,0.04)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
                   <td className="px-7 lg:px-9 py-5">
@@ -334,7 +409,7 @@ function AdminDashboard() {
                   <td className="px-7 lg:px-9 py-5 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
                     {c.banks.join(" · ") || "—"}
                   </td>
-                  <td className="px-7 lg:px-9 py-5 aurora-serif" style={{ fontSize: 20, fontWeight: 300, color: c.saldo >= 0 ? "var(--navy)" : "var(--tan)", letterSpacing: "-0.3px" }}>
+                  <td className="px-7 lg:px-9 py-5 aurora-serif" style={{ fontSize: 20, fontWeight: 300, color: c.saldo >= 0 ? "var(--navy)" : "var(--expense)", letterSpacing: "-0.3px" }}>
                     {brl(c.saldo)}
                   </td>
                   <td className="px-7 lg:px-9 py-5">
@@ -381,6 +456,78 @@ function KpiCard({ icon, label, value, sub, tone, footer }: {
         <div className="mt-2 pt-4 text-[11px]" style={{ color: "var(--muted-foreground)", borderTop: "1px solid var(--line)", lineHeight: 1.5 }}>{footer}</div>
       )}
     </article>
+  );
+}
+
+function TrendChart({ data }: { data: TrendPoint[] }) {
+  function fmtY(v: number) {
+    if (v >= 1_000_000) return `R$${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 1_000) return `R$${Math.round(v / 1_000)}k`;
+    return `R$${v}`;
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <AreaChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="trendFillRec" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%"  stopColor="#284C2B" stopOpacity={0.12} />
+            <stop offset="95%" stopColor="#284C2B" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="trendFillDes" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%"  stopColor="#C0392B" stopOpacity={0.08} />
+            <stop offset="95%" stopColor="#C0392B" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
+        <XAxis
+          dataKey="mes"
+          tick={{ fontSize: 11, fill: "#99A989", letterSpacing: 1 }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis
+          tickFormatter={fmtY}
+          tick={{ fontSize: 10, fill: "#99A989" }}
+          axisLine={false}
+          tickLine={false}
+          width={52}
+        />
+        <Tooltip
+          contentStyle={{
+            background: "#fff",
+            border: "1px solid var(--line)",
+            borderRadius: 8,
+            fontSize: 12,
+            boxShadow: "var(--shadow-soft)",
+          }}
+          formatter={(value: number, name: string) => [
+            value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 }),
+            name === "rec" ? "Entradas" : "Saídas",
+          ]}
+          labelStyle={{ fontSize: 11, fontWeight: 600, color: "var(--foreground)", marginBottom: 4 }}
+        />
+        <Area
+          type="monotone"
+          dataKey="rec"
+          stroke="#284C2B"
+          strokeWidth={1.5}
+          fill="url(#trendFillRec)"
+          dot={{ fill: "#284C2B", r: 3, strokeWidth: 0 }}
+          activeDot={{ r: 4, fill: "#284C2B", strokeWidth: 0 }}
+        />
+        <Area
+          type="monotone"
+          dataKey="des"
+          stroke="#C0392B"
+          strokeWidth={1.5}
+          strokeDasharray="5 3"
+          fill="url(#trendFillDes)"
+          dot={{ fill: "#C0392B", r: 3, strokeWidth: 0 }}
+          activeDot={{ r: 4, fill: "#C0392B", strokeWidth: 0 }}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
 

@@ -216,17 +216,17 @@ function DFCPage() {
         {/* Resumo */}
         <div className="grid md:grid-cols-4 gap-5">
           <Resumo label="Receitas" value={brl(receitas)} tone="green" delta={deltaPct(receitas, prevReceitas)} />
-          <Resumo label="Despesas" value={brl(despesas)} tone="tan" delta={deltaPct(despesas, prevDespesas)} />
-          <Resumo label="Resultado" value={brl(resultado)} tone={resultado >= 0 ? "green" : "tan"} />
+          <Resumo label="Despesas" value={brl(despesas)} tone="expense" delta={deltaPct(despesas, prevDespesas)} />
+          <Resumo label="Resultado" value={brl(resultado)} tone={resultado >= 0 ? "green" : "expense"} />
           <Resumo label="Lançamentos" value={String(tx.length)} tone="navy" />
         </div>
 
         {/* Fixos vs Variáveis */}
         {despesas > 0 && (
           <div className="grid md:grid-cols-2 gap-5">
-            <Resumo label="Despesas Fixas" value={brl(fixos)} tone="navy"
+            <Resumo label="Despesas Fixas" value={brl(fixos)} tone="expense"
               sub={`${((fixos / despesas) * 100).toFixed(1)}% das despesas`} />
-            <Resumo label="Despesas Variáveis" value={brl(variaveis)} tone="tan"
+            <Resumo label="Despesas Variáveis" value={brl(variaveis)} tone="expense"
               sub={`${((variaveis / despesas) * 100).toFixed(1)}% das despesas`} />
           </div>
         )}
@@ -248,7 +248,7 @@ function DFCPage() {
                   <div key={s.lbl} className="h-full flex flex-col justify-end gap-2">
                     <div className="flex gap-1.5 items-end h-full">
                       <div className="flex-1 transition-all" style={{ height: `${(s.rec / maxBar) * 100}%`, background: "var(--green)", borderRadius: "3px 3px 0 0" }} title={brl(s.rec)} />
-                      <div className="flex-1 transition-all" style={{ height: `${(s.des / maxBar) * 100}%`, background: "var(--tan)", borderRadius: "3px 3px 0 0" }} title={brl(s.des)} />
+                      <div className="flex-1 transition-all" style={{ height: `${(s.des / maxBar) * 100}%`, background: "var(--expense)", borderRadius: "3px 3px 0 0" }} title={brl(s.des)} />
                     </div>
                     <div className="text-[10px] uppercase text-center" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>{s.lbl}</div>
                   </div>
@@ -256,7 +256,7 @@ function DFCPage() {
               </div>
               <div className="flex gap-5 mt-5 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
                 <span className="flex items-center gap-2"><span className="w-3 h-3 inline-block" style={{ background: "var(--green)" }} /> Receitas</span>
-                <span className="flex items-center gap-2"><span className="w-3 h-3 inline-block" style={{ background: "var(--tan)" }} /> Despesas</span>
+                <span className="flex items-center gap-2"><span className="w-3 h-3 inline-block" style={{ background: "var(--expense)" }} /> Despesas</span>
               </div>
             </>
           )}
@@ -348,7 +348,7 @@ function DFCPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--tan)" }}>
+                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--expense)" }}>
                         {brl(p.des)}
                         {p.confirmedDes > 0 && (
                           <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: "inherit", fontWeight: 400 }}>
@@ -356,7 +356,7 @@ function DFCPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 16, color: r >= 0 ? "var(--green)" : "var(--tan)" }}>
+                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 16, color: r >= 0 ? "var(--green)" : "var(--expense)" }}>
                         {brl(r)}
                       </td>
                     </tr>
@@ -381,12 +381,12 @@ function Resumo({
 }: {
   label: string;
   value: string;
-  tone: "green" | "tan" | "navy";
+  tone: "green" | "tan" | "navy" | "expense";
   delta?: string | null;
   sub?: string;
 }) {
-  const color = tone === "green" ? "var(--green)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
-  const deltaColor = delta?.startsWith("▲") ? "var(--green)" : "var(--tan)";
+  const color = tone === "green" ? "var(--green)" : tone === "expense" ? "var(--expense)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
+  const deltaColor = delta?.startsWith("▲") ? "var(--green)" : "var(--expense)";
   return (
     <div className="aurora-card">
       <div className="aurora-cap mb-3">{label}</div>
