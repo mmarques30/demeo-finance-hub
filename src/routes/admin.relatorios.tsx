@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl, formatDatePtBR } from "@/lib/utils";
+import { todayISO, firstOfMonthISO, lastOfMonthISO } from "@/lib/dateUtils";
 import { supabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
 import { computeForecastMonths, type ForecastMonth, type PayableProjection } from "@/hooks/useDFCForecast";
@@ -13,18 +14,6 @@ export const Route = createFileRoute("/admin/relatorios")({
 });
 
 // ─── helpers de data ──────────────────────────────────────────────────────────
-function firstOfMonthISO(offsetMonths = 0) {
-  const d = new Date(new Date().getFullYear(), new Date().getMonth() + offsetMonths, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
-function lastOfMonthISO(offsetMonths = 0) {
-  const d = new Date(new Date().getFullYear(), new Date().getMonth() + offsetMonths + 1, 0);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-function todayISO() {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
-}
 function fmtLabel(iso: string) {
   return new Date(iso + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 }
