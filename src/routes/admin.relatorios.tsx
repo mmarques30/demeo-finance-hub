@@ -470,6 +470,20 @@ function RelatoriosPage() {
     saveExportRecord(clientId, client.name, "xlsx", p);
   }
 
+  const [reexporting, setReexporting] = useState<string | null>(null);
+
+  async function handleReexport(r: ExportRecord) {
+    setReexporting(r.id);
+    const p: ClientPeriod = { start: r.start_date, end: r.end_date };
+    const [txs, forecast, catMap] = await Promise.all([fetchTxs(r.client_id, p), fetchForecast(r.client_id, p), fetchCategories(r.client_id)]);
+    if (r.type === "pdf") {
+      openPrintReport(r.client_name, r.period_label, txs, forecast, catMap);
+    } else {
+      exportExcel(r.client_name, r.period_label, r.start_date, r.end_date, txs, forecast, catMap);
+    }
+    setReexporting(null);
+  }
+
   const filteredHistory = histFilter
     ? history.filter((r) => r.client_id === histFilter)
     : history;
@@ -660,7 +674,14 @@ function RelatoriosPage() {
                     <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                       {new Date(r.exported_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </td>
-                    <td className="px-6 py-3 text-right">
+                    <td className="px-6 py-3 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => handleReexport(r)}
+                        disabled={reexporting === r.id}
+                        className="aurora-link text-[11px] mr-4 disabled:opacity-40"
+                      >
+                        {reexporting === r.id ? "..." : r.type === "pdf" ? "Abrir PDF" : "Baixar Excel"}
+                      </button>
                       <button
                         onClick={() => deleteExportRecord(r.id)}
                         disabled={deletingId === r.id}

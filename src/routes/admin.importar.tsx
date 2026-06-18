@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -809,7 +809,7 @@ function ImportarPage() {
           clientName={clients.find((c) => c.id === clientId)?.name ?? ""}
           files={files}
           bank={bank}
-          onConfirm={() => { setAwaitingConfirm(false); handleUpload(files); }}
+          onConfirm={(confirmedBank) => { setBank(confirmedBank); setAwaitingConfirm(false); handleUpload(files); }}
           onCancel={() => { setAwaitingConfirm(false); setFiles([]); setError(null); if (inputRef.current) inputRef.current.value = ""; }}
         />
       )}
@@ -877,15 +877,19 @@ function CancelUploadModal({
   );
 }
 
+const BANKS = ["Itaú", "Santander", "Bradesco", "Banco do Brasil", "Inter", "Nubank"];
+
 function ConfirmUploadModal({
   clientName, files, bank, onConfirm, onCancel,
 }: {
   clientName: string;
   files: File[];
   bank: string;
-  onConfirm: () => void;
+  onConfirm: (confirmedBank: string) => void;
   onCancel: () => void;
 }) {
+  const [confirmedBank, setConfirmedBank] = React.useState(bank);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -902,13 +906,29 @@ function ConfirmUploadModal({
         </div>
         <div className="px-6 py-5 flex flex-col gap-4">
           <div className="flex flex-col gap-3">
-            <div className="flex justify-between text-[13px]">
+            <div className="flex justify-between items-center text-[13px]">
               <span style={{ color: "var(--muted-foreground)" }}>Cliente</span>
               <span style={{ fontWeight: 500 }}>{clientName}</span>
             </div>
-            <div className="flex justify-between text-[13px]">
-              <span style={{ color: "var(--muted-foreground)" }}>Banco</span>
-              <span>{bank}</span>
+            {/* Banco editável com destaque */}
+            <div
+              className="flex items-center justify-between gap-3 px-4 py-3"
+              style={{ background: "rgba(184,149,106,0.1)", border: "1px solid var(--tan)", borderRadius: 6 }}
+            >
+              <div>
+                <div className="text-[10px] uppercase mb-0.5" style={{ letterSpacing: "1.5px", fontWeight: 600, color: "var(--tan)" }}>
+                  Banco — confirme se está correto
+                </div>
+                <select
+                  value={confirmedBank}
+                  onChange={(e) => setConfirmedBank(e.target.value)}
+                  className="bg-transparent text-[13px] font-medium outline-none"
+                  style={{ color: "var(--foreground)", border: "none", cursor: "pointer" }}
+                >
+                  {BANKS.map((b) => <option key={b}>{b}</option>)}
+                </select>
+              </div>
+              <span style={{ fontSize: 18 }}>🏦</span>
             </div>
             <div className="flex justify-between text-[13px]">
               <span style={{ color: "var(--muted-foreground)" }}>{files.length === 1 ? "Arquivo" : "Arquivos"}</span>
@@ -919,7 +939,7 @@ function ConfirmUploadModal({
             className="text-[12px] px-4 py-3"
             style={{ background: "rgba(27,57,77,0.06)", color: "var(--foreground)", lineHeight: 1.6 }}
           >
-            Os lançamentos deste extrato serão vinculados a <strong>{clientName}</strong>. Confirme antes de prosseguir.
+            Os lançamentos deste extrato serão vinculados a <strong>{clientName}</strong> como banco <strong>{confirmedBank}</strong>.
           </div>
           <div className="flex justify-end gap-3 pt-1">
             <button
@@ -932,7 +952,7 @@ function ConfirmUploadModal({
             </button>
             <button
               type="button"
-              onClick={onConfirm}
+              onClick={() => onConfirm(confirmedBank)}
               className="text-[10px] uppercase px-6 py-3 transition-opacity"
               style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
             >
