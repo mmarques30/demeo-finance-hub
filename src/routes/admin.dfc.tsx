@@ -9,6 +9,8 @@ import { RecorrenciasPanel } from "@/components/RecorrenciasPanel";
 import { ContasPanel } from "@/components/ContasPanel";
 import { ExtratosPanel } from "@/components/ExtratosPanel";
 import { computeDRE, type CatInfo } from "@/lib/dre";
+import { computeHealthLevel, healthMargemPct } from "@/lib/healthScore";
+import { HealthAlertCard } from "@/components/HealthAlertCard";
 
 export const Route = createFileRoute("/admin/dfc")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -19,7 +21,7 @@ export const Route = createFileRoute("/admin/dfc")({
   head: () => ({ meta: [{ title: "DFC · Aurora" }] }),
 });
 
-interface ClientOption { id: string; name: string; }
+interface ClientOption { id: string; name: string; segment: string | null; }
 interface Tx { id: string; date: string; description: string; amount: number; category: string | null; is_recurring: boolean; }
 
 function dfcTodayISO() {
@@ -77,7 +79,7 @@ function DFCPage() {
 
   // Carrega lista de clientes; valida preselectedId e usa fallback se inválido
   useEffect(() => {
-    supabase().from("clients").select("id, name").order("name").then(({ data }) => {
+    supabase().from("clients").select("id, name, segment").order("name").then(({ data }) => {
       if (data && data.length > 0) {
         setClients(data as ClientOption[]);
         const exists = preselectedId && data.some((c: ClientOption) => c.id === preselectedId);
@@ -188,7 +190,13 @@ function DFCPage() {
 
   const periodForForecast = `${endDate.split("-")[1]}/${endDate.split("-")[0]}`;
   const projecao = useDFCForecast(clientId, periodForForecast);
-  const clienteName = clients.find((c) => c.id === clientId)?.name ?? "Cliente";
+  const activeClient = clients.find((c) => c.id === clientId);
+  const clienteName = activeClient?.name ?? "Cliente";
+  const health = useMemo(
+    () => computeHealthLevel(receitas, despesas, activeClient?.segment ?? null),
+    [receitas, despesas, activeClient]
+  );
+  const margem = useMemo(() => healthMargemPct(receitas, despesas), [receitas, despesas]);
   const periodoLabel = startDate === endDate
     ? new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR")
     : `${new Date(startDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} – ${new Date(endDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}`;
@@ -232,6 +240,12 @@ function DFCPage() {
           </button>
         ))}
       </div>
+
+      {clientId && (
+        <div className="px-8 lg:px-12 pt-6">
+          <HealthAlertCard health={health} margem={margem} segment={activeClient?.segment ?? null} period={periodoLabel} />
+        </div>
+      )}
 
       {activeTab === "recorrencias" && <RecorrenciasPanel clientId={clientId} />}
       {activeTab === "contas" && <ContasPanel clientId={clientId} />}
