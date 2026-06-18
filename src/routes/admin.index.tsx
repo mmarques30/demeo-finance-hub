@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { brl } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
@@ -195,25 +196,13 @@ function AdminDashboard() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>De</span>
-            <input
-              type="date"
-              value={startDate}
-              max={endDate}
-              onChange={(e) => { setActivePreset(""); setStartDate(e.target.value); }}
-              className="text-[12px] px-3 py-2 outline-none"
-              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff", borderRadius: "var(--radius-sm)" }}
-            />
-            <span className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>Até</span>
-            <input
-              type="date"
-              value={endDate}
-              min={startDate}
-              max={todayISO()}
-              onChange={(e) => { setActivePreset(""); setEndDate(e.target.value); }}
-              className="text-[12px] px-3 py-2 outline-none"
-              style={{ border: "1px solid var(--line)", color: "var(--foreground)", background: "#fff", borderRadius: "var(--radius-sm)" }}
+          <div className="ml-auto">
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              maxDate={todayISO()}
+              onStartChange={(d) => { setActivePreset(""); setStartDate(d); }}
+              onEndChange={(d) => { setActivePreset(""); setEndDate(d); }}
             />
           </div>
         </div>
@@ -401,7 +390,7 @@ export function StatusBadge({ status }: { status: string }) {
     : status === "Pendente" ? { bg: "rgba(184,149,106,0.15)", color: "var(--tan)" }
     : { bg: "rgba(27,57,77,0.10)", color: "var(--navy)" };
   return (
-    <span className="inline-flex items-center gap-2 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: tone.bg, color: tone.color, padding: "5px 12px", borderRadius: "999px" }}>
+    <span className="inline-flex items-center gap-2 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: tone.bg, color: tone.color, padding: "5px 12px", borderRadius: "999px", whiteSpace: "nowrap" }}>
       <span style={{ width: 6, height: 6, borderRadius: 999, background: tone.color }} />
       {status}
     </span>
