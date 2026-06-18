@@ -26,6 +26,7 @@ interface ClientRow {
   status: string;
   last_upload_at: string | null;
   created_at: string;
+  monthly_closing_day: number | null;
   client_banks: ClientBank[];
 }
 
@@ -254,14 +255,16 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
   const [nome, setNome] = useState("");
   const [responsavel, setResponsavel] = useState("");
   const [cnpj, setCnpj] = useState("");
+  const [closingDay, setClosingDay] = useState("");
   const [bancos, setBancos] = useState<string[]>([]);
   const [bancosInput, setBancosInput] = useState("");
 
   const mutation = useMutation({
     mutationFn: async () => {
+      const day = closingDay ? Number(closingDay) : null;
       const { data: client, error: clientErr } = await supabase()
         .from("clients")
-        .insert({ name: nome.trim(), owner_name: responsavel.trim(), cnpj: cnpj.trim() || null })
+        .insert({ name: nome.trim(), owner_name: responsavel.trim(), cnpj: cnpj.trim() || null, monthly_closing_day: day })
         .select("id")
         .single();
 
@@ -316,6 +319,7 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
       <NomeField value={nome} onChange={setNome} />
       <ResponsavelField value={responsavel} onChange={setResponsavel} />
       <CnpjField value={cnpj} onChange={setCnpj} />
+      <ClosingDayField value={closingDay} onChange={setClosingDay} />
       <BancosField
         bancos={bancos}
         bancosInput={bancosInput}
@@ -329,13 +333,14 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
 
 // ─── modal editar cliente ─────────────────────────────────────────────────────
 
-function EditarClienteModal({ client, onClose }: { client: { id: string; name: string; owner_name: string; cnpj: string | null; status: string; client_banks: { bank_name: string }[] }; onClose: () => void }) {
+function EditarClienteModal({ client, onClose }: { client: { id: string; name: string; owner_name: string; cnpj: string | null; status: string; monthly_closing_day: number | null; client_banks: { bank_name: string }[] }; onClose: () => void }) {
   const qc = useQueryClient();
 
   const [nome, setNome] = useState(client.name);
   const [responsavel, setResponsavel] = useState(client.owner_name);
   const [cnpj, setCnpj] = useState(client.cnpj ?? "");
   const [status, setStatus] = useState(client.status);
+  const [closingDay, setClosingDay] = useState(String(client.monthly_closing_day ?? ""));
   const [bancos, setBancos] = useState<string[]>(client.client_banks.map((b) => b.bank_name));
   const [bancosInput, setBancosInput] = useState("");
 
@@ -350,6 +355,12 @@ function EditarClienteModal({ client, onClose }: { client: { id: string; name: s
         p_banks:      bancos,
       });
       if (error) throw error;
+      const day = closingDay ? Number(closingDay) : null;
+      const { error: err2 } = await supabase()
+        .from("clients")
+        .update({ monthly_closing_day: day })
+        .eq("id", client.id);
+      if (err2) throw err2;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -391,6 +402,7 @@ function EditarClienteModal({ client, onClose }: { client: { id: string; name: s
       <NomeField value={nome} onChange={setNome} />
       <ResponsavelField value={responsavel} onChange={setResponsavel} />
       <CnpjField value={cnpj} onChange={setCnpj} />
+      <ClosingDayField value={closingDay} onChange={setClosingDay} />
 
       {/* Status */}
       <Field label="Status">
@@ -542,6 +554,22 @@ function CnpjField({ value, onChange }: { value: string; onChange: (v: string) =
   return (
     <Field label="CNPJ" hint="opcional">
       <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder="00.000.000/0001-00" style={inputStyle} />
+    </Field>
+  );
+}
+
+function ClosingDayField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Field label="Dia de fechamento mensal" hint="opcional · 1 a 31">
+      <input
+        type="number"
+        min={1}
+        max={31}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Ex: 25"
+        style={inputStyle}
+      />
     </Field>
   );
 }

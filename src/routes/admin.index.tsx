@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
-import { brl } from "@/lib/utils";
+import { brl, currentMonthStr } from "@/lib/utils";
+import { computeHealthLevel, healthMargemPct, HealthLevel, SEGMENT_BENCHMARKS } from "@/lib/healthScore";
 import { supabase } from "@/lib/supabase";
 import {
   AreaChart,
@@ -24,6 +25,15 @@ interface ClientRow {
   name: string;
   status: string;
   last_upload_at: string | null;
+  segment: string | null;
+}
+
+interface UploadRow {
+  client_id: string;
+  period: string;
+  tx_classified: number;
+  tx_pending: number;
+  status: string;
 }
 
 interface ClientSummary extends ClientRow {
@@ -31,6 +41,9 @@ interface ClientSummary extends ClientRow {
   saldo: number;
   pendentes: number;
   banks: string[];
+  closing: UploadRow | null;
+  health: HealthLevel;
+  margem: number;
 }
 
 interface TrendPoint {
@@ -113,8 +126,9 @@ function AdminDashboard() {
       { data: txData },
       { data: pendingData },
       { data: banksData },
+      { data: uploadsData },
     ] = await Promise.all([
-      supabase().from("clients").select("id, name, status, last_upload_at").order("name"),
+      supabase().from("clients").select("id, name, status, last_upload_at, segment").order("name"),
       // Somente o mês atual — evita carregar todo o histórico
       supabase()
         .from("transactions")
@@ -128,6 +142,12 @@ function AdminDashboard() {
         .select("client_id")
         .eq("status", "pending"),
       supabase().from("client_banks").select("client_id, bank_name"),
+      // Uploads do mês corrente — para badge de fechamento
+      supabase()
+        .from("uploads")
+        .select("client_id, period, tx_classified, tx_pending, status")
+        .eq("period", currentMonthStr())
+        .order("created_at", { ascending: false }),
     ]);
 
     const clients = (clientsData ?? []) as ClientRow[];
@@ -153,16 +173,24 @@ function AdminDashboard() {
       pendingByClient[t.client_id] = (pendingByClient[t.client_id] ?? 0) + 1;
     }
 
+    // Índice de upload do mês corrente por cliente (primeiro = mais recente)
+    const uploadByClient: Record<string, UploadRow> = {};
+    for (const u of (uploadsData ?? []) as UploadRow[]) {
+      if (!uploadByClient[u.client_id]) uploadByClient[u.client_id] = u;
+    }
+
     let totalPend = 0;
     const summaries: ClientSummary[] = clients.map((c) => {
       const clientTx = txByClient[c.id] ?? [];
-      const receita = clientTx
-        .filter((t) => t.amount > 0)
-        .reduce((s, t) => s + t.amount, 0);
+      const receita = clientTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+      const despesas = clientTx.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
       const saldo = clientTx.reduce((s, t) => s + t.amount, 0);
       const pendentes = pendingByClient[c.id] ?? 0;
       totalPend += pendentes;
-      return { ...c, receita, saldo, pendentes, banks: banksMap[c.id] ?? [] };
+      const closing = uploadByClient[c.id] ?? null;
+      const health = computeHealthLevel(receita, despesas, c.segment);
+      const margem = healthMargemPct(receita, despesas);
+      return { ...c, receita, saldo, pendentes, banks: banksMap[c.id] ?? [], closing, health, margem };
     });
 
     setClientes(summaries);
@@ -383,7 +411,7 @@ function AdminDashboard() {
           <table className="w-full">
             <thead>
               <tr style={{ background: "#FAFAF8" }}>
-                {["Cliente", "Bancos", "Saldo de Caixa", "Pendentes", "Status"].map((h) => (
+                {["Cliente", "Bancos", "Saldo de Caixa", "Pendentes", "Fechamento", "Saúde", "Status"].map((h) => (
                   <th key={h} className="text-left px-7 lg:px-9 py-4 text-[11px] uppercase" style={{ fontWeight: 600, letterSpacing: "2px", color: "var(--muted-foreground)" }}>
                     {h}
                   </th>
@@ -393,10 +421,10 @@ function AdminDashboard() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={5} className="px-7 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando...</td>
+                  <td colSpan={7} className="px-7 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando...</td>
                 </tr>
               )}
-              {!loading && clientes.map((c, idx) => (
+              {!loading && clientes.map((c) => (
                 <tr
                   key={c.id}
                   style={{ borderTop: "1px solid var(--line)", transition: "background 0.15s" }}
@@ -420,6 +448,12 @@ function AdminDashboard() {
                     ) : (
                       <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>—</span>
                     )}
+                  </td>
+                  <td className="px-7 lg:px-9 py-5">
+                    <ClosingBadge closing={c.closing} />
+                  </td>
+                  <td className="px-7 lg:px-9 py-5">
+                    <HealthBadge health={c.health} margem={c.margem} segment={c.segment} />
                   </td>
                   <td className="px-7 lg:px-9 py-5">
                     <StatusBadge status={c.status} />
@@ -528,6 +562,53 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
         />
       </AreaChart>
     </ResponsiveContainer>
+  );
+}
+
+function ClosingBadge({ closing }: { closing: UploadRow | null }) {
+  if (!closing) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: "rgba(192,57,43,0.08)", color: "#C0392B", padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>
+        <span style={{ width: 5, height: 5, borderRadius: 999, background: "#C0392B" }} />
+        Sem extrato
+      </span>
+    );
+  }
+  if (closing.tx_pending > 0) {
+    return (
+      <Link to={"/admin/pendentes" as never} className="inline-flex items-center gap-1.5 text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: "rgba(184,149,106,0.12)", color: "var(--tan)", padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>
+        <span style={{ width: 5, height: 5, borderRadius: 999, background: "var(--tan)" }} />
+        {closing.tx_pending} pendente{closing.tx_pending !== 1 ? "s" : ""}
+      </Link>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: "rgba(74,103,65,0.10)", color: "var(--green)", padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>
+      <span style={{ width: 5, height: 5, borderRadius: 999, background: "var(--green)" }} />
+      Fechado
+    </span>
+  );
+}
+
+function HealthBadge({ health, margem, segment }: { health: HealthLevel; margem: number; segment: string | null }) {
+  if (health === "sem_dados") {
+    return <span className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>—</span>;
+  }
+  const config = {
+    saudavel: { label: "Saudável", bg: "rgba(74,103,65,0.10)",    color: "var(--green)" },
+    atencao:  { label: "Atenção",  bg: "rgba(184,149,106,0.12)", color: "var(--tan)"   },
+    critico:  { label: "Crítico",  bg: "rgba(192,57,43,0.10)",   color: "#C0392B"      },
+  }[health];
+  const bench = SEGMENT_BENCHMARKS[segment ?? ""] ?? SEGMENT_BENCHMARKS["default"];
+  return (
+    <span
+      title={`Margem: ${margem.toFixed(1)}% · Ref. ${segment ?? "geral"}: saudável ≥ ${bench.healthy}%, atenção ≥ ${bench.caution}%`}
+      className="inline-flex items-center gap-1.5 text-[10px] uppercase cursor-help"
+      style={{ letterSpacing: "1.5px", fontWeight: 600, background: config.bg, color: config.color, padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}
+    >
+      <span style={{ width: 5, height: 5, borderRadius: 999, background: config.color }} />
+      {config.label}
+    </span>
   );
 }
 
