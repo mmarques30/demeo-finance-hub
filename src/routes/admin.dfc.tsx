@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl } from "@/lib/utils";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
@@ -8,6 +8,7 @@ import { useDFCForecast } from "@/hooks/useDFCForecast";
 import { RecorrenciasPanel } from "@/components/RecorrenciasPanel";
 import { ContasPanel } from "@/components/ContasPanel";
 import { ExtratosPanel } from "@/components/ExtratosPanel";
+import { computeDRE, type CatInfo } from "@/lib/dre";
 
 export const Route = createFileRoute("/admin/dfc")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -47,16 +48,17 @@ function deltaPct(curr: number, prev: number): string | null {
   return (pct >= 0 ? "▲ +" : "▼ ") + pct.toFixed(1) + "%";
 }
 
-type DFCTab = "dfc" | "recorrencias" | "contas" | "extratos";
+type DFCTab = "dfc" | "dre" | "recorrencias" | "contas" | "extratos";
 
 const DFC_TABS: { key: DFCTab; label: string }[] = [
   { key: "dfc", label: "DFC Gerencial" },
+  { key: "dre", label: "DRE" },
   { key: "recorrencias", label: "Recorrências" },
   { key: "contas", label: "Contas" },
   { key: "extratos", label: "Histórico de Extratos" },
 ];
 
-const VALID_TABS: DFCTab[] = ["dfc", "recorrencias", "contas", "extratos"];
+const VALID_TABS: DFCTab[] = ["dfc", "dre", "recorrencias", "contas", "extratos"];
 
 function DFCPage() {
   const { clientId: preselectedId, tab: preselectedTab } = Route.useSearch();
@@ -70,6 +72,8 @@ function DFCPage() {
   const [tx, setTx] = useState<Tx[]>([]);
   const [prevTx, setPrevTx] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(false);
+  const [saldoInicial, setSaldoInicial] = useState(0);
+  const [catMap, setCatMap] = useState<Map<string, CatInfo>>(new Map());
 
   // Carrega lista de clientes; valida preselectedId e usa fallback se inválido
   useEffect(() => {
@@ -81,6 +85,35 @@ function DFCPage() {
       }
     });
   }, [preselectedId]);
+
+  // Carrega catMap de categorias para DRE
+  useEffect(() => {
+    if (!clientId) return;
+    supabase()
+      .from("categories")
+      .select("name, group_name, type")
+      .eq("client_id", clientId)
+      .eq("is_active", true)
+      .then(({ data }) => {
+        const map = new Map<string, CatInfo>();
+        for (const cat of data ?? []) map.set(cat.name, { group_name: cat.group_name, type: cat.type });
+        setCatMap(map);
+      });
+  }, [clientId]);
+
+  // Carrega saldo acumulado antes do período (saldo inicial da DFC)
+  useEffect(() => {
+    if (!clientId || !startDate) return;
+    supabase()
+      .from("transactions")
+      .select("amount")
+      .eq("client_id", clientId)
+      .eq("status", "approved")
+      .lt("date", startDate)
+      .then(({ data }) => {
+        setSaldoInicial((data ?? []).reduce((s: number, t: { amount: number }) => s + t.amount, 0));
+      });
+  }, [clientId, startDate]);
 
   // Recarrega transações do período atual e anterior em paralelo
   useEffect(() => {
@@ -113,6 +146,7 @@ function DFCPage() {
   const receitas = useMemo(() => tx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0), [tx]);
   const despesas = useMemo(() => tx.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0), [tx]);
   const resultado = receitas - despesas;
+  const saldoFinal = saldoInicial + resultado;
 
   const prevReceitas = useMemo(() => prevTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0), [prevTx]);
   const prevDespesas = useMemo(() => prevTx.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0), [prevTx]);
@@ -149,6 +183,8 @@ function DFCPage() {
     return w;
   }, [tx]);
   const maxBar = Math.max(...semanas.map((s) => Math.max(s.rec, s.des)), 1);
+
+  const dre = useMemo(() => computeDRE(tx, catMap), [tx, catMap]);
 
   const periodForForecast = `${endDate.split("-")[1]}/${endDate.split("-")[0]}`;
   const projecao = useDFCForecast(clientId, periodForForecast);
@@ -201,6 +237,94 @@ function DFCPage() {
       {activeTab === "contas" && <ContasPanel clientId={clientId} />}
       {activeTab === "extratos" && <ExtratosPanel clientId={clientId} />}
 
+      {activeTab === "dre" && (
+        <div className="px-8 lg:px-12 pb-12 grid gap-8">
+          <div className="flex justify-end pt-6">
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              maxDate={dfcTodayISO()}
+              onStartChange={setStartDate}
+              onEndChange={setEndDate}
+            />
+          </div>
+
+          {/* Cards de resumo DRE */}
+          <div className="grid md:grid-cols-4 gap-5">
+            <Resumo label="Receita Bruta" value={brl(dre.receitaBruta)} tone="green" />
+            <Resumo label="EBITDA" value={brl(dre.ebitda)} tone={dre.ebitda >= 0 ? "navy" : "expense"}
+              sub={dre.receitaBruta > 0 ? `margem ${((dre.ebitda / dre.receitaBruta) * 100).toFixed(1)}%` : undefined} />
+            <Resumo label="Resultado Líquido" value={brl(dre.resultadoLiquido)} tone={dre.resultadoLiquido >= 0 ? "green" : "expense"}
+              sub={dre.receitaBruta > 0 ? `margem líquida ${((dre.resultadoLiquido / dre.receitaBruta) * 100).toFixed(1)}%` : undefined} />
+            <Resumo label="Margem EBITDA" value={dre.receitaBruta > 0 ? `${((dre.ebitda / dre.receitaBruta) * 100).toFixed(1)}%` : "—"} tone="tan" />
+          </div>
+
+          {/* Tabela contábil */}
+          {dre.groups.length === 0 ? (
+            <div className="aurora-card text-[12px] text-center py-8" style={{ color: "var(--muted-foreground)" }}>
+              Nenhuma transação aprovada neste período.
+            </div>
+          ) : (
+            <div className="aurora-card p-0 overflow-hidden">
+              <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)" }}>
+                <div className="aurora-cap mb-1">Estrutura contábil</div>
+                <div className="aurora-serif text-[22px]">
+                  DRE <em className="italic" style={{ color: "var(--green)" }}>· {periodoLabel}</em>
+                </div>
+              </div>
+              <table className="w-full">
+                <thead>
+                  <tr style={{ background: "var(--linen)" }}>
+                    <th className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>Conta</th>
+                    <th className="text-right px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dre.groups.map((g) => (
+                    <React.Fragment key={g.name}>
+                      <tr style={{ background: "var(--linen)", borderTop: "1px solid var(--line)" }}>
+                        <td className="px-6 py-2 aurora-cap" style={{ fontWeight: 600, fontSize: 10 }}>
+                          {g.isExpense ? "(−) " : ""}{g.name.toUpperCase()}
+                        </td>
+                        <td />
+                      </tr>
+                      {g.lines.map((l) => (
+                        <tr key={l.cat} style={{ borderTop: "1px solid var(--line)", background: "#fff" }}>
+                          <td className="px-6 py-2.5 pl-10 text-[12px]">{l.cat}</td>
+                          <td className="px-6 py-2.5 text-right aurora-value text-[13px]" style={{ color: g.isExpense ? "var(--expense)" : "var(--green)" }}>
+                            {g.isExpense ? `(${brl(l.total)})` : brl(l.total)}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr style={{ borderTop: "1px solid var(--line)", background: "#FAFAF8" }}>
+                        <td className="px-6 py-2.5 text-[12px]" style={{ fontWeight: 600 }}>Subtotal {g.name}</td>
+                        <td className="px-6 py-2.5 text-right aurora-value text-[13px]" style={{ fontWeight: 700, color: g.isExpense ? "var(--expense)" : "var(--green)" }}>
+                          {g.isExpense ? `(${brl(g.subtotal)})` : brl(g.subtotal)}
+                        </td>
+                      </tr>
+                      {g.name === "Despesa Variável" && (
+                        <tr style={{ background: "#E8F0E4", borderTop: "2px solid var(--green)" }}>
+                          <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 700 }}>= Resultado Operacional (EBITDA)</td>
+                          <td className="px-6 py-3 text-right aurora-value text-[15px]" style={{ fontWeight: 700, color: dre.ebitda >= 0 ? "var(--green)" : "var(--expense)" }}>
+                            {brl(dre.ebitda)}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                  <tr style={{ background: "var(--navy)", borderTop: "2px solid var(--navy)" }}>
+                    <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 700, color: "#fff" }}>= Resultado Líquido do Período</td>
+                    <td className="px-6 py-3 text-right aurora-value text-[15px]" style={{ fontWeight: 700, color: dre.resultadoLiquido >= 0 ? "#A8D5A2" : "#F4A57E" }}>
+                      {brl(dre.resultadoLiquido)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === "dfc" && (
       <div className="px-8 lg:px-12 pb-12 grid gap-8">
         {/* Filtro De / Até */}
@@ -221,12 +345,14 @@ function DFCPage() {
           </div>
         )}
 
-        {/* Resumo */}
+        {/* Resumo DFC */}
         <div className="grid md:grid-cols-4 gap-5">
-          <Resumo label="Receitas" value={brl(receitas)} tone="green" delta={deltaPct(receitas, prevReceitas)} />
-          <Resumo label="Despesas" value={brl(despesas)} tone="expense" delta={deltaPct(despesas, prevDespesas)} />
-          <Resumo label="Resultado" value={brl(resultado)} tone={resultado >= 0 ? "green" : "expense"} />
-          <Resumo label="Lançamentos" value={String(tx.length)} tone="navy" />
+          <Resumo label="Saldo Inicial" value={brl(saldoInicial)} tone={saldoInicial >= 0 ? "navy" : "expense"}
+            sub="acumulado antes do período" />
+          <Resumo label="Entradas" value={brl(receitas)} tone="green" delta={deltaPct(receitas, prevReceitas)} />
+          <Resumo label="Saídas" value={brl(despesas)} tone="expense" delta={deltaPct(despesas, prevDespesas)} />
+          <Resumo label="Saldo Final" value={brl(saldoFinal)} tone={saldoFinal >= 0 ? "green" : "expense"}
+            sub={`resultado do período: ${brl(resultado)}`} />
         </div>
 
         {/* Fixos vs Variáveis */}

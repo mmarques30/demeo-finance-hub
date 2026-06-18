@@ -184,6 +184,15 @@
     letter-spacing: -0.02em;
   }
 
+  /* Valores numéricos / monetários — não-itálico, peso legível para usuário */
+  .aurora-value {
+    font-family: 'Cormorant Garamond', ui-serif, Georgia, serif;
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
   /* Card padrão da landing — cantos generosos, sombra suave, hover-lift */
   .aurora-card {
     background: #fff;

@@ -1,39 +1,39 @@
 // Aurora · Edge Function: pending-count
 // Retorna o total de transações pendentes agrupado por cliente.
 // Usado pelo n8n para o digest agendado das 09:00.
+//
+// Auth: aceita Bearer token de admin JWT ou header X-Aurora-Service-Key (n8n/cron).
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, handlePreflight, jsonResponse } from "../_shared/cors.ts";
+import { userFromAuthHeader, isAdmin, serviceClient } from "../_shared/supabase.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  const preflight = handlePreflight(req);
+  if (preflight) return preflight;
+
+  const origin = req.headers.get("origin");
+
+  // Auth: aceita chave de serviço (n8n, cron) ou admin JWT
+  const serviceKey = Deno.env.get("AURORA_SERVICE_KEY");
+  const incomingKey = req.headers.get("x-aurora-service-key");
+  const isServiceCall = serviceKey && incomingKey === serviceKey;
+
+  if (!isServiceCall) {
+    const user = await userFromAuthHeader(req);
+    if (!user) return jsonResponse({ error: "Não autenticado" }, 401, origin);
+    if (!(await isAdmin(user.id))) return jsonResponse({ error: "Acesso negado" }, 403, origin);
   }
 
   try {
-    // Usa service_role internamente para acessar transactions sem RLS
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = serviceClient();
 
     const { data: rows, error } = await supabase
       .from("transactions")
       .select("client_id, clients!inner(name)")
       .eq("status", "pending");
 
-    if (error) {
-      return new Response(
-        JSON.stringify({ error: error.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    if (error) return jsonResponse({ error: error.message }, 500, origin);
 
-    // Agrega por cliente
     const countMap = new Map<string, { name: string; count: number }>();
     for (const row of rows ?? []) {
       const clientName = (row.clients as { name: string } | null)?.name ?? "Desconhecido";
@@ -44,15 +44,9 @@ Deno.serve(async (req) => {
     const clients = Array.from(countMap.values()).sort((a, b) => b.count - a.count);
     const total = clients.reduce((s, c) => s + c.count, 0);
 
-    return new Response(
-      JSON.stringify({ total, clients }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ total, clients }, 200, origin);
   } catch (err) {
     console.error("pending-count error:", err);
-    return new Response(
-      JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ error: String(err) }, 500, origin);
   }
 });

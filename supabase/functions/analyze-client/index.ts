@@ -109,8 +109,9 @@ Deno.serve(async (req) => {
     if (months.length >= 2) {
       const first = months[0][1];
       const n = months.length;
-      if (first.rec > 0) growthRec = clampGrowth((last.rec - first.rec) / first.rec / n);
-      if (first.des > 0) growthDes = clampGrowth((last.des - first.des) / first.des / n);
+      // Taxa geométrica composta: (last/first)^(1/(n-1)) - 1
+      if (n >= 2 && first.rec > 0) growthRec = clampGrowth(Math.pow(last.rec / first.rec, 1 / (n - 1)) - 1);
+      if (n >= 2 && first.des > 0) growthDes = clampGrowth(Math.pow(last.des / first.des, 1 / (n - 1)) - 1);
     }
 
     const [periodYear, periodMonth] = period_end.split("-").map(Number);

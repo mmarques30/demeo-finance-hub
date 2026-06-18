@@ -5,6 +5,7 @@ import { brl, formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
 import { computeForecastMonths, type ForecastMonth } from "@/hooks/useDFCForecast";
+import { computeDRE, type CatInfo, type DREData } from "@/lib/dre";
 
 export const Route = createFileRoute("/admin/relatorios")({
   component: RelatoriosPage,
@@ -57,11 +58,7 @@ interface ReportData {
   byCategory: { cat: string; total: number; isReceita: boolean }[];
 }
 
-interface CatInfo { group_name: string; type: string }
-interface DREGroup { name: string; lines: { cat: string; total: number }[]; subtotal: number }
-interface DREData { groups: DREGroup[]; resultado: number }
-
-const DRE_GROUP_ORDER = ["Receita", "Despesa Fixa", "Despesa Variável", "Investimento", "Outros"];
+// CatInfo e DREData importados de @/lib/dre
 
 // ─── cálculos (puros) ─────────────────────────────────────────────────────────
 function computeReport(txs: Tx[]): ReportData {
@@ -96,30 +93,6 @@ async function fetchCategories(clientId: string): Promise<Map<string, CatInfo>> 
   return map;
 }
 
-function computeDRE(txs: Tx[], catMap: Map<string, CatInfo>): DREData {
-  const groupMap = new Map<string, Map<string, number>>();
-  for (const tx of txs) {
-    const info = catMap.get(tx.category ?? "");
-    const groupName = info?.group_name ?? "Outros";
-    if (!groupMap.has(groupName)) groupMap.set(groupName, new Map());
-    const cats = groupMap.get(groupName)!;
-    const cat = tx.category ?? "Sem categoria";
-    cats.set(cat, (cats.get(cat) ?? 0) + tx.amount);
-  }
-  const groups: DREGroup[] = [];
-  for (const groupName of DRE_GROUP_ORDER) {
-    const cats = groupMap.get(groupName);
-    if (!cats) continue;
-    const lines = Array.from(cats.entries())
-      .map(([cat, total]) => ({ cat, total }))
-      .sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
-    const subtotal = lines.reduce((s, l) => s + l.total, 0);
-    groups.push({ name: groupName, lines, subtotal });
-  }
-  const resultado = groups.reduce((s, g) => s + g.subtotal, 0);
-  return { groups, resultado };
-}
-
 // ─── exportações ──────────────────────────────────────────────────────────────
 function openPrintReport(
   clientName: string,
@@ -144,26 +117,37 @@ function openPrintReport(
     })
     .join("");
 
-  const dreRows = dre.groups.map((g) => {
+  // DRE estruturada: grupos com valores absolutos + subtotais intermediários
+  const dreRowsArr: string[] = [];
+  for (const g of dre.groups) {
     const isReceita = g.name === "Receita";
     const color = isReceita ? "#8FA688" : "#B8956A";
+    const prefix = isReceita ? "" : "(−) ";
     const lineRows = g.lines.map((l) =>
       `<tr>
         <td style="padding-left:24px;color:#555">${l.cat}</td>
-        <td style="text-align:right;color:${l.total >= 0 ? "#8FA688" : "#B8956A"}">${brl(l.total)}</td>
+        <td style="text-align:right;color:${color}">${isReceita ? brl(l.total) : `(${brl(l.total)})`}</td>
       </tr>`
     ).join("");
-    return `<tr style="background:#F8F6F1">
-        <td style="font-weight:600;padding:8px 10px;letter-spacing:1px;font-size:11px;text-transform:uppercase;font-family:sans-serif;color:#555">${g.name}</td>
+    dreRowsArr.push(`<tr style="background:#F8F6F1">
+        <td style="font-weight:600;padding:8px 10px;letter-spacing:1px;font-size:11px;text-transform:uppercase;font-family:sans-serif;color:#555">${prefix}${g.name}</td>
         <td></td>
       </tr>
       ${lineRows}
       <tr style="border-top:1px solid #E8E3D9">
-        <td style="font-weight:500;font-family:sans-serif;font-size:12px;padding-left:8px">Total ${g.name}</td>
-        <td style="text-align:right;font-weight:600;color:${color}">${brl(g.subtotal)}</td>
+        <td style="font-weight:500;font-family:sans-serif;font-size:12px;padding-left:8px">Subtotal ${g.name}</td>
+        <td style="text-align:right;font-weight:600;color:${color}">${isReceita ? brl(g.subtotal) : `(${brl(g.subtotal)})`}</td>
       </tr>
-      <tr><td colspan="2" style="padding:4px"></td></tr>`;
-  }).join("");
+      <tr><td colspan="2" style="padding:4px"></td></tr>`);
+    // Linha de EBITDA após Despesa Variável
+    if (g.name === "Despesa Variável") {
+      dreRowsArr.push(`<tr style="background:#E8F0E4;border-top:2px solid #8FA688">
+        <td style="font-weight:700;font-size:13px;padding:10px 10px;font-family:sans-serif">= Resultado Operacional (EBITDA)</td>
+        <td style="text-align:right;font-weight:700;font-size:14px;color:${dre.ebitda >= 0 ? "#8FA688" : "#B8956A"};padding:10px">${brl(dre.ebitda)}</td>
+      </tr><tr><td colspan="2" style="padding:4px"></td></tr>`);
+    }
+  }
+  const dreRows = dreRowsArr.join("");
 
   const fixosPct = d.despesas > 0 ? ((d.fixos / d.despesas) * 100).toFixed(1) : "0";
   const varPct = d.despesas > 0 ? ((d.variaveis / d.despesas) * 100).toFixed(1) : "0";
@@ -222,14 +206,14 @@ function openPrintReport(
   }
 
   <div class="sec">
-    <div class="sec-title">DFC Gerencial</div>
+    <div class="sec-title">DRE — Demonstrativo do Resultado do Exercício</div>
     <table>
       <thead><tr><th>Conta</th><th style="text-align:right">Valor</th></tr></thead>
       <tbody>
         ${dreRows}
-        <tr style="border-top:2px solid #1B3950">
-          <td style="font-weight:700;font-size:13px;padding:10px">Saldo do Período</td>
-          <td style="text-align:right;font-weight:700;font-size:15px;color:${dre.resultado >= 0 ? "#8FA688" : "#B8956A"};padding:10px">${brl(dre.resultado)}</td>
+        <tr style="background:#1B3950">
+          <td style="font-weight:700;font-size:13px;padding:12px 10px;color:#fff">= Resultado Líquido do Período</td>
+          <td style="text-align:right;font-weight:700;font-size:15px;color:${dre.resultadoLiquido >= 0 ? "#A8D5A2" : "#F4A57E"};padding:12px 10px">${brl(dre.resultadoLiquido)}</td>
         </tr>
       </tbody>
     </table>
@@ -292,14 +276,22 @@ function exportExcel(
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dfcRows), "DFC");
 
-  const dreXlsx: { Grupo: string; Categoria: string; Valor: number }[] = [];
+  const dreXlsx: { Linha: string; Categoria: string; Valor: number | string }[] = [];
   for (const g of dre.groups) {
-    for (const l of g.lines) dreXlsx.push({ Grupo: g.name, Categoria: l.cat, Valor: l.total });
-    dreXlsx.push({ Grupo: `Total ${g.name}`, Categoria: "", Valor: g.subtotal });
-    dreXlsx.push({ Grupo: "", Categoria: "", Valor: 0 });
+    const prefix = g.isExpense ? "(−) " : "";
+    dreXlsx.push({ Linha: `${prefix}${g.name.toUpperCase()}`, Categoria: "", Valor: "" });
+    for (const l of g.lines) {
+      dreXlsx.push({ Linha: "", Categoria: l.cat, Valor: g.isExpense ? -l.total : l.total });
+    }
+    dreXlsx.push({ Linha: `Subtotal ${g.name}`, Categoria: "", Valor: g.isExpense ? -g.subtotal : g.subtotal });
+    dreXlsx.push({ Linha: "", Categoria: "", Valor: "" });
+    if (g.name === "Despesa Variável") {
+      dreXlsx.push({ Linha: "= RESULTADO OPERACIONAL (EBITDA)", Categoria: "", Valor: dre.ebitda });
+      dreXlsx.push({ Linha: "", Categoria: "", Valor: "" });
+    }
   }
-  dreXlsx.push({ Grupo: "SALDO DO PERÍODO", Categoria: "", Valor: dre.resultado });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dreXlsx), "DFC Gerencial");
+  dreXlsx.push({ Linha: "= RESULTADO LÍQUIDO DO PERÍODO", Categoria: "", Valor: dre.resultadoLiquido });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dreXlsx), "DRE");
 
   const instTxs = txs.filter((t) => t.installment_group_id);
   const instRows = instTxs.length > 0
