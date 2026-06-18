@@ -4,11 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders as getCorsHeaders, handlePreflight } from "../_shared/cors.ts";
 
 interface TxRow { date: string; amount: number; category: string | null }
 interface PatternRow { pattern: string; modal_category: string; occurrences: number }
@@ -22,9 +18,10 @@ function clampGrowth(rate: number) {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const preflightRes = handlePreflight(req);
+  if (preflightRes) return preflightRes;
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
 
   try {
     const supabase = createClient(

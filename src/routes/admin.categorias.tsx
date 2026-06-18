@@ -208,7 +208,7 @@ function CategoriasPage() {
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Ex: Receita · Consultoria"
+              placeholder="Ex: Receita · Honorários"
               required
               style={{ padding: "8px 12px", fontSize: 13, border: "1px solid var(--line)", background: "#fff", minWidth: 220 }}
             />

@@ -7,11 +7,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { z } from "npm:zod@3";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders as getCorsHeaders, handlePreflight } from "../_shared/cors.ts";
 
 // Replica normalize_description do banco em TypeScript
 function normalizeDescription(raw: string): string {
@@ -114,9 +110,10 @@ ${JSON.stringify(payload)}`,
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const preflightRes = handlePreflight(req);
+  if (preflightRes) return preflightRes;
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
 
   try {
     const supabase = createClient(
