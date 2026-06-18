@@ -47,6 +47,7 @@ function PendentesPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [editTx, setEditTx] = useState<PendingTx | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PendingTx | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -132,8 +133,10 @@ function PendentesPage() {
     return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
   }
 
-  async function saveClient(clientId: string) {
-    const clientTxs = transactions.filter((t) => t.client_id === clientId && !!cats[t.id]);
+  async function saveClient(clientId: string, ids?: Set<string>) {
+    const clientTxs = transactions.filter(
+      (t) => t.client_id === clientId && !!cats[t.id] && (ids ? ids.has(t.id) : true)
+    );
     setSaving(clientId);
     setError(null);
 
@@ -187,9 +190,10 @@ function PendentesPage() {
         if (rulesErr) throw new Error(`Regras: ${rulesErr.message}`);
       }
 
-      // Remove transações salvas da lista local
+      // Remove transações salvas da lista local e das seleções
       const savedIds = new Set(clientTxs.map((t) => t.id));
       setTransactions((prev) => prev.filter((t) => !savedIds.has(t.id)));
+      setSelected((prev) => { const next = { ...prev }; savedIds.forEach((id) => delete next[id]); return next; });
     } catch (e) {
       setError(String(e));
     } finally {
@@ -346,14 +350,29 @@ function PendentesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => saveClient(cid)}
-                    disabled={isSaving}
-                    className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-50"
-                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
-                  >
-                    {isSaving ? "Salvando..." : "Salvar classificação"}
-                  </button>
+                  {(() => {
+                    const selIds = new Set(items.filter((t) => selected[t.id]).map((t) => t.id));
+                    const selCount = selIds.size;
+                    return selCount > 0 ? (
+                      <button
+                        onClick={() => saveClient(cid, selIds)}
+                        disabled={isSaving}
+                        className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-50"
+                        style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                      >
+                        {isSaving ? "Salvando..." : `Aprovar selecionados (${selCount})`}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => saveClient(cid)}
+                        disabled={isSaving}
+                        className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-50"
+                        style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                      >
+                        {isSaving ? "Salvando..." : "Aprovar todos classificados"}
+                      </button>
+                    );
+                  })()}
                   <span
                     style={{ fontSize: 9, color: "var(--muted-foreground)", transition: "transform 0.2s", transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block" }}
                   >
@@ -365,6 +384,18 @@ function PendentesPage() {
               <table className="w-full">
                 <thead>
                   <tr>
+                    <th className="px-4 py-3" style={{ borderBottom: "1px solid var(--line)", width: 40 }}>
+                      <input
+                        type="checkbox"
+                        checked={items.length > 0 && items.every((t) => selected[t.id])}
+                        onChange={(e) => {
+                          const next = { ...selected };
+                          items.forEach((t) => { next[t.id] = e.target.checked; });
+                          setSelected(next);
+                        }}
+                        title="Selecionar todos"
+                      />
+                    </th>
                     {["Data", "Descrição", "Valor", "Categoria", "Recorrente", "Parcelamento", ""].map((h) => (
                       <th
                         key={h}
@@ -378,7 +409,14 @@ function PendentesPage() {
                 </thead>
                 <tbody>
                   {items.map((t, idx) => (
-                    <tr key={t.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFAF8" }}>
+                    <tr key={t.id} style={{ background: selected[t.id] ? "rgba(74,103,65,0.05)" : idx % 2 === 0 ? "#fff" : "#FAFAF8" }}>
+                      <td className="px-4 py-3 text-center" style={{ width: 40 }}>
+                        <input
+                          type="checkbox"
+                          checked={!!selected[t.id]}
+                          onChange={(e) => setSelected((prev) => ({ ...prev, [t.id]: e.target.checked }))}
+                        />
+                      </td>
                       <td className="px-6 py-3 text-[12px]">{formatDatePtBR(t.date)}</td>
                       <td className="px-6 py-3 text-[12px]" title={t.raw_description}>
                         {t.description}
