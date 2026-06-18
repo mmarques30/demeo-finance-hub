@@ -45,6 +45,23 @@ function markReload(): void {
   }
 }
 
+function pingAlert(source: string, message: string, detail?: string): void {
+  const alertUrl = import.meta.env.VITE_ALERT_WEBHOOK_URL as string | undefined;
+  if (!alertUrl || import.meta.env.DEV) return;
+  const body = JSON.stringify({
+    type: "frontend_error",
+    source,
+    message,
+    detail: detail ?? "",
+    url: window.location.href,
+  });
+  try {
+    navigator.sendBeacon(alertUrl, body);
+  } catch {
+    fetch(alertUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body }).catch(() => {});
+  }
+}
+
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   const chunkError = isChunkLoadError(error);
@@ -61,6 +78,11 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
     }, 600);
     return () => clearTimeout(t);
   }, [chunkError]);
+
+  useEffect(() => {
+    if (chunkError) return;
+    pingAlert("router", error.message, error.stack?.split("\n")[1]?.trim());
+  }, [chunkError, error]);
 
   const isDev = import.meta.env.DEV;
 
@@ -245,7 +267,10 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
 if (typeof window !== "undefined") {
   window.addEventListener("error", (e) => {
     const err = e.error ?? new Error(e.message ?? "");
-    if (!isChunkLoadError(err)) return;
+    if (!isChunkLoadError(err)) {
+      pingAlert("window.error", err.message, `${e.filename}:${e.lineno}`);
+      return;
+    }
     if (!shouldAutoReload()) return;
     markReload();
     window.location.reload();
@@ -256,7 +281,10 @@ if (typeof window !== "undefined") {
       reason instanceof Error
         ? reason
         : new Error(typeof reason === "string" ? reason : "");
-    if (!isChunkLoadError(err)) return;
+    if (!isChunkLoadError(err)) {
+      pingAlert("unhandledrejection", err.message);
+      return;
+    }
     if (!shouldAutoReload()) return;
     markReload();
     window.location.reload();
