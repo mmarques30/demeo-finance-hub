@@ -44,7 +44,7 @@ export function currentMonthLabel(): string {
   return new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 }
 
-/** Espelha exatamente a lógica de buildPattern() do classify-batch edge function. */
+/** MUST stay in sync with normalizeDescription()+buildPattern() in supabase/functions/classify-batch/index.ts */
 export function buildPattern(raw: string): string {
   const normalized = raw
     .toUpperCase()
