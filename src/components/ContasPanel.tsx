@@ -352,9 +352,14 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
   async function markPaid(id: string) {
     setMarking(id);
     const paid = todayISO();
+    const prev = payables;
+    setPayables((p) => p.map((r) => (r.id === id ? { ...r, paid_at: paid } : r)));
     const { error: err } = await supabase().from("payables").update({ paid_at: paid }).eq("id", id);
-    if (err) setError(err.message);
-    else setPayables((prev) => prev.map((p) => (p.id === id ? { ...p, paid_at: paid } : p)));
+    if (err) {
+      console.error("[ContasPanel] markPaid failed, rolling back:", err.message);
+      setPayables(prev);
+      setError(err.message);
+    }
     setMarking(null);
   }
 

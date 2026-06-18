@@ -10,6 +10,19 @@ import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { corsHeaders as getCorsHeaders, handlePreflight } from "../_shared/cors.ts";
 
+async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === maxAttempts) throw err;
+      console.error(`[parse-extract] Claude call attempt ${attempt} failed, retrying in ${2 ** (attempt - 1)}s:`, err);
+      await new Promise(r => setTimeout(r, 1000 * 2 ** (attempt - 1)));
+    }
+  }
+  throw new Error("unreachable");
+}
+
 interface ParsedTransaction {
   date: string;
   description: string;
@@ -319,17 +332,18 @@ async function parseWithAI(fileData: Blob, filename: string, bankName: string): 
         },
       };
 
-  const { content } = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 4096,
-    messages: [
-      {
-        role: "user",
-        content: [
-          contentBlock,
-          {
-            type: "text",
-            text: `Este é um extrato bancário do banco "${bankName}". Extraia TODOS os lançamentos financeiros.
+  const { content } = await withRetry(() =>
+    client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4096,
+      messages: [
+        {
+          role: "user",
+          content: [
+            contentBlock,
+            {
+              type: "text",
+              text: `Este é um extrato bancário do banco "${bankName}". Extraia TODOS os lançamentos financeiros.
 
 Retorne SOMENTE um JSON array no formato abaixo, sem texto adicional:
 [{"date":"YYYY-MM-DD","description":"DESCRIÇÃO EM MAIÚSCULAS","amount":valor_numerico}]
@@ -341,19 +355,35 @@ Regras:
 - Ignore linhas de saldo, totais e cabeçalhos
 - Inclua TODOS os lançamentos visíveis, sem filtrar
 - Se não conseguir identificar lançamentos, retorne []`,
-          },
-        ],
-      },
-    ],
-  });
+            },
+          ],
+        },
+      ],
+    })
+  );
 
   const raw = content[0].type === "text" ? content[0].text.trim() : "[]";
   const jsonMatch = raw.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) return [];
+  if (!jsonMatch) {
+    console.error("[parse-extract] AI response had no JSON array. Raw (first 300 chars):", raw.slice(0, 300));
+    return [];
+  }
 
-  const parsed: AITransaction[] = JSON.parse(jsonMatch[0]);
+  let parsed: AITransaction[];
+  try {
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch (e) {
+    console.error("[parse-extract] AI returned unparseable JSON. Raw (first 300 chars):", jsonMatch[0].slice(0, 300));
+    console.error("[parse-extract] JSON.parse error:", e);
+    return [];
+  }
+
   return parsed
-    .filter((t) => t.date && t.description && t.amount !== 0)
+    .filter((t) => {
+      const ok = t.date && t.description && typeof t.amount === "number" && t.amount !== 0;
+      if (!ok) console.error("[parse-extract] AI returned invalid transaction row:", JSON.stringify(t));
+      return ok;
+    })
     .map((t) => ({
       date: t.date,
       description: cleanDescription(t.description),
