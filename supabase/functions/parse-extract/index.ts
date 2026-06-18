@@ -122,6 +122,34 @@ function cellText(value: unknown): string {
   return String(value).trim();
 }
 
+// RFC 4180-compliant CSV row parser — handles quoted fields, embedded separators, "" escape
+function parseCSVLine(line: string, sep: string): string[] {
+  const cols: string[] = [];
+  let cur = "";
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuote) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { cur += '"'; i++; } // escaped quote ""
+        else inQuote = false;
+      } else {
+        cur += ch;
+      }
+    } else if (ch === '"') {
+      inQuote = true;
+    } else if (line.slice(i, i + sep.length) === sep) {
+      cols.push(cur.trim());
+      cur = "";
+      i += sep.length - 1;
+    } else {
+      cur += ch;
+    }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
 function parseCSV(text: string, bankName: string): ParsedTransaction[] {
   const normalized = bankName.toLowerCase().trim().normalize("NFD");
   const key = normalized.replace(new RegExp("[\\u0300-\\u036f]", "g"), "");
@@ -143,7 +171,7 @@ function parseCSV(text: string, bankName: string): ParsedTransaction[] {
   for (let i = config.skipRows; i < lines.length; i++) {
     const line = lines[i];
     if (config.skipKeywords.some((kw) => line.includes(kw))) continue;
-    const cols = line.split(config.separator).map((c) => c.replace(/^"|"$/g, ""));
+    const cols = parseCSVLine(line, config.separator);
     if (cols.length < Math.max(config.colDate, config.colDesc, config.colAmount) + 1) continue;
     const rawDate = cols[config.colDate];
     const rawDesc = cols[config.colDesc];

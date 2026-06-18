@@ -60,6 +60,7 @@ function ImportarPage() {
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [canceling, setCanceling] = useState(false);
   const [cancelUploadOpen, setCancelUploadOpen] = useState(false);
+  const [classifyTimedOut, setClassifyTimedOut] = useState(false);
 
   const CATEGORIAS = useCategories(clientId);
 
@@ -114,10 +115,12 @@ function ImportarPage() {
 
     setFiles(fileList);
     setError(null);
+    setClassifyTimedOut(false);
     setCurrentFileIndex(0);
     setStage("reading");
 
     const allTransactions: Transaction[] = [];
+    let anyTimedOut = false;
 
     const {
       data: { session },
@@ -159,6 +162,7 @@ function ImportarPage() {
         }
 
         allTransactions.push(...(result.transactions ?? []));
+        if (result.classify_timedout) anyTimedOut = true;
       } catch (err) {
         const msg = `${file.name}: ${String(err)}`;
         setError((prev) => (prev ? `${prev}\n${msg}` : msg));
@@ -167,6 +171,7 @@ function ImportarPage() {
 
     // n8n notificado pela Edge Function create-upload (N8N_WEBHOOK_URL) — não duplicar aqui
     setTransactions(allTransactions);
+    if (anyTimedOut) setClassifyTimedOut(true);
     setStage("done");
   }
 
@@ -413,6 +418,18 @@ function ImportarPage() {
             <span style={{ color: "var(--tan)", fontSize: 18 }}>!</span>
             <div className="text-[13px]" style={{ color: "var(--foreground)" }}>
               {error}
+            </div>
+          </div>
+        )}
+
+        {/* Aviso de timeout na classificação automática */}
+        {stage === "done" && classifyTimedOut && (
+          <div className="flex items-start gap-3 px-5 py-4 rounded-xl text-[12px]"
+            style={{ background: "rgba(184,149,106,0.12)", border: "1px solid rgba(184,149,106,0.35)", color: "var(--tan)" }}>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>⚠</span>
+            <div>
+              <strong style={{ fontWeight: 600 }}>Classificação automática expirou</strong> — os lançamentos foram importados, mas a IA não conseguiu classificá-los a tempo.
+              Revise os itens com status <em>Pendente</em> e classifique manualmente ou aguarde a próxima execução automática.
             </div>
           </div>
         )}
