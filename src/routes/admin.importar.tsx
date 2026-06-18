@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl, formatDatePtBR } from "@/lib/utils";
@@ -110,7 +110,7 @@ function ImportarPage() {
       .select("id, filename, bank_name, status, tx_total, created_at, clients(name)")
       .order("created_at", { ascending: false })
       .limit(10)
-      .then(({ data }) => setRecentUploads((data ?? []) as UploadRecord[]));
+      .then(({ data }) => setRecentUploads((data ?? []) as unknown as UploadRecord[]));
   }, [uploadsRefresh]);
 
   async function handleUndoUpload(upload: UploadRecord) {
@@ -550,6 +550,19 @@ function ImportarPage() {
             </table>
           </div>
         )}
+
+        {stage === "done" && clientId && (
+          <div className="flex justify-end">
+            <Link
+              to={"/admin/dfc" as never}
+              search={{ clientId, tab: "extratos" } as never}
+              className="aurora-link text-[12px]"
+            >
+              Ver Histórico de Extratos →
+            </Link>
+          </div>
+        )}
+
         {/* Importações recentes */}
         {recentUploads.length > 0 && (
           <div className="aurora-card p-0 overflow-hidden">

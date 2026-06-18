@@ -7,10 +7,12 @@ import { supabase } from "@/lib/supabase";
 import { useDFCForecast } from "@/hooks/useDFCForecast";
 import { RecorrenciasPanel } from "@/components/RecorrenciasPanel";
 import { ContasPanel } from "@/components/ContasPanel";
+import { ExtratosPanel } from "@/components/ExtratosPanel";
 
 export const Route = createFileRoute("/admin/dfc")({
   validateSearch: (search: Record<string, unknown>) => ({
     clientId: typeof search.clientId === "string" ? search.clientId : undefined,
+    tab: typeof search.tab === "string" ? search.tab : undefined,
   }),
   component: DFCPage,
   head: () => ({ meta: [{ title: "DFC · Aurora" }] }),
@@ -45,21 +47,26 @@ function deltaPct(curr: number, prev: number): string | null {
   return (pct >= 0 ? "▲ +" : "▼ ") + pct.toFixed(1) + "%";
 }
 
-type DFCTab = "dfc" | "recorrencias" | "contas";
+type DFCTab = "dfc" | "recorrencias" | "contas" | "extratos";
 
 const DFC_TABS: { key: DFCTab; label: string }[] = [
   { key: "dfc", label: "DFC Gerencial" },
   { key: "recorrencias", label: "Recorrências" },
   { key: "contas", label: "Contas" },
+  { key: "extratos", label: "Histórico de Extratos" },
 ];
 
+const VALID_TABS: DFCTab[] = ["dfc", "recorrencias", "contas", "extratos"];
+
 function DFCPage() {
-  const { clientId: preselectedId } = Route.useSearch();
+  const { clientId: preselectedId, tab: preselectedTab } = Route.useSearch();
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientId, setClientId] = useState(preselectedId ?? "");
   const [startDate, setStartDate] = useState(dfcFirstOfMonthISO());
   const [endDate, setEndDate] = useState(dfcTodayISO());
-  const [activeTab, setActiveTab] = useState<DFCTab>("dfc");
+  const [activeTab, setActiveTab] = useState<DFCTab>(
+    VALID_TABS.includes(preselectedTab as DFCTab) ? (preselectedTab as DFCTab) : "dfc"
+  );
   const [tx, setTx] = useState<Tx[]>([]);
   const [prevTx, setPrevTx] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(false);
@@ -192,6 +199,7 @@ function DFCPage() {
 
       {activeTab === "recorrencias" && <RecorrenciasPanel clientId={clientId} />}
       {activeTab === "contas" && <ContasPanel clientId={clientId} />}
+      {activeTab === "extratos" && <ExtratosPanel clientId={clientId} />}
 
       {activeTab === "dfc" && (
       <div className="px-8 lg:px-12 pb-12 grid gap-8">
