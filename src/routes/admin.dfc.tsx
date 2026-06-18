@@ -11,6 +11,7 @@ import { ExtratosPanel } from "@/components/ExtratosPanel";
 import { computeDRE, type CatInfo } from "@/lib/dre";
 import { computeHealthLevel, healthMargemPct } from "@/lib/healthScore";
 import { HealthAlertCard } from "@/components/HealthAlertCard";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/admin/dfc")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -153,38 +154,23 @@ function DFCPage() {
   const prevReceitas = useMemo(() => prevTx.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0), [prevTx]);
   const prevDespesas = useMemo(() => prevTx.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0), [prevTx]);
 
-  const fixos = useMemo(() => tx.filter((t) => t.is_recurring && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0), [tx]);
-  const variaveis = useMemo(() => tx.filter((t) => !t.is_recurring && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0), [tx]);
-
-  const porCategoria = useMemo(() => {
+  const dfcEntradas = useMemo(() => {
     const map = new Map<string, number>();
-    tx.forEach((t) => {
-      const k = t.category || "Sem categoria";
-      map.set(k, (map.get(k) ?? 0) + Math.abs(t.amount));
+    tx.filter((t) => t.amount > 0).forEach((t) => {
+      const cat = t.category || "Sem categoria";
+      map.set(cat, (map.get(cat) ?? 0) + t.amount);
     });
-    const total = Array.from(map.values()).reduce((a, b) => a + b, 0) || 1;
-    return Array.from(map.entries())
-      .map(([cat, val]) => ({ cat, val, pct: (val / total) * 100 }))
-      .sort((a, b) => b.val - a.val)
-      .slice(0, 8);
+    return Array.from(map.entries()).map(([cat, val]) => ({ cat, val })).sort((a, b) => b.val - a.val);
   }, [tx]);
 
-  const semanas = useMemo(() => {
-    const w = [
-      { lbl: "Sem 1", rec: 0, des: 0 },
-      { lbl: "Sem 2", rec: 0, des: 0 },
-      { lbl: "Sem 3", rec: 0, des: 0 },
-      { lbl: "Sem 4", rec: 0, des: 0 },
-    ];
-    tx.forEach((t) => {
-      const day = parseInt(t.date.split("-")[2], 10);
-      const idx = Math.min(3, Math.floor((day - 1) / 7));
-      if (t.amount >= 0) w[idx].rec += t.amount;
-      else w[idx].des += Math.abs(t.amount);
+  const dfcSaidas = useMemo(() => {
+    const map = new Map<string, number>();
+    tx.filter((t) => t.amount < 0).forEach((t) => {
+      const cat = t.category || "Sem categoria";
+      map.set(cat, (map.get(cat) ?? 0) + Math.abs(t.amount));
     });
-    return w;
+    return Array.from(map.entries()).map(([cat, val]) => ({ cat, val })).sort((a, b) => b.val - a.val);
   }, [tx]);
-  const maxBar = Math.max(...semanas.map((s) => Math.max(s.rec, s.des)), 1);
 
   const dre = useMemo(() => computeDRE(tx, catMap), [tx, catMap]);
 
@@ -209,14 +195,23 @@ function DFCPage() {
         emphasis="de fluxo de caixa"
         description="Análise consolidada do período com comparativo, drill-down por categoria e projeção dos próximos 3 meses."
         right={
-          <select
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            className="bg-white px-3 py-2.5 text-[12px]"
-            style={{ border: "1px solid var(--line)" }}
-          >
-            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <select
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="bg-white px-3 py-2.5 text-[12px]"
+              style={{ border: "1px solid var(--line)" }}
+            >
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              maxDate={dfcTodayISO()}
+              onStartChange={setStartDate}
+              onEndChange={setEndDate}
+            />
+          </div>
         }
       />
 
@@ -241,7 +236,7 @@ function DFCPage() {
         ))}
       </div>
 
-      {clientId && (
+      {clientId && (activeTab === "dfc" || activeTab === "dre") && (
         <div className="px-8 lg:px-12 pt-6">
           <HealthAlertCard health={health} margem={margem} segment={activeClient?.segment ?? null} period={periodoLabel} />
         </div>
@@ -252,17 +247,7 @@ function DFCPage() {
       {activeTab === "extratos" && <ExtratosPanel clientId={clientId} />}
 
       {activeTab === "dre" && (
-        <div className="px-8 lg:px-12 pb-12 grid gap-8">
-          <div className="flex justify-end pt-6">
-            <DateRangeFilter
-              startDate={startDate}
-              endDate={endDate}
-              maxDate={dfcTodayISO()}
-              onStartChange={setStartDate}
-              onEndChange={setEndDate}
-            />
-          </div>
-
+        <div className="px-8 lg:px-12 pb-12 grid gap-8 pt-6">
           {/* Cards de resumo DRE */}
           <div className="grid md:grid-cols-4 gap-5">
             <Resumo label="Receita Bruta" value={brl(dre.receitaBruta)} tone="green" />
@@ -340,17 +325,7 @@ function DFCPage() {
       )}
 
       {activeTab === "dfc" && (
-      <div className="px-8 lg:px-12 pb-12 grid gap-8">
-        {/* Filtro De / Até */}
-        <div className="flex justify-end pt-6">
-          <DateRangeFilter
-            startDate={startDate}
-            endDate={endDate}
-            maxDate={dfcTodayISO()}
-            onStartChange={setStartDate}
-            onEndChange={setEndDate}
-          />
-        </div>
+      <div className="px-8 lg:px-12 pb-12 pt-6 grid gap-8">
 
         {loading && (
           <div className="aurora-card flex items-center gap-3">
@@ -359,159 +334,106 @@ function DFCPage() {
           </div>
         )}
 
-        {/* Resumo DFC */}
+        {/* 4 KPI cards */}
         <div className="grid md:grid-cols-4 gap-5">
           <Resumo label="Saldo Inicial" value={brl(saldoInicial)} tone={saldoInicial >= 0 ? "navy" : "expense"}
             sub="acumulado antes do período" />
           <Resumo label="Entradas" value={brl(receitas)} tone="green" delta={deltaPct(receitas, prevReceitas)} />
           <Resumo label="Saídas" value={brl(despesas)} tone="expense" delta={deltaPct(despesas, prevDespesas)} />
           <Resumo label="Saldo Final" value={brl(saldoFinal)} tone={saldoFinal >= 0 ? "green" : "expense"}
-            sub={`resultado do período: ${brl(resultado)}`} />
+            sub={`resultado: ${brl(resultado)}`} />
         </div>
 
-        {/* Fixos vs Variáveis */}
-        {despesas > 0 && (
-          <div className="grid md:grid-cols-2 gap-5">
-            <Resumo label="Despesas Fixas" value={brl(fixos)} tone="expense"
-              sub={`${((fixos / despesas) * 100).toFixed(1)}% das despesas`} />
-            <Resumo label="Despesas Variáveis" value={brl(variaveis)} tone="expense"
-              sub={`${((variaveis / despesas) * 100).toFixed(1)}% das despesas`} />
+        {/* Planilha DFC */}
+        {tx.length === 0 && !loading ? (
+          <div className="aurora-card text-[12px] text-center py-8" style={{ color: "var(--muted-foreground)" }}>
+            Nenhuma transação aprovada neste período.
           </div>
-        )}
-
-        {/* Fluxo semanal */}
-        <div className="aurora-card">
-          <div className="aurora-cap mb-1">Gráfico</div>
-          <div className="aurora-serif text-[22px] mb-7">
-            Fluxo semanal <em className="italic" style={{ color: "var(--green)" }}>· {periodoLabel}</em>
-          </div>
-          {tx.length === 0 ? (
-            <div className="text-[12px] text-center py-8" style={{ color: "var(--muted-foreground)" }}>
-              Nenhuma transação aprovada neste período.
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-4 gap-8 items-end h-[200px]">
-                {semanas.map((s) => (
-                  <div key={s.lbl} className="h-full flex flex-col justify-end gap-2">
-                    <div className="flex gap-1.5 items-end h-full">
-                      <div className="flex-1 transition-all" style={{ height: `${(s.rec / maxBar) * 100}%`, background: "var(--green)", borderRadius: "3px 3px 0 0" }} title={brl(s.rec)} />
-                      <div className="flex-1 transition-all" style={{ height: `${(s.des / maxBar) * 100}%`, background: "var(--expense)", borderRadius: "3px 3px 0 0" }} title={brl(s.des)} />
-                    </div>
-                    <div className="text-[10px] uppercase text-center" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>{s.lbl}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-5 mt-5 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-                <span className="flex items-center gap-2"><span className="w-3 h-3 inline-block" style={{ background: "var(--green)" }} /> Receitas</span>
-                <span className="flex items-center gap-2"><span className="w-3 h-3 inline-block" style={{ background: "var(--expense)" }} /> Despesas</span>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Por categoria */}
-        {porCategoria.length > 0 && (
+        ) : (
           <div className="aurora-card p-0 overflow-hidden">
             <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)" }}>
-              <div className="aurora-cap mb-1">Detalhamento</div>
-              <div className="aurora-serif text-[22px]">Por <em className="italic" style={{ color: "var(--green)" }}>categoria</em></div>
+              <div className="aurora-cap mb-1">Planilha</div>
+              <div className="aurora-serif text-[22px]">
+                Demonstrativo <em className="italic" style={{ color: "var(--green)" }}>· {periodoLabel}</em>
+              </div>
             </div>
             <table className="w-full">
-              <thead>
-                <tr style={{ background: "var(--linen)" }}>
-                  {["Categoria", "Total", "% do total"].map((h) => (
-                    <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
               <tbody>
-                {porCategoria.map((row, i) => (
-                  <tr key={row.cat} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
-                    <td className="px-6 py-3 text-[12px]">{row.cat}</td>
-                    <td className="px-6 py-3 aurora-value" style={{ fontSize: 15, color: "var(--navy)" }}>{brl(row.val)}</td>
-                    <td className="px-6 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="text-[12px] w-12">{row.pct.toFixed(1)}%</div>
-                        <div className="flex-1 h-1.5 max-w-[180px]" style={{ background: "var(--linen)" }}>
-                          <div className="h-full" style={{ width: `${row.pct}%`, background: "var(--sage)" }} />
-                        </div>
-                      </div>
-                    </td>
+                {/* ── Entradas ── */}
+                <tr style={{ background: "rgba(74,103,65,0.06)" }}>
+                  <td colSpan={2} className="px-6 py-2.5 text-[10px] uppercase" style={{ letterSpacing: "2px", fontWeight: 700, color: "var(--green)" }}>
+                    Entradas operacionais
+                  </td>
+                </tr>
+                {dfcEntradas.map((row) => (
+                  <tr key={`e-${row.cat}`} style={{ borderTop: "1px solid var(--line)" }}>
+                    <td className="px-8 py-2.5 text-[12px]" style={{ color: "var(--foreground)" }}>{row.cat}</td>
+                    <td className="px-6 py-2.5 aurora-value text-right" style={{ fontSize: 14, color: "var(--green)" }}>{brl(row.val)}</td>
                   </tr>
                 ))}
+                <tr style={{ borderTop: "2px solid rgba(74,103,65,0.3)" }}>
+                  <td className="px-6 py-3 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 700, color: "var(--green)" }}>Total Entradas</td>
+                  <td className="px-6 py-3 aurora-value text-right" style={{ fontSize: 16, color: "var(--green)", fontWeight: 700 }}>{brl(receitas)}</td>
+                </tr>
+
+                {/* ── Saídas ── */}
+                <tr style={{ background: "rgba(180,90,60,0.06)", borderTop: "1px solid var(--line)" }}>
+                  <td colSpan={2} className="px-6 py-2.5 text-[10px] uppercase" style={{ letterSpacing: "2px", fontWeight: 700, color: "var(--expense)" }}>
+                    Saídas operacionais
+                  </td>
+                </tr>
+                {dfcSaidas.map((row) => (
+                  <tr key={`s-${row.cat}`} style={{ borderTop: "1px solid var(--line)" }}>
+                    <td className="px-8 py-2.5 text-[12px]" style={{ color: "var(--foreground)" }}>{row.cat}</td>
+                    <td className="px-6 py-2.5 aurora-value text-right" style={{ fontSize: 14, color: "var(--expense)" }}>({brl(row.val)})</td>
+                  </tr>
+                ))}
+                <tr style={{ borderTop: "2px solid rgba(180,90,60,0.3)" }}>
+                  <td className="px-6 py-3 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 700, color: "var(--expense)" }}>Total Saídas</td>
+                  <td className="px-6 py-3 aurora-value text-right" style={{ fontSize: 16, color: "var(--expense)", fontWeight: 700 }}>({brl(despesas)})</td>
+                </tr>
+
+                {/* ── Resultado + Saldo ── */}
+                <tr style={{ background: "var(--linen)", borderTop: "2px solid var(--line)" }}>
+                  <td className="px-6 py-3 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 700 }}>Resultado do Período</td>
+                  <td className="px-6 py-3 aurora-value text-right" style={{ fontSize: 16, fontWeight: 700, color: resultado >= 0 ? "var(--green)" : "var(--expense)" }}>{brl(resultado)}</td>
+                </tr>
+                <tr style={{ borderTop: "1px solid var(--line)" }}>
+                  <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>Saldo Inicial</td>
+                  <td className="px-6 py-3 aurora-value text-right" style={{ fontSize: 14, color: "var(--navy)" }}>{brl(saldoInicial)}</td>
+                </tr>
+                <tr style={{ background: "var(--linen)", borderTop: "2px solid var(--line)" }}>
+                  <td className="px-6 py-3 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 700 }}>Saldo Final</td>
+                  <td className="px-6 py-3 aurora-value text-right" style={{ fontSize: 18, fontWeight: 700, color: saldoFinal >= 0 ? "var(--green)" : "var(--expense)" }}>{brl(saldoFinal)}</td>
+                </tr>
               </tbody>
             </table>
           </div>
         )}
 
-        {/* Projeção */}
-        {tx.length > 0 && (
-          <div className="aurora-card p-0 overflow-hidden">
-            <div className="px-6 py-4 flex items-end justify-between gap-4 flex-wrap" style={{ borderBottom: "1px solid var(--line)" }}>
-              <div>
-                <div className="aurora-cap mb-1">Próximos 90 dias</div>
-                <div className="aurora-serif text-[22px]">
-                  Projeção <em className="italic" style={{ color: "var(--green)" }}>de fluxo de caixa</em>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 inline-block rounded-sm" style={{ background: "var(--green)", opacity: 0.4 }} />
-                  Tendência histórica
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 inline-block rounded-sm" style={{ background: "var(--green)" }} />
-                  Confirmado (contas)
-                </span>
-              </div>
+        {/* Projeção — gráfico de linha */}
+        {projecao.length > 0 && (
+          <div className="aurora-card">
+            <div className="aurora-cap mb-1">Próximos 90 dias</div>
+            <div className="aurora-serif text-[22px] mb-6">
+              Projeção <em className="italic" style={{ color: "var(--green)" }}>de fluxo de caixa</em>
             </div>
-            <table className="w-full">
-              <thead>
-                <tr style={{ background: "var(--linen)" }}>
-                  {["Mês", "Receitas previstas", "Despesas previstas", "Resultado previsto"].map((h) => (
-                    <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {projecao.map((p, i) => {
-                  const r = p.rec - p.des;
-                  const hasConfirmed = p.confirmedRec > 0 || p.confirmedDes > 0;
-                  return (
-                    <tr key={p.mes} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
-                      <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 500 }}>
-                        {p.mes}
-                        {hasConfirmed && (
-                          <div className="text-[10px] mt-0.5" style={{ color: "var(--green)", letterSpacing: "0.5px" }}>
-                            com contas confirmadas
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 aurora-value" style={{ fontSize: 15, color: "var(--green)" }}>
-                        {brl(p.rec)}
-                        {p.confirmedRec > 0 && (
-                          <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: "inherit", fontWeight: 400 }}>
-                            {brl(p.confirmedRec)} confirmado
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 aurora-value" style={{ fontSize: 15, color: "var(--expense)" }}>
-                        {brl(p.des)}
-                        {p.confirmedDes > 0 && (
-                          <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: "inherit", fontWeight: 400 }}>
-                            {brl(p.confirmedDes)} confirmado
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 aurora-value" style={{ fontSize: 17, color: r >= 0 ? "var(--green)" : "var(--expense)" }}>
-                        {brl(r)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={projecao.map((p) => ({ mes: p.mes, Receitas: Math.round(p.rec), Despesas: Math.round(p.des), Resultado: Math.round(p.rec - p.des) }))} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
+                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={48} />
+                <Tooltip formatter={(v: number) => brl(v)} contentStyle={{ fontSize: 12, border: "1px solid var(--line)", borderRadius: 6 }} />
+                <Line type="monotone" dataKey="Receitas" stroke="var(--green)" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="Despesas" stroke="var(--expense)" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="Resultado" stroke="var(--navy)" strokeWidth={2} strokeDasharray="4 2" dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="flex gap-5 mt-3 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+              <span className="flex items-center gap-2"><span className="w-3 h-2 inline-block rounded" style={{ background: "var(--green)" }} /> Receitas</span>
+              <span className="flex items-center gap-2"><span className="w-3 h-2 inline-block rounded" style={{ background: "var(--expense)" }} /> Despesas</span>
+              <span className="flex items-center gap-2"><span className="w-3 h-2 inline-block rounded" style={{ background: "var(--navy)" }} /> Resultado</span>
+            </div>
           </div>
         )}
       </div>
