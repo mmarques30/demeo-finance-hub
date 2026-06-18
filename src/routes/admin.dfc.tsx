@@ -289,7 +289,7 @@ function DFCPage() {
                 {porCategoria.map((row, i) => (
                   <tr key={row.cat} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
                     <td className="px-6 py-3 text-[12px]">{row.cat}</td>
-                    <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--navy)" }}>{brl(row.val)}</td>
+                    <td className="px-6 py-3 aurora-value" style={{ fontSize: 15, color: "var(--navy)" }}>{brl(row.val)}</td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
                         <div className="text-[12px] w-12">{row.pct.toFixed(1)}%</div>
@@ -348,7 +348,7 @@ function DFCPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--green)" }}>
+                      <td className="px-6 py-3 aurora-value" style={{ fontSize: 15, color: "var(--green)" }}>
                         {brl(p.rec)}
                         {p.confirmedRec > 0 && (
                           <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: "inherit", fontWeight: 400 }}>
@@ -356,7 +356,7 @@ function DFCPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 14, color: "var(--expense)" }}>
+                      <td className="px-6 py-3 aurora-value" style={{ fontSize: 15, color: "var(--expense)" }}>
                         {brl(p.des)}
                         {p.confirmedDes > 0 && (
                           <div className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: "inherit", fontWeight: 400 }}>
@@ -364,7 +364,7 @@ function DFCPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-3 aurora-serif" style={{ fontSize: 16, color: r >= 0 ? "var(--green)" : "var(--expense)" }}>
+                      <td className="px-6 py-3 aurora-value" style={{ fontSize: 17, color: r >= 0 ? "var(--green)" : "var(--expense)" }}>
                         {brl(r)}
                       </td>
                     </tr>
@@ -398,7 +398,7 @@ function Resumo({
   return (
     <div className="aurora-card">
       <div className="aurora-cap mb-3">{label}</div>
-      <div className="aurora-serif" style={{ fontSize: 30, color, lineHeight: 1, letterSpacing: "-1px" }}>{value}</div>
+      <div className="aurora-value" style={{ fontSize: 34, color }}>{value}</div>
       {delta && (
         <div className="text-[11px] mt-2" style={{ color: deltaColor }}>
           {delta} vs mês anterior
