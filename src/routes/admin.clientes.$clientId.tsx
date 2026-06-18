@@ -223,7 +223,7 @@ function ClientePage() {
                     </td>
                     <td
                       className="px-6 py-3 aurora-serif"
-                      style={{ fontSize: 14, color: t.amount >= 0 ? "var(--green)" : "var(--navy)" }}
+                      style={{ fontSize: 14, color: t.amount >= 0 ? "var(--green)" : "var(--navy)", fontWeight: 600 }}
                     >
                       {t.amount >= 0 ? "+" : ""}
                       {brl(t.amount)}
@@ -247,7 +247,7 @@ function KpiCard({ label, value, tone }: { label: string; value: string; tone: "
   return (
     <div className="aurora-card">
       <div className="aurora-cap mb-3">{label}</div>
-      <div className="aurora-serif" style={{ fontSize: 28, color, lineHeight: 1, letterSpacing: "-0.8px" }}>{value}</div>
+      <div className="aurora-serif" style={{ fontSize: 28, color, lineHeight: 1, letterSpacing: "-0.8px", fontWeight: 500 }}>{value}</div>
     </div>
   );
 }

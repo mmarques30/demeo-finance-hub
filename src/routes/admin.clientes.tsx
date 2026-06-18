@@ -92,7 +92,8 @@ function ClientesPage() {
 
       <div className="px-8 lg:px-12 pb-12 pt-8">
         {/* Filtros */}
-        <div className="flex gap-2 mb-6 flex-wrap">
+        <div className="flex gap-2 mb-6 flex-wrap items-center">
+          <span className="aurora-cap mr-1">Filtrar por status</span>
           {FILTROS.map((f) => (
             <button
               key={f}
@@ -114,6 +115,20 @@ function ClientesPage() {
 
         {/* Tabela */}
         <div className="aurora-card p-0 overflow-hidden">
+          <header className="px-6 py-4 flex items-center justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+            <div>
+              <div className="aurora-cap mb-0.5">Carteira</div>
+              <div className="aurora-serif text-[20px]">
+                {lista.length}{" "}
+                <em className="italic" style={{ color: "var(--green)" }}>
+                  {lista.length === 1 ? "cliente" : "clientes"}
+                </em>
+                {filtro !== "Todos" && (
+                  <span className="text-[14px]" style={{ color: "var(--muted-foreground)" }}> · {filtro}</span>
+                )}
+              </div>
+            </div>
+          </header>
           <table className="w-full">
             <thead>
               <tr style={{ background: "var(--linen)" }}>
@@ -176,7 +191,8 @@ function ClientesPage() {
                     <div className="flex items-center gap-4 justify-end">
                       <button
                         onClick={() => setEditClient(c)}
-                        className="aurora-link text-[11px]"
+                        className="inline-flex items-center text-[10px] uppercase transition-opacity hover:opacity-80"
+                        style={{ border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px", fontWeight: 500, padding: "4px 12px", borderRadius: "999px" }}
                       >
                         Editar
                       </button>
