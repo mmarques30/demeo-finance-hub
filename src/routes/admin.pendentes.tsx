@@ -47,6 +47,9 @@ function PendentesPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [editTx, setEditTx] = useState<PendingTx | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PendingTx | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadData(page);
@@ -225,6 +228,19 @@ function PendentesPage() {
     return res;
   })();
 
+  async function handleDeleteTx(tx: PendingTx) {
+    setDeleting(true);
+    const { error: err } = await supabase().from("transactions").delete().eq("id", tx.id);
+    setDeleting(false);
+    if (err) {
+      setError(`Erro ao excluir: ${err.message}`);
+    } else {
+      setDeleteTarget(null);
+      setTransactions((prev) => prev.filter((t) => t.id !== tx.id));
+      setTotalCount((c) => c - 1);
+    }
+  }
+
   function toggleExpanded(cid: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -349,7 +365,7 @@ function PendentesPage() {
               <table className="w-full">
                 <thead>
                   <tr>
-                    {["Data", "Descrição", "Valor", "Categoria", "Recorrente", "Parcelamento"].map((h) => (
+                    {["Data", "Descrição", "Valor", "Categoria", "Recorrente", "Parcelamento", ""].map((h) => (
                       <th
                         key={h}
                         className="text-left px-6 py-3 aurora-cap"
@@ -448,6 +464,21 @@ function PendentesPage() {
                           );
                         })()}
                       </td>
+                      <td className="px-6 py-3 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => setEditTx(t)}
+                          className="aurora-link text-[11px] mr-3"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(t)}
+                          className="text-[11px] transition-opacity hover:opacity-70"
+                          style={{ color: "var(--tan)" }}
+                        >
+                          Excluir
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -480,6 +511,191 @@ function PendentesPage() {
           </div>
         )}
       </div>
+
+      {editTx && (
+        <EditPendingTxModal
+          tx={editTx}
+          categories={categoriesMap[editTx.client_id] ?? []}
+          onClose={() => setEditTx(null)}
+          onSave={(updated) => {
+            setTransactions((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+            setCats((prev) => ({ ...prev, [updated.id]: updated.category ?? "" }));
+            setEditTx(null);
+          }}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeletePendingTxModal
+          tx={deleteTarget}
+          deleting={deleting}
+          onConfirm={() => handleDeleteTx(deleteTarget)}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </AdminLayout>
+  );
+}
+
+function EditPendingTxModal({
+  tx, categories, onClose, onSave,
+}: {
+  tx: PendingTx;
+  categories: string[];
+  onClose: () => void;
+  onSave: (updated: PendingTx) => void;
+}) {
+  const [date, setDate] = useState(tx.date);
+  const [desc, setDesc] = useState(tx.description);
+  const [amount, setAmount] = useState(String(Math.abs(tx.amount)).replace(".", ","));
+  const [tipo, setTipo] = useState<"receita" | "despesa">(tx.amount >= 0 ? "receita" : "despesa");
+  const [category, setCategory] = useState(tx.category ?? "");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = parseFloat(amount.replace(",", "."));
+    if (isNaN(parsed) || parsed <= 0) { setErr("Informe um valor numérico válido."); return; }
+    const signed = tipo === "despesa" ? -Math.abs(parsed) : Math.abs(parsed);
+    setSaving(true);
+    setErr(null);
+    const { error } = await supabase()
+      .from("transactions")
+      .update({ date, description: desc, amount: signed, category: category || null })
+      .eq("id", tx.id);
+    setSaving(false);
+    if (error) { setErr(error.message); return; }
+    onSave({ ...tx, date, description: desc, amount: signed, category: category || null });
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-lg bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+          <div>
+            <div className="aurora-cap mb-0.5">Lançamento pendente</div>
+            <div className="aurora-serif text-[20px]">Editar registro</div>
+          </div>
+          <button onClick={onClose} className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100">×</button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block">
+              <div className="aurora-cap mb-2">Data</div>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required
+                className="w-full bg-white px-3 py-2.5 text-[13px] outline-none"
+                style={{ border: "1px solid var(--line)" }} />
+            </label>
+            <label className="block">
+              <div className="aurora-cap mb-2">Tipo</div>
+              <div className="grid grid-cols-2 h-[42px]" style={{ border: "1px solid var(--line)" }}>
+                {(["despesa", "receita"] as const).map((t) => (
+                  <button key={t} type="button" onClick={() => setTipo(t)}
+                    className="text-[10px] uppercase transition-colors"
+                    style={{ letterSpacing: "1.5px", background: tipo === t ? (t === "despesa" ? "var(--navy)" : "var(--green)") : "transparent", color: tipo === t ? "#fff" : "var(--muted-foreground)", fontWeight: 500 }}>
+                    {t === "despesa" ? "− Desp." : "+ Rec."}
+                  </button>
+                ))}
+              </div>
+            </label>
+          </div>
+          <label className="block">
+            <div className="aurora-cap mb-2">Descrição</div>
+            <input type="text" value={desc} onChange={(e) => setDesc(e.target.value)} required
+              className="w-full bg-white px-3 py-2.5 text-[13px] outline-none"
+              style={{ border: "1px solid var(--line)" }} />
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block">
+              <div className="aurora-cap mb-2">Valor (R$)</div>
+              <input type="text" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} required
+                className="w-full bg-white px-3 py-2.5 text-[13px] outline-none"
+                style={{ border: "1px solid var(--line)" }} />
+            </label>
+            <label className="block">
+              <div className="aurora-cap mb-2">Categoria</div>
+              <select value={category} onChange={(e) => setCategory(e.target.value)}
+                className="w-full bg-white px-3 py-2.5 text-[13px]"
+                style={{ border: "1px solid var(--line)" }}>
+                <option value="">Sem categoria</option>
+                {categories.map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </label>
+          </div>
+          {err && (
+            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
+              {err}
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="text-[10px] uppercase px-5 py-3 transition-opacity"
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving}
+              className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function DeletePendingTxModal({
+  tx, deleting, onConfirm, onCancel,
+}: {
+  tx: PendingTx;
+  deleting: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+    >
+      <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(184,149,106,0.12)", borderBottom: "1px solid var(--line)" }}>
+          <div>
+            <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>
+            <div className="aurora-serif text-[20px]">Excluir lançamento</div>
+          </div>
+          <button onClick={onCancel} className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100">×</button>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <div className="text-[13px]" style={{ lineHeight: 1.6 }}>
+            <span style={{ fontWeight: 500 }}>{tx.description}</span>
+            <br />
+            <span style={{ color: "var(--muted-foreground)" }}>{formatDatePtBR(tx.date)} · {brl(tx.amount)}</span>
+          </div>
+          <div className="text-[12px] px-4 py-3"
+            style={{ background: "rgba(184,149,106,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}>
+            Este lançamento será removido permanentemente. Essa ação não pode ser desfeita.
+          </div>
+          <div className="flex justify-end gap-3 pt-1">
+            <button type="button" onClick={onCancel} disabled={deleting}
+              className="text-[10px] uppercase px-5 py-3 transition-opacity disabled:opacity-40"
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}>
+              Cancelar
+            </button>
+            <button type="button" onClick={onConfirm} disabled={deleting}
+              className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
+              style={{ background: "var(--tan)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              {deleting ? "Excluindo..." : "Excluir"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
