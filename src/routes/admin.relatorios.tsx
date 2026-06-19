@@ -353,7 +353,6 @@ function RelatoriosPage() {
   const [histLoading, setHistLoading] = useState(false);
   const [histFilter, setHistFilter] = useState<string>("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [formats, setFormats] = useState<Record<string, ReportFormat>>({});
 
   useEffect(() => {
     supabase()
@@ -473,9 +472,8 @@ function RelatoriosPage() {
     setExporting((e) => ({ ...e, [clientId]: "pdf" }));
     const [txs, forecast, catMap] = await Promise.all([fetchTxs(clientId, p), fetchForecast(clientId, p), fetchCategories(clientId)]);
     const client = clients.find((c) => c.id === clientId)!;
-    const format = formats[clientId] ?? "DFC";
     setExporting((e) => ({ ...e, [clientId]: null }));
-    openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, catMap, format);
+    openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, catMap, "DFC Gerencial");
     saveExportRecord(clientId, client.name, "pdf", p, forecast, format);
   }
 
@@ -485,10 +483,9 @@ function RelatoriosPage() {
     setExporting((e) => ({ ...e, [clientId]: "excel" }));
     const [txs, forecast, catMap] = await Promise.all([fetchTxs(clientId, p), fetchForecast(clientId, p), fetchCategories(clientId)]);
     const client = clients.find((c) => c.id === clientId)!;
-    const format = formats[clientId] ?? "DFC";
-    exportExcel(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, p.start, p.end, txs, forecast, catMap, format);
+    exportExcel(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, p.start, p.end, txs, forecast, catMap, "DFC Gerencial");
     setExporting((e) => ({ ...e, [clientId]: null }));
-    saveExportRecord(clientId, client.name, "xlsx", p, forecast, format);
+    saveExportRecord(clientId, client.name, "xlsx", p, forecast, "DFC Gerencial");
   }
 
   const [reexporting, setReexporting] = useState<string | null>(null);
@@ -611,13 +608,8 @@ function RelatoriosPage() {
                     </td>
                     <td className="px-6 py-4">
                       {hasData ? (
-                        <button
-                          type="button"
-                          onClick={() => setFormats((prev) => {
-                            const cur = prev[c.id] ?? "DFC";
-                            return { ...prev, [c.id]: cur === "DFC" ? "DFC Gerencial" : "DFC" };
-                          })}
-                          className="text-[10px] uppercase px-3 py-1.5 transition-colors"
+                        <span
+                          className="text-[10px] uppercase px-3 py-1.5"
                           style={{
                             letterSpacing: "1.5px",
                             fontWeight: 500,
@@ -626,8 +618,8 @@ function RelatoriosPage() {
                             border: "1px solid var(--navy)",
                           }}
                         >
-                          {(formats[c.id] ?? "DFC") === "DFC Gerencial" ? "Gerencial" : "DFC"}
-                        </button>
+                          DFC + Gerencial
+                        </span>
                       ) : (
                         <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Sem dados</span>
                       )}
