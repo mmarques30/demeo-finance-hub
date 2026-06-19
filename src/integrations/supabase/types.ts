@@ -1230,6 +1230,15 @@ export type Database = {
           pattern: string
         }[]
       }
+      recurrence_monthly_avg: {
+        Args: { p_client_id: string }
+        Returns: {
+          pattern: string
+          modal_category: string | null
+          avg_monthly_amount: number
+          occurrences: number
+        }[]
+      }
       pending_recurrences_total: { Args: never; Returns: number }
       update_client_with_banks: {
         Args: {

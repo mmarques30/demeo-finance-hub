@@ -21,6 +21,14 @@ export interface PayableProjection {
   due_date: string; // YYYY-MM-DD
 }
 
+/** Padrão recorrente com valor médio mensal — retornado pelo RPC recurrence_monthly_avg. */
+export interface RecurringPattern {
+  pattern: string;
+  modal_category: string | null;
+  avg_monthly_amount: number;
+  occurrences: number;
+}
+
 function clampGrowth(rate: number) {
   return Math.max(-0.15, Math.min(0.20, rate));
 }
@@ -47,16 +55,21 @@ interface InstallmentRow {
 /**
  * Função pura exportada para que admin.relatorios.tsx reutilize sem duplicação.
  *
- * O parâmetro `payables` é opcional (default []): lançamentos confirmados de contas
- * a pagar/receber que injetam valores determinísticos sobre a tendência histórica
- * para os meses projetados.
+ * `payables` — lançamentos confirmados de contas a pagar/receber que injetam
+ * valores determinísticos sobre a tendência para os meses projetados.
+ *
+ * `recurringPatterns` — padrões do RPC recurrence_monthly_avg. Quando presente,
+ * substitui o cálculo de âncora baseado em is_recurring por uma âncora por padrão
+ * identificado (ex: "ALUGUEL PONTO" → média R$2.800/mês nos últimos 90 dias).
+ * Parâmetro opcional: callers existentes sem o arg continuam funcionando.
  */
 export function computeForecastMonths(
   txs: HistTx[],
   installments: Omit<InstallmentRow, "installment_group_id">[],
   mm: number,
   yyyy: number,
-  payables: PayableProjection[] = []
+  payables: PayableProjection[] = [],
+  recurringPatterns: RecurringPattern[] = []
 ): ForecastMonth[] {
   // 1. Tendência histórica por mês
   const monthMap = new Map<string, { rec: number; des: number }>();
@@ -82,17 +95,26 @@ export function computeForecastMonths(
     if (first.des > 0) growthDes = clampGrowth(Math.pow(last.des / first.des, 1 / (n - 1)) - 1);
   }
 
-  // 2. Âncora de custo fixo: média mensal real das despesas recorrentes no histórico.
-  const monthlyFixedMap = new Map<string, number>();
-  for (const tx of txs) {
-    if (tx.is_recurring && tx.amount < 0) {
-      const key = tx.date.slice(0, 7);
-      monthlyFixedMap.set(key, (monthlyFixedMap.get(key) ?? 0) + Math.abs(tx.amount));
+  // 2. Âncora de custo fixo:
+  //    Prioridade: patternAnchor — soma das médias mensais por padrão identificado
+  //    pelo RPC recurrence_monthly_avg (padrões com ≥2 ocorrências em 90 dias).
+  //    Fallback: recurrenceAnchor — média mensal do campo is_recurring nos dados
+  //    históricos, usado quando o RPC ainda não retornou dados.
+  const patternAnchor = recurringPatterns.reduce((sum, p) => sum + p.avg_monthly_amount, 0);
+
+  let fixedCostAnchor = patternAnchor;
+  if (patternAnchor === 0) {
+    const monthlyFixedMap = new Map<string, number>();
+    for (const tx of txs) {
+      if (tx.is_recurring && tx.amount < 0) {
+        const key = tx.date.slice(0, 7);
+        monthlyFixedMap.set(key, (monthlyFixedMap.get(key) ?? 0) + Math.abs(tx.amount));
+      }
     }
+    const fixedValues = Array.from(monthlyFixedMap.values());
+    fixedCostAnchor =
+      fixedValues.length > 0 ? fixedValues.reduce((a, b) => a + b, 0) / fixedValues.length : 0;
   }
-  const fixedValues = Array.from(monthlyFixedMap.values());
-  const recurrenceAnchor =
-    fixedValues.length > 0 ? fixedValues.reduce((a, b) => a + b, 0) / fixedValues.length : 0;
 
   // 3. Parcelas futuras: cada grupo contribui com 1 parcela por mês (sem duplicação).
   const installmentsByOffset: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
@@ -127,7 +149,7 @@ export function computeForecastMonths(
     const baseRec = last.rec * (1 + growthRec * offset);
     const baseDes = Math.max(
       last.des * (1 + growthDes * offset),
-      last.des * 0.85 + recurrenceAnchor
+      last.des * 0.85 + fixedCostAnchor
     );
 
     const pay = payByMonth.get(monthKey) ?? { rec: 0, des: 0 };
@@ -210,8 +232,24 @@ export function useDFCForecast(clientId: string, currentPeriod: string): Forecas
     },
   });
 
+  // E3 · Âncora de custo fixo por padrão: média mensal real por padrão identificado.
+  const { data: recurringPatterns = [] } = useQuery<RecurringPattern[]>({
+    queryKey: ["dfc-recurrence-patterns", clientId],
+    enabled: !!clientId,
+    staleTime: 15 * 60_000,
+    queryFn: async () => {
+      const { data } = await supabase().rpc("recurrence_monthly_avg", {
+        p_client_id: clientId,
+      });
+      return (data ?? []) as RecurringPattern[];
+    },
+  });
+
   return useMemo(
-    () => periodValid ? computeForecastMonths(txs, installments, mm, yyyy, payables) : [],
-    [txs, installments, mm, yyyy, payables, periodValid]
+    () =>
+      periodValid
+        ? computeForecastMonths(txs, installments, mm, yyyy, payables, recurringPatterns)
+        : [],
+    [txs, installments, mm, yyyy, payables, recurringPatterns, periodValid]
   );
 }
