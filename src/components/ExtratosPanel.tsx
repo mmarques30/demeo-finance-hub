@@ -246,22 +246,39 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
           <div className="aurora-card p-0 overflow-hidden">
             <div
               className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap"
-              style={{ background: "var(--linen)", borderBottom: isExpanded ? "1px solid var(--line)" : "none" }}
+              style={{
+                background: "rgba(184,149,106,0.08)",
+                borderBottom: isExpanded ? "1px solid rgba(184,149,106,0.25)" : "none",
+              }}
             >
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => toggleExpand(MANUAL_KEY)}
                   className="text-[13px] transition-transform"
-                  style={{ color: "var(--muted-foreground)", transform: isExpanded ? "rotate(90deg)" : "none", display: "inline-block" }}
+                  style={{ color: "#8C6A40", transform: isExpanded ? "rotate(90deg)" : "none", display: "inline-block" }}
                 >
                   ▶
                 </button>
                 <div>
-                  <div className="text-[13px]" style={{ fontWeight: 600 }}>Lançamentos Manuais</div>
-                  <div className="text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Inseridos diretamente na plataforma</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-[13px]" style={{ fontWeight: 600 }}>Lançamentos Manuais</div>
+                    <span
+                      className="text-[9px] uppercase px-2 py-0.5"
+                      style={{
+                        letterSpacing: "1.5px",
+                        fontWeight: 600,
+                        background: "rgba(184,149,106,0.18)",
+                        color: "#8C6A40",
+                        border: "1px solid rgba(184,149,106,0.35)",
+                      }}
+                    >
+                      Manual
+                    </span>
+                  </div>
+                  <div className="text-[11px] mt-0.5" style={{ color: "#8C6A40" }}>Inseridos diretamente na plataforma</div>
                 </div>
               </div>
-              <div className="flex items-center gap-6 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+              <div className="flex items-center gap-6 text-[11px]" style={{ color: "#8C6A40" }}>
                 <span>{manualTxs.length} {manualTxs.length === 1 ? "transação" : "transações"}</span>
               </div>
             </div>
