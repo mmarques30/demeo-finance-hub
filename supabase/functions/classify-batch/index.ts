@@ -99,7 +99,7 @@ Setor: ${segment}
 ${contextPatterns ? `\nPadrões frequentes deste cliente:\n${contextPatterns}\n` : ""}
 Categorias disponíveis: ${categories.join(", ")}
 
-Classifique cada lançamento abaixo. Retorne SOMENTE um JSON array, sem texto extra.
+Classifique cada lançamento abaixo. Retorne APENAS um JSON array puro, sem markdown, sem texto extra.
 Formato: [{"id":"...","cat":"Categoria · Subcategoria","rec":true/false,"conf":0-100}]
 - cat: exatamente uma das categorias listadas
 - rec: true se for despesa ou receita recorrente mensal
@@ -205,7 +205,10 @@ Deno.serve(async (req) => {
     const ruleMatches: { tx: TxRow; match: Rule }[] = [];
     for (const tx of pending as TxRow[]) {
       const normalized = buildPattern(tx.description);
-      const match = rules.find((r) => normalized.startsWith(r.pattern));
+      // Word-boundary match: padrão "PIX" não pode casar com "PIXBET"
+      const match = rules.find((r) =>
+        normalized === r.pattern || normalized.startsWith(r.pattern + " ")
+      );
       if (match) {
         ruleMatches.push({ tx, match });
         approvedByRule.push(tx.id);
@@ -254,7 +257,8 @@ Deno.serve(async (req) => {
 
       const recurrenceMap = new Map<string, string>();
       for (const r of recurrences ?? []) {
-        recurrenceMap.set(r.pattern, r.modal_category);
+        // modal_category é NULL em empate de MODE() — descartar para não aprovar sem categoria
+        if (r.modal_category) recurrenceMap.set(r.pattern, r.modal_category);
       }
 
       // Decisão em memória — sem queries dentro do loop
@@ -301,50 +305,69 @@ Deno.serve(async (req) => {
       .order("occurrences", { ascending: false })
       .limit(10);
 
+    // Se não há categorias cadastradas, camada 3 não tem como classificar — pular IA
+    if (categoryNames.length === 0 && remainingForAI.length > 0) {
+      console.warn("[classify-batch] cliente sem categorias ativas — pulando camada 3, todas ficam pending");
+    }
+
     const BATCH_SIZE = 50;
     let aiApproved = 0;
     let aiPending = 0;
 
-    for (let i = 0; i < remainingForAI.length; i += BATCH_SIZE) {
-      const batch = remainingForAI.slice(i, i + BATCH_SIZE);
+    if (categoryNames.length > 0) {
+      for (let i = 0; i < remainingForAI.length; i += BATCH_SIZE) {
+        const batch = remainingForAI.slice(i, i + BATCH_SIZE);
 
-      let results: AIResult[] = [];
-      try {
-        results = await classifyWithAI(
-          batch,
-          categoryNames,
-          clientName,
-          clientSegment,
-          topPatterns ?? []
-        );
-      } catch (aiErr) {
-        // Falha de IA após 3 tentativas (timeout, API fora do ar, etc.): transações do batch
-        // ficam como pending para revisão manual. O upload continua sem abortar.
-        console.error("[classify-batch] AI batch failed after 3 retries, marking as pending:", aiErr);
-        aiPending += batch.length;
-        continue;
-      }
-
-      for (const r of results) {
-        const isKnownCategory = categoryNames.includes(r.cat);
-        if (!isKnownCategory) {
-          console.error(`[classify-batch] AI hallucinated category "${r.cat}" for tx ${r.id} — not in client categories, saving null`);
+        let results: AIResult[] = [];
+        try {
+          results = await classifyWithAI(
+            batch,
+            categoryNames,
+            clientName,
+            clientSegment,
+            topPatterns ?? []
+          );
+        } catch (aiErr) {
+          console.error("[classify-batch] AI batch failed after 3 retries, marking as pending:", aiErr);
+          aiPending += batch.length;
+          continue;
         }
-        await supabase.from("transactions").update({
-          category: isKnownCategory ? r.cat : null,
-          is_recurring: r.rec ?? false,
-          confidence: r.conf ?? 0,
-          status: "approved",
-        }).eq("id", r.id);
 
-        aiApproved++;
-      }
+        // Agrupar por (category, is_recurring) para batch UPDATE — evita N+1 queries
+        const resultIds = new Set(results.map((r) => r.id));
+        const approvedGroups = new Map<string, { ids: string[]; category: string | null; is_recurring: boolean; confidence: number }>();
 
-      // Transações sem resultado da IA ficam como pending
-      const resultIds = new Set(results.map((r) => r.id));
-      for (const tx of batch) {
-        if (!resultIds.has(tx.id)) aiPending++;
+        for (const r of results) {
+          const isKnownCategory = categoryNames.includes(r.cat);
+          if (!isKnownCategory) {
+            console.error(`[classify-batch] AI hallucinated category "${r.cat}" for tx ${r.id} — saving null`);
+          }
+          const category = isKnownCategory ? r.cat : null;
+          const key = `${category}||${r.rec ?? false}||${r.conf ?? 0}`;
+          if (!approvedGroups.has(key)) {
+            approvedGroups.set(key, { ids: [], category, is_recurring: r.rec ?? false, confidence: r.conf ?? 0 });
+          }
+          approvedGroups.get(key)!.ids.push(r.id);
+          aiApproved++;
+        }
+
+        // 1 query por grupo de classificação idêntica
+        for (const { ids, category, is_recurring, confidence } of approvedGroups.values()) {
+          await supabase.from("transactions").update({
+            category,
+            is_recurring,
+            confidence,
+            status: "approved",
+          }).in("id", ids);
+        }
+
+        // Transações sem resultado da IA: contabilizar (já estão como pending no banco)
+        for (const tx of batch) {
+          if (!resultIds.has(tx.id)) aiPending++;
+        }
       }
+    } else {
+      aiPending = remainingForAI.length;
     }
 
     // Atualiza contadores do upload
