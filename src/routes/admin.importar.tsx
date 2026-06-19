@@ -86,6 +86,7 @@ function ImportarPage() {
       const { data, error: clientsError } = await supabase()
         .from("clients")
         .select("id, name")
+        .is("deleted_at", null)
         .order("name");
       if (data && data.length > 0) {
         setClients(data);

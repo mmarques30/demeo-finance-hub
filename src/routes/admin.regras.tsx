@@ -43,6 +43,7 @@ function RegrasPage() {
     supabase()
       .from("clients")
       .select("id, name")
+      .is("deleted_at", null)
       .order("name")
       .then(({ data }) => {
         if (data && data.length > 0) {
@@ -153,6 +154,18 @@ function RegrasPage() {
             })}
           </div>
         </div>
+
+        {activeCount >= 400 && (
+          <div
+            className="text-[12px] px-4 py-3 flex items-center gap-2"
+            style={{ background: "rgba(184,149,106,0.12)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}
+          >
+            <span style={{ fontWeight: 600 }}>Atenção:</span>
+            {activeCount >= 500
+              ? `Limite de 500 regras ativas atingido. Novas aprovações não criarão regras até que algumas sejam desativadas.`
+              : `${activeCount}/500 regras ativas — próximo do limite. Considere desativar regras antigas pouco utilizadas.`}
+          </div>
+        )}
 
         {error && (
           <div

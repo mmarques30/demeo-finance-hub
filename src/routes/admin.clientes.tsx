@@ -67,6 +67,7 @@ function ClientesPage() {
       const { data, error } = await supabase()
         .from("clients")
         .select("*, client_banks(bank_name)")
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as ClientRow[];
@@ -697,24 +698,20 @@ function ExcluirClienteModal({ client, onClose }: { client: ClientRow; onClose: 
 
   const mutation = useMutation({
     mutationFn: async () => {
-      // client_banks removidos automaticamente pelo ON DELETE CASCADE
-      const { error } = await supabase().from("clients").delete().eq("id", client.id);
+      // Soft-delete: preserva histórico financeiro completo do cliente
+      const { error } = await supabase()
+        .from("clients")
+        .update({ deleted_at: new Date().toISOString() } as any)
+        .eq("id", client.id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
-      toast.success(`Cliente "${client.name}" excluído.`);
+      toast.success(`Cliente "${client.name}" arquivado.`);
       onClose();
     },
     onError: (err: Error) => {
-      const msg = err.message ?? "";
-      if (msg.includes("foreign key") || msg.includes("violates") || msg.includes("constraint")) {
-        toast.error(
-          `Não é possível excluir — o cliente possui lançamentos vinculados. Use "Editar" e altere o status para "Fechado" para arquivá-lo.`
-        );
-      } else {
-        toast.error("Erro ao excluir: " + msg);
-      }
+      toast.error("Erro ao arquivar: " + (err.message ?? ""));
     },
   });
 

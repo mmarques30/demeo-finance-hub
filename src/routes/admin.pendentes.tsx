@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl, buildPattern, formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -47,7 +47,14 @@ function PendentesPage() {
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [showAll, setShowAll] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const dateFrom = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 90);
+    return d.toISOString().slice(0, 10);
+  }, []);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [editTx, setEditTx] = useState<PendingTx | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PendingTx | null>(null);
@@ -55,7 +62,7 @@ function PendentesPage() {
 
   useEffect(() => {
     loadData(page);
-  }, [page]);
+  }, [page, showAll]);
 
   async function loadData(p: number) {
     setLoading(true);
@@ -64,17 +71,22 @@ function PendentesPage() {
     setRecurring({});
     setInstallments({});
 
+    let txQuery = supabase()
+      .from("transactions")
+      .select("id, client_id, date, description, raw_description, amount, category, status")
+      .eq("status", "pending");
+    let countQuery = supabase()
+      .from("transactions")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending");
+    if (!showAll) {
+      txQuery = txQuery.gte("date", dateFrom);
+      countQuery = countQuery.gte("date", dateFrom);
+    }
+
     const [{ data: txData, error: txErr }, { count }] = await Promise.all([
-      supabase()
-        .from("transactions")
-        .select("id, client_id, date, description, raw_description, amount, category, status")
-        .eq("status", "pending")
-        .order("date", { ascending: false })
-        .range(p * PAGE_SIZE, (p + 1) * PAGE_SIZE - 1),
-      supabase()
-        .from("transactions")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending"),
+      txQuery.order("date", { ascending: false }).range(p * PAGE_SIZE, (p + 1) * PAGE_SIZE - 1),
+      countQuery,
     ]);
 
     setTotalCount(count ?? 0);
@@ -122,10 +134,12 @@ function PendentesPage() {
     setLoading(false);
   }
 
-  // UUID determinístico baseado em (client_id, padrão da descrição, total de parcelas).
-  // Garante que a mesma compra parcelada importada em meses diferentes receba o mesmo grupo.
-  async function deterministicGroupId(clientId: string, description: string, installmentTotal: number): Promise<string> {
-    const input = `${clientId}:${buildPattern(description)}:${installmentTotal}`;
+  // UUID determinístico por evento de compra: (client_id, padrão, total de parcelas, YYYY-MM da tx).
+  // Incluir yearMonth garante que duas compras parceladas distintas do mesmo fornecedor e valor
+  // recebam group IDs diferentes, evitando mesclagem incorreta na projeção financeira.
+  async function deterministicGroupId(clientId: string, description: string, installmentTotal: number, date: string): Promise<string> {
+    const yearMonth = date.slice(0, 7);
+    const input = `${clientId}:${buildPattern(description)}:${installmentTotal}:${yearMonth}`;
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
     const b = new Uint8Array(buf);
     b[6] = (b[6] & 0x0f) | 0x40; // version 4
@@ -149,27 +163,26 @@ function PendentesPage() {
           const isRecurring = !!recurring[tx.id];
           const inst = installments[tx.id];
           const installmentFields =
-            inst?.enabled && inst.total > 0 && inst.number > 0
+            inst?.enabled && inst.total > 0 && inst.number > 0 && inst.number <= inst.total
               ? {
                   installment_number: inst.number,
                   installment_total: inst.total,
-                  installment_group_id: await deterministicGroupId(tx.client_id, tx.description, inst.total),
+                  installment_group_id: await deterministicGroupId(tx.client_id, tx.description, inst.total, tx.date),
                 }
               : {};
           return { tx, category, isRecurring, installmentFields };
         })
       );
 
-      // 1. Atualiza todas as transações em paralelo
-      await Promise.all(
-        payloads.map(({ tx, category, isRecurring, installmentFields }) =>
-          supabase()
-            .from("transactions")
-            .update({ category, status: "approved", is_recurring: isRecurring, ...installmentFields })
-            .eq("id", tx.id)
-            .then(({ error }) => { if (error) throw new Error(`Transação ${tx.id}: ${error.message}`); })
-        )
-      );
+      // 1. Aprova todas as transações atomicamente (BEGIN/COMMIT único via RPC)
+      const txUpdates = payloads.map(({ tx, category, isRecurring, installmentFields }) => ({
+        id: tx.id,
+        category,
+        is_recurring: isRecurring,
+        ...installmentFields,
+      }));
+      const { error: approveErr } = await supabase().rpc("approve_transactions_batch", { p_updates: txUpdates });
+      if (approveErr) throw new Error(`Aprovação: ${approveErr.message}`);
 
       // 2. Upsert de todas as regras recorrentes em um único roundtrip
       const rulesToUpsert = payloads
@@ -313,16 +326,41 @@ function PendentesPage() {
           </div>
         )}
 
-        {/* Ordenação */}
-        {!loading && clientCount > 1 && (
-          <div className="flex items-center justify-end">
-            <button
-              onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
-              className="text-[10px] uppercase px-3 py-1.5 transition-colors"
-              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px", fontWeight: 500, borderRadius: "999px" }}
-            >
-              {sortOrder === "desc" ? "↓ Mais pendentes" : "↑ Menos pendentes"}
-            </button>
+        {/* Filtro de data + ordenação */}
+        {!loading && (
+          <div className="flex items-center justify-between">
+            <div className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+              {showAll ? (
+                <>
+                  Histórico completo ·{" "}
+                  <button
+                    onClick={() => { setPage(0); setShowAll(false); }}
+                    style={{ color: "var(--navy)", textDecoration: "underline" }}
+                  >
+                    Filtrar últimos 90 dias
+                  </button>
+                </>
+              ) : (
+                <>
+                  Últimos 90 dias ·{" "}
+                  <button
+                    onClick={() => { setPage(0); setShowAll(true); }}
+                    style={{ color: "var(--navy)", textDecoration: "underline" }}
+                  >
+                    Ver histórico completo
+                  </button>
+                </>
+              )}
+            </div>
+            {clientCount > 1 && (
+              <button
+                onClick={() => setSortOrder((o) => (o === "desc" ? "asc" : "desc"))}
+                className="text-[10px] uppercase px-3 py-1.5 transition-colors"
+                style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px", fontWeight: 500, borderRadius: "999px" }}
+              >
+                {sortOrder === "desc" ? "↓ Mais pendentes" : "↑ Menos pendentes"}
+              </button>
+            )}
           </div>
         )}
 
@@ -484,7 +522,7 @@ function PendentesPage() {
                                     max={inst.total}
                                     value={inst.number}
                                     onChange={(e) =>
-                                      setInstallments({ ...installments, [t.id]: { ...inst, number: Math.max(1, Number(e.target.value)) } })
+                                      setInstallments({ ...installments, [t.id]: { ...inst, number: Math.min(inst.total, Math.max(1, Number(e.target.value))) } })
                                     }
                                     className="w-10 text-center text-[11px] px-1 py-0.5"
                                     style={{ border: "1px solid var(--line)" }}
@@ -494,9 +532,10 @@ function PendentesPage() {
                                     type="number"
                                     min={2}
                                     value={inst.total}
-                                    onChange={(e) =>
-                                      setInstallments({ ...installments, [t.id]: { ...inst, total: Math.max(2, Number(e.target.value)) } })
-                                    }
+                                    onChange={(e) => {
+                                      const newTotal = Math.max(2, Number(e.target.value));
+                                      setInstallments({ ...installments, [t.id]: { ...inst, total: newTotal, number: Math.min(inst.number, newTotal) } });
+                                    }}
                                     className="w-10 text-center text-[11px] px-1 py-0.5"
                                     style={{ border: "1px solid var(--line)" }}
                                   />
