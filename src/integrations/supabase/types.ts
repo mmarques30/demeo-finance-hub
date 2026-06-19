@@ -141,6 +141,7 @@ export type Database = {
         Row: {
           cnpj: string | null
           created_at: string | null
+          deleted_at: string | null
           id: string
           last_upload_at: string | null
           monthly_closing_day: number | null
@@ -153,6 +154,7 @@ export type Database = {
         Insert: {
           cnpj?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           id?: string
           last_upload_at?: string | null
           monthly_closing_day?: number | null
@@ -165,6 +167,7 @@ export type Database = {
         Update: {
           cnpj?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           id?: string
           last_upload_at?: string | null
           monthly_closing_day?: number | null
@@ -838,6 +841,53 @@ export type Database = {
         }
         Relationships: []
       }
+      report_exports: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          end_date: string
+          exported_at: string
+          forecast_json: Json | null
+          id: string
+          period_label: string
+          report_format: string | null
+          start_date: string
+          type: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          end_date: string
+          exported_at?: string
+          forecast_json?: Json | null
+          id?: string
+          period_label: string
+          report_format?: string | null
+          start_date: string
+          type: string
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          end_date?: string
+          exported_at?: string
+          forecast_json?: Json | null
+          id?: string
+          period_label?: string
+          report_format?: string | null
+          start_date?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_exports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_price_history: {
         Row: {
           created_at: string
@@ -922,6 +972,8 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          approved_at: string | null
+          approved_by: string | null
           bank: string
           category: string | null
           client_id: string
@@ -940,6 +992,8 @@ export type Database = {
         }
         Insert: {
           amount: number
+          approved_at?: string | null
+          approved_by?: string | null
           bank: string
           category?: string | null
           client_id: string
@@ -958,6 +1012,8 @@ export type Database = {
         }
         Update: {
           amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
           bank?: string
           category?: string | null
           client_id?: string
@@ -1128,6 +1184,10 @@ export type Database = {
       }
     }
     Functions: {
+      approve_transactions_batch: {
+        Args: { p_updates: Json }
+        Returns: undefined
+      }
       build_pattern: { Args: { raw: string }; Returns: string }
       current_client_id: { Args: never; Returns: string }
       expire_stale_rules: { Args: never; Returns: undefined }
