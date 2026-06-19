@@ -89,11 +89,11 @@ function openPrintReport(
   txs: Tx[],
   forecast: ForecastMonth[],
   catMap: Map<string, CatInfo>,
-  format: ReportFormat = "DFC + DRE (Completo)"
+  format: ReportFormat = "DFC"
 ) {
-  const showDFC = format !== "DRE";
-  const showDRE = format === "DRE" || format === "DFC + DRE (Completo)";
-  const showProjecao = format !== "DRE";
+  const showDFC = true;
+  const showDRE = false;
+  const showProjecao = true;
   const dfcTitle = format === "DFC Gerencial" ? "DFC Gerencial — Demonstrativo Executivo" : "Demonstrativo de Fluxo de Caixa";
   const d = computeReport(txs);
   const dre = computeDRE(txs, catMap);
@@ -243,11 +243,11 @@ function exportExcel(
   txs: Tx[],
   forecast: ForecastMonth[],
   catMap: Map<string, CatInfo>,
-  format: ReportFormat = "DFC + DRE (Completo)"
+  format: ReportFormat = "DFC"
 ) {
-  const showDFC = format !== "DRE";
-  const showDRE = format === "DRE" || format === "DFC + DRE (Completo)";
-  const showProjecao = format !== "DRE";
+  const showDFC = true;
+  const showDRE = false;
+  const showProjecao = true;
   const d = computeReport(txs);
   const dre = computeDRE(txs, catMap);
   const wb = XLSX.utils.book_new();
@@ -340,7 +340,7 @@ interface ExportRecord {
 // ─── componente principal ─────────────────────────────────────────────────────
 type RelTab = "exportar" | "historico";
 
-const REPORT_FORMATS = ["DFC", "DRE", "DFC + DRE (Completo)", "DFC Gerencial"] as const;
+const REPORT_FORMATS = ["DFC", "DFC Gerencial"] as const;
 type ReportFormat = typeof REPORT_FORMATS[number];
 
 function RelatoriosPage() {
@@ -473,7 +473,7 @@ function RelatoriosPage() {
     setExporting((e) => ({ ...e, [clientId]: "pdf" }));
     const [txs, forecast, catMap] = await Promise.all([fetchTxs(clientId, p), fetchForecast(clientId, p), fetchCategories(clientId)]);
     const client = clients.find((c) => c.id === clientId)!;
-    const format = formats[clientId] ?? "DFC + DRE (Completo)";
+    const format = formats[clientId] ?? "DFC";
     setExporting((e) => ({ ...e, [clientId]: null }));
     openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, catMap, format);
     saveExportRecord(clientId, client.name, "pdf", p, forecast, format);
@@ -485,7 +485,7 @@ function RelatoriosPage() {
     setExporting((e) => ({ ...e, [clientId]: "excel" }));
     const [txs, forecast, catMap] = await Promise.all([fetchTxs(clientId, p), fetchForecast(clientId, p), fetchCategories(clientId)]);
     const client = clients.find((c) => c.id === clientId)!;
-    const format = formats[clientId] ?? "DFC + DRE (Completo)";
+    const format = formats[clientId] ?? "DFC";
     exportExcel(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, p.start, p.end, txs, forecast, catMap, format);
     setExporting((e) => ({ ...e, [clientId]: null }));
     saveExportRecord(clientId, client.name, "xlsx", p, forecast, format);
@@ -496,7 +496,7 @@ function RelatoriosPage() {
   async function handleReexport(r: ExportRecord) {
     setReexporting(r.id);
     const p: ClientPeriod = { start: r.start_date, end: r.end_date };
-    const format = (r.report_format ?? "DFC + DRE (Completo)") as ReportFormat;
+    const format = (r.report_format ?? "DFC") as ReportFormat;
     const [txs, catMap] = await Promise.all([fetchTxs(r.client_id, p), fetchCategories(r.client_id)]);
     const forecast = r.forecast_json ?? await fetchForecast(r.client_id, p);
     if (r.type === "pdf") {
@@ -612,12 +612,12 @@ function RelatoriosPage() {
                     <td className="px-6 py-4">
                       {hasData ? (
                         <select
-                          value={formats[c.id] ?? "DFC + DRE (Completo)"}
+                          value={formats[c.id] ?? "DFC"}
                           onChange={(e) => setFormats((prev) => ({ ...prev, [c.id]: e.target.value as ReportFormat }))}
                           className="text-[11px] px-2 py-1.5 outline-none"
                           style={{ border: "1px solid var(--line)", background: "#fff", color: "var(--foreground)" }}
                         >
-                          {REPORT_FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+                          {REPORT_FORMATS.map((f) => <option key={f} value={f}>{f === "DFC Gerencial" ? "Gerencial" : f}</option>)}
                         </select>
                       ) : (
                         <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Sem dados</span>
@@ -711,7 +711,7 @@ function RelatoriosPage() {
                           letterSpacing: "0.5px",
                         }}
                       >
-                        {r.report_format ?? "DFC + DRE (Completo)"}
+                        {r.report_format ?? "DFC"}
                       </span>
                     </td>
                     <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
