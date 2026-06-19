@@ -144,10 +144,13 @@ export function computeForecastMonths(
 
 export function useDFCForecast(clientId: string, currentPeriod: string): ForecastMonth[] {
   const [mm, yyyy] = currentPeriod.split("/").map(Number);
+  const periodValid = !isNaN(mm) && !isNaN(yyyy) && mm >= 1 && mm <= 12 && yyyy >= 2000;
 
-  const histStart = new Date(yyyy, mm - 1 - 5, 1);
+  const histStart = periodValid ? new Date(yyyy, mm - 1 - 5, 1) : new Date();
   const startDate = `${histStart.getFullYear()}-${String(histStart.getMonth() + 1).padStart(2, "0")}-01`;
-  const endDate = `${yyyy}-${String(mm).padStart(2, "0")}-${new Date(yyyy, mm, 0).getDate()}`;
+  const endDate = periodValid
+    ? `${yyyy}-${String(mm).padStart(2, "0")}-${new Date(yyyy, mm, 0).getDate()}`
+    : new Date().toISOString().split("T")[0];
 
   const { data: txs = [] } = useQuery<HistTx[]>({
     queryKey: ["dfc-forecast-history", clientId, currentPeriod],
@@ -208,7 +211,7 @@ export function useDFCForecast(clientId: string, currentPeriod: string): Forecas
   });
 
   return useMemo(
-    () => computeForecastMonths(txs, installments, mm, yyyy, payables),
-    [txs, installments, mm, yyyy, payables]
+    () => periodValid ? computeForecastMonths(txs, installments, mm, yyyy, payables) : [],
+    [txs, installments, mm, yyyy, payables, periodValid]
   );
 }

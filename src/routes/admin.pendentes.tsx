@@ -241,8 +241,11 @@ function PendentesPage() {
       setError(`Erro ao excluir: ${err.message}`);
     } else {
       setDeleteTarget(null);
-      setTransactions((prev) => prev.filter((t) => t.id !== tx.id));
+      const remaining = transactions.filter((t) => t.id !== tx.id);
+      setTransactions(remaining);
       setTotalCount((c) => c - 1);
+      // Se a página ficou vazia e não é a primeira, volta uma página
+      if (remaining.length === 0 && page > 0) setPage((p) => p - 1);
     }
   }
 
