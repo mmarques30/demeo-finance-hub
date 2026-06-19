@@ -262,10 +262,10 @@ function ImportarPage() {
 
     if (!clientId) { setManualError("Selecione um cliente."); return; }
     if (!manualDesc.trim()) { setManualError("Informe a descrição."); return; }
-    if (!manualAmount || isNaN(parseFloat(manualAmount))) { setManualError("Informe um valor válido."); return; }
+    if (!manualAmount || isNaN(parseFloat(manualAmount.replace(/\./g, "").replace(",", ".")))) { setManualError("Informe um valor válido."); return; }
     if (!manualCategory) { setManualError("Selecione uma categoria."); return; }
 
-    const rawAmount = parseFloat(manualAmount.replace(",", "."));
+    const rawAmount = parseFloat(manualAmount.replace(/\./g, "").replace(",", "."));
     const signedAmount = manualType === "despesa" ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
     setManualSaving(true);
