@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { supabase as managedSupabase } from "@/integrations/supabase/client";
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) as string | undefined;
@@ -6,16 +7,7 @@ const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_
 let _client: SupabaseClient | null = null;
 
 export function supabase(): SupabaseClient {
-  if (_client) return _client;
-  if (!url || !anonKey) {
-    throw new Error(
-      "VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY são obrigatórios para usar o Supabase.",
-    );
-  }
-  _client = createClient(url, anonKey, {
-    auth: { persistSession: true, autoRefreshToken: true },
-  });
-  return _client;
+  return managedSupabase as SupabaseClient;
 }
 
 export function supabaseWithProposalToken(token: string): SupabaseClient {
