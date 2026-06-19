@@ -56,7 +56,8 @@ function pingAlert(source: string, message: string, detail?: string): void {
     url: window.location.href,
   });
   try {
-    navigator.sendBeacon(alertUrl, body);
+    // sendBeacon com string envia text/plain; Blob garante application/json para o n8n parsear corretamente
+    navigator.sendBeacon(alertUrl, new Blob([body], { type: "application/json" }));
   } catch {
     fetch(alertUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body }).catch(() => {});
   }

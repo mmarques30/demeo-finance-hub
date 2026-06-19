@@ -149,7 +149,7 @@ function PendentesPage() {
           const isRecurring = !!recurring[tx.id];
           const inst = installments[tx.id];
           const installmentFields =
-            inst?.enabled && inst.total > 0 && inst.number > 0
+            inst?.enabled && inst.total > 0 && inst.number > 0 && inst.number <= inst.total
               ? {
                   installment_number: inst.number,
                   installment_total: inst.total,
@@ -160,16 +160,15 @@ function PendentesPage() {
         })
       );
 
-      // 1. Atualiza todas as transações em paralelo
-      await Promise.all(
-        payloads.map(({ tx, category, isRecurring, installmentFields }) =>
-          supabase()
-            .from("transactions")
-            .update({ category, status: "approved", is_recurring: isRecurring, ...installmentFields })
-            .eq("id", tx.id)
-            .then(({ error }) => { if (error) throw new Error(`Transação ${tx.id}: ${error.message}`); })
-        )
-      );
+      // 1. Aprova todas as transações atomicamente (BEGIN/COMMIT único via RPC)
+      const txUpdates = payloads.map(({ tx, category, isRecurring, installmentFields }) => ({
+        id: tx.id,
+        category,
+        is_recurring: isRecurring,
+        ...installmentFields,
+      }));
+      const { error: approveErr } = await supabase().rpc("approve_transactions_batch", { p_updates: txUpdates });
+      if (approveErr) throw new Error(`Aprovação: ${approveErr.message}`);
 
       // 2. Upsert de todas as regras recorrentes em um único roundtrip
       const rulesToUpsert = payloads
@@ -484,7 +483,7 @@ function PendentesPage() {
                                     max={inst.total}
                                     value={inst.number}
                                     onChange={(e) =>
-                                      setInstallments({ ...installments, [t.id]: { ...inst, number: Math.max(1, Number(e.target.value)) } })
+                                      setInstallments({ ...installments, [t.id]: { ...inst, number: Math.min(inst.total, Math.max(1, Number(e.target.value))) } })
                                     }
                                     className="w-10 text-center text-[11px] px-1 py-0.5"
                                     style={{ border: "1px solid var(--line)" }}
@@ -494,9 +493,10 @@ function PendentesPage() {
                                     type="number"
                                     min={2}
                                     value={inst.total}
-                                    onChange={(e) =>
-                                      setInstallments({ ...installments, [t.id]: { ...inst, total: Math.max(2, Number(e.target.value)) } })
-                                    }
+                                    onChange={(e) => {
+                                      const newTotal = Math.max(2, Number(e.target.value));
+                                      setInstallments({ ...installments, [t.id]: { ...inst, total: newTotal, number: Math.min(inst.number, newTotal) } });
+                                    }}
                                     className="w-10 text-center text-[11px] px-1 py-0.5"
                                     style={{ border: "1px solid var(--line)" }}
                                   />

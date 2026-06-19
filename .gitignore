@@ -1,6 +1,10 @@
 # Documentos reais de clientes — NUNCA subir ao repositório
 docs/
 
+# Environment variables — NUNCA subir ao repositório
+.env
+.env.local
+
 # Test environment secrets
 .env.test
 .env.test.local

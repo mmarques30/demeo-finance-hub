@@ -109,7 +109,7 @@ function AdminDashboard() {
       { data: banksData },
       { data: uploadsData },
     ] = await Promise.all([
-      supabase().from("clients").select("id, name, status, last_upload_at, segment").order("name"),
+      supabase().from("clients").select("id, name, status, last_upload_at, segment").is("deleted_at", null).order("name"),
       // Somente o mês atual — evita carregar todo o histórico
       supabase()
         .from("transactions")

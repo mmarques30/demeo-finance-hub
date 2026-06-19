@@ -358,6 +358,7 @@ function RelatoriosPage() {
     supabase()
       .from("clients")
       .select("id, name, last_upload_at")
+      .is("deleted_at", null)
       .order("name")
       .then(({ data }) => {
         const cls = (data ?? []) as ClientRow[];

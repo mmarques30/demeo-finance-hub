@@ -73,7 +73,7 @@ function DFCPage() {
 
   // Carrega lista de clientes; valida preselectedId e usa fallback se inválido
   useEffect(() => {
-    supabase().from("clients").select("id, name, segment").order("name").then(({ data }) => {
+    supabase().from("clients").select("id, name, segment").is("deleted_at", null).order("name").then(({ data }) => {
       if (data && data.length > 0) {
         setClients(data as ClientOption[]);
         const exists = preselectedId && data.some((c: ClientOption) => c.id === preselectedId);

@@ -43,6 +43,7 @@ function RegrasPage() {
     supabase()
       .from("clients")
       .select("id, name")
+      .is("deleted_at", null)
       .order("name")
       .then(({ data }) => {
         if (data && data.length > 0) {
