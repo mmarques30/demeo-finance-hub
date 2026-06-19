@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { brl, formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
@@ -200,6 +201,20 @@ function NovoLancamentoModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { data: categories = [] } = useQuery<string[]>({
+    queryKey: ["categories-names", clientId],
+    enabled: !!clientId,
+    queryFn: async () => {
+      const { data } = await supabase()
+        .from("categories")
+        .select("name")
+        .eq("client_id", clientId)
+        .eq("is_active", true)
+        .order("sort_order");
+      return (data ?? []).map((c: { name: string }) => c.name);
+    },
+  });
+
   function set(key: keyof FormState, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
   }
@@ -300,7 +315,12 @@ function NovoLancamentoModal({
 
           <div>
             <label className="aurora-cap mb-1 block">Categoria</label>
-            <input type="text" value={form.category} onChange={(e) => set("category", e.target.value)} placeholder="Ex: Aluguel, Fornecedores, Receita de serviço..." style={inputStyle} />
+            <select value={form.category} onChange={(e) => set("category", e.target.value)} style={inputStyle}>
+              <option value="">— Selecione —</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
 
           <div>
