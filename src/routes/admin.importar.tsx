@@ -389,18 +389,6 @@ function ImportarPage() {
                 ))}
               </select>
             </div>
-            {stage === "idle" && (
-              <div className="aurora-card">
-                <div className="aurora-cap mb-3">Período do extrato</div>
-                <input
-                  type="month"
-                  value={uploadPeriod}
-                  onChange={(e) => setUploadPeriod(e.target.value)}
-                  className="w-full bg-white px-3 py-2.5 text-[13px]"
-                  style={{ border: "1px solid var(--line)" }}
-                />
-              </div>
-            )}
           </div>
         )}
 
