@@ -22,10 +22,9 @@ interface TxRecord {
   amount: number;
   category: string | null;
   status: string;
-  bank: string;
 }
 
-export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: string; startDate: string; endDate: string }) {
+export function ExtratosPanel({ clientId }: { clientId: string }) {
   const [uploads, setUploads] = useState<UploadRecord[]>([]);
   const [txMap, setTxMap] = useState<Record<string, TxRecord[] | undefined>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -46,14 +45,12 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
       .from("uploads")
       .select("id, bank_name, filename, period, status, tx_total, tx_classified, tx_pending, created_at")
       .eq("client_id", clientId)
-      .gte("created_at", startDate)
-      .lte("created_at", endDate + "T23:59:59")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         setUploads((data ?? []) as UploadRecord[]);
         setLoading(false);
       });
-  }, [clientId, startDate, endDate]);
+  }, [clientId]);
 
   async function toggleExpand(uploadId: string) {
     const next = new Set(expanded);
@@ -67,7 +64,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
     if (txMap[uploadId] === undefined) {
       const { data } = await supabase()
         .from("transactions")
-        .select("id, date, description, amount, category, status, bank")
+        .select("id, date, description, amount, category, status")
         .eq("upload_id", uploadId)
         .order("date");
       setTxMap((prev) => ({ ...prev, [uploadId]: (data ?? []) as TxRecord[] }));
