@@ -1100,6 +1100,32 @@ export type Database = {
           },
         ]
       }
+      user_client_mapping: {
+        Row: {
+          client_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_client_mapping_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
