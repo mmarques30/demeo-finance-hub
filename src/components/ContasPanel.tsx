@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { brl, formatDatePtBR } from "@/lib/utils";
+import { todayISO } from "@/lib/dateUtils";
 import { supabase } from "@/lib/supabase";
 
 interface Payable {
@@ -26,9 +27,6 @@ interface FormState {
   notes: string;
 }
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function displayStatus(p: Payable): "pago" | "vencido" | "pendente" {
   if (p.paid_at) return "pago";
@@ -181,6 +179,10 @@ function PayableSection({
   );
 }
 
+function parseBRNumber(s: string): number {
+  return parseFloat(s.replace(/\./g, "").replace(",", "."));
+}
+
 function NovoLancamentoModal({
   clientId,
   onClose,
@@ -221,7 +223,7 @@ function NovoLancamentoModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const amount = parseFloat(form.amount.replace(",", "."));
+    const amount = parseBRNumber(form.amount);
     if (!form.description.trim()) { setError("Informe a descrição."); return; }
     if (isNaN(amount) || amount <= 0) { setError("Valor inválido."); return; }
     if (!form.due_date) { setError("Informe o vencimento."); return; }
@@ -342,8 +344,11 @@ function NovoLancamentoModal({
   );
 }
 
+const PAGE_SIZE = 50;
+
 export function ContasPanel({ clientId, openTrigger }: { clientId: string; openTrigger?: number }) {
   const [view, setView] = useState<FilterView>("pendentes");
+  const [page, setPage] = useState(0);
   const [payables, setPayables] = useState<Payable[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -372,9 +377,14 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
   async function markPaid(id: string) {
     setMarking(id);
     const paid = todayISO();
+    const prev = payables;
+    setPayables((p) => p.map((r) => (r.id === id ? { ...r, paid_at: paid } : r)));
     const { error: err } = await supabase().from("payables").update({ paid_at: paid }).eq("id", id);
-    if (err) setError(err.message);
-    else setPayables((prev) => prev.map((p) => (p.id === id ? { ...p, paid_at: paid } : p)));
+    if (err) {
+      console.error("[ContasPanel] markPaid failed, rolling back:", err.message);
+      setPayables(prev);
+      setError(err.message);
+    }
     setMarking(null);
   }
 
@@ -399,8 +409,12 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
     return true;
   });
 
-  const receber = filtered.filter((p) => p.type === "receber");
-  const pagar = filtered.filter((p) => p.type === "pagar");
+  const pageStart = page * PAGE_SIZE;
+  const paged = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+
+  const receber = paged.filter((p) => p.type === "receber");
+  const pagar = paged.filter((p) => p.type === "pagar");
 
   const pending = payables.filter((p) => !p.paid_at);
   const totalReceber = pending.filter((p) => p.type === "receber").reduce((s, p) => s + p.amount, 0);
@@ -449,7 +463,7 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
         {(["pendentes", "pagos", "todos"] as FilterView[]).map((v) => (
           <button
             key={v}
-            onClick={() => setView(v)}
+            onClick={() => { setView(v); setPage(0); }}
             className="text-[10px] uppercase px-3 py-1.5 transition-colors"
             style={{
               letterSpacing: "1.5px",
@@ -493,6 +507,31 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
             onUndoPaid={undoPaid}
             onDelete={deletePayable}
           />
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <div className="text-[11px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>
+                Página {page + 1} de {totalPages} · {filtered.length} lançamentos
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-30"
+                  style={{ border: "1px solid var(--line)", letterSpacing: "1.5px", fontWeight: 500 }}
+                >
+                  ← Anterior
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-30"
+                  style={{ border: "1px solid var(--line)", letterSpacing: "1.5px", fontWeight: 500 }}
+                >
+                  Próximo →
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
 

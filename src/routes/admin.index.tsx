@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { brl, currentMonthStr } from "@/lib/utils";
+import { todayISO, firstOfMonthISO, lastOfMonthISO, firstOfYearISO } from "@/lib/dateUtils";
 import { computeHealthLevel, healthMargemPct, HealthLevel, SEGMENT_BENCHMARKS } from "@/lib/healthScore";
 import { supabase } from "@/lib/supabase";
 import {
@@ -54,26 +55,6 @@ interface TrendPoint {
 
 const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-function todayISO() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
-
-function firstOfMonthISO(offsetMonths = 0) {
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth() + offsetMonths, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
-function lastOfMonthISO(offsetMonths = 0) {
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth() + offsetMonths + 1, 0);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function firstOfYearISO() {
-  return `${new Date().getFullYear()}-01-01`;
-}
 
 const PRESETS = [
   { label: "Este mês",     start: () => firstOfMonthISO(0),  end: () => todayISO() },
