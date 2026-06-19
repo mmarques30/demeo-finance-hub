@@ -24,6 +24,8 @@ interface TxRecord {
   status: string;
 }
 
+const MANUAL_KEY = "__manual__";
+
 export function ExtratosPanel({ clientId }: { clientId: string }) {
   const [uploads, setUploads] = useState<UploadRecord[]>([]);
   const [txMap, setTxMap] = useState<Record<string, TxRecord[] | undefined>>({});
@@ -41,15 +43,27 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
   useEffect(() => {
     if (!clientId) return;
     setLoading(true);
-    supabase()
-      .from("uploads")
-      .select("id, bank_name, filename, period, status, tx_total, tx_classified, tx_pending, created_at")
-      .eq("client_id", clientId)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setUploads((data ?? []) as UploadRecord[]);
-        setLoading(false);
-      });
+    setTxMap({});
+    Promise.all([
+      supabase()
+        .from("uploads")
+        .select("id, bank_name, filename, period, status, tx_total, tx_classified, tx_pending, created_at")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false }),
+      supabase()
+        .from("transactions")
+        .select("id, date, description, amount, category, status")
+        .eq("client_id", clientId)
+        .is("upload_id", null)
+        .order("date", { ascending: false }),
+    ]).then(([{ data: uploadsData }, { data: manualData }]) => {
+      setUploads((uploadsData ?? []) as UploadRecord[]);
+      const manual = (manualData ?? []) as TxRecord[];
+      if (manual.length > 0) {
+        setTxMap((prev) => ({ ...prev, [MANUAL_KEY]: manual }));
+      }
+      setLoading(false);
+    });
   }, [clientId]);
 
   async function toggleExpand(uploadId: string) {
@@ -92,9 +106,11 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
         ...prev,
         [uploadId]: (prev[uploadId] ?? []).filter((t) => t.id !== tx.id),
       }));
-      setUploads((prev) =>
-        prev.map((u) => u.id === uploadId ? { ...u, tx_total: Math.max(0, u.tx_total - 1) } : u)
-      );
+      if (uploadId !== MANUAL_KEY) {
+        setUploads((prev) =>
+          prev.map((u) => u.id === uploadId ? { ...u, tx_total: Math.max(0, u.tx_total - 1) } : u)
+        );
+      }
     }
   }
 
@@ -107,10 +123,10 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
         </div>
       )}
 
-      {!loading && uploads.length === 0 && (
+      {!loading && uploads.length === 0 && !txMap[MANUAL_KEY]?.length && (
         <div className="aurora-card text-center py-10">
           <div className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-            Nenhum extrato importado no período selecionado.
+            Nenhum extrato importado ainda.
           </div>
         </div>
       )}
@@ -221,6 +237,86 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
           </div>
         );
       })}
+
+      {(() => {
+        const manualTxs = txMap[MANUAL_KEY];
+        if (!manualTxs || manualTxs.length === 0) return null;
+        const isExpanded = expanded.has(MANUAL_KEY);
+        return (
+          <div className="aurora-card p-0 overflow-hidden">
+            <div
+              className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap"
+              style={{ background: "var(--linen)", borderBottom: isExpanded ? "1px solid var(--line)" : "none" }}
+            >
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => toggleExpand(MANUAL_KEY)}
+                  className="text-[13px] transition-transform"
+                  style={{ color: "var(--muted-foreground)", transform: isExpanded ? "rotate(90deg)" : "none", display: "inline-block" }}
+                >
+                  ▶
+                </button>
+                <div>
+                  <div className="text-[13px]" style={{ fontWeight: 600 }}>Lançamentos Manuais</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Inseridos diretamente na plataforma</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-6 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                <span>{manualTxs.length} {manualTxs.length === 1 ? "transação" : "transações"}</span>
+              </div>
+            </div>
+            {isExpanded && (
+              <table className="w-full">
+                <thead>
+                  <tr style={{ background: "#FAFAF8" }}>
+                    {["Data", "Descrição", "Valor", "Categoria", "Status", "Ações"].map((h) => (
+                      <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {manualTxs.map((tx, i) => (
+                    <tr key={tx.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                      <td className="px-5 py-3 text-[12px] whitespace-nowrap">{formatDatePtBR(tx.date)}</td>
+                      <td className="px-5 py-3 text-[12px]">{tx.description}</td>
+                      <td className="px-5 py-3 aurora-value text-[14px] whitespace-nowrap"
+                        style={{ color: tx.amount >= 0 ? "var(--green)" : "var(--expense)" }}>
+                        {tx.amount >= 0 ? "+" : ""}{brl(tx.amount)}
+                      </td>
+                      <td className="px-5 py-3 text-[12px]">
+                        {tx.category ?? <span style={{ color: "var(--muted-foreground)" }}>—</span>}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span
+                          className="aurora-cap px-2 py-0.5 rounded text-[10px]"
+                          style={{
+                            background: tx.status === "approved" ? "rgba(74,103,65,0.12)" : "rgba(184,149,106,0.15)",
+                            color: tx.status === "approved" ? "var(--green)" : "var(--tan)",
+                          }}
+                        >
+                          {tx.status === "approved" ? "Aprovado" : "Pendente"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-right whitespace-nowrap">
+                        <button onClick={() => setEditTx(tx)} className="aurora-link text-[11px] mr-3">
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => setDeleteTx({ tx, uploadId: MANUAL_KEY })}
+                          className="text-[11px] transition-opacity hover:opacity-70"
+                          style={{ color: "var(--tan)" }}
+                        >
+                          Excluir
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        );
+      })()}
 
       {editUpload && (
         <EditUploadModal

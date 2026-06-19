@@ -611,28 +611,23 @@ function RelatoriosPage() {
                     </td>
                     <td className="px-6 py-4">
                       {hasData ? (
-                        <div className="flex gap-1.5">
-                          {REPORT_FORMATS.map((f) => {
-                            const active = (formats[c.id] ?? "DFC") === f;
-                            return (
-                              <button
-                                key={f}
-                                type="button"
-                                onClick={() => setFormats((prev) => ({ ...prev, [c.id]: f }))}
-                                className="text-[10px] uppercase px-3 py-1.5 transition-colors"
-                                style={{
-                                  letterSpacing: "1.5px",
-                                  fontWeight: 500,
-                                  background: active ? "var(--navy)" : "transparent",
-                                  color: active ? "#fff" : "var(--muted-foreground)",
-                                  border: `1px solid ${active ? "var(--navy)" : "var(--line)"}`,
-                                }}
-                              >
-                                {f === "DFC Gerencial" ? "Gerencial" : f}
-                              </button>
-                            );
+                        <button
+                          type="button"
+                          onClick={() => setFormats((prev) => {
+                            const cur = prev[c.id] ?? "DFC";
+                            return { ...prev, [c.id]: cur === "DFC" ? "DFC Gerencial" : "DFC" };
                           })}
-                        </div>
+                          className="text-[10px] uppercase px-3 py-1.5 transition-colors"
+                          style={{
+                            letterSpacing: "1.5px",
+                            fontWeight: 500,
+                            background: "var(--navy)",
+                            color: "#fff",
+                            border: "1px solid var(--navy)",
+                          }}
+                        >
+                          {(formats[c.id] ?? "DFC") === "DFC Gerencial" ? "Gerencial" : "DFC"}
+                        </button>
                       ) : (
                         <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Sem dados</span>
                       )}
