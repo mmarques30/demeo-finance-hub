@@ -9,7 +9,6 @@ import Anthropic from "npm:@anthropic-ai/sdk";
 import { z } from "npm:zod@3";
 import { corsHeaders as getCorsHeaders, handlePreflight } from "../_shared/cors.ts";
 
-// Retry helper: retries fn up to maxAttempts with exponential backoff (1s, 2s, ...)
 async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -23,13 +22,12 @@ async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
   throw new Error("unreachable");
 }
 
-// MUST stay in sync with src/lib/utils.ts buildPattern() — same normalization logic
 function normalizeDescription(raw: string): string {
   return raw
     .toUpperCase()
-    .replace(/\d{2}\/\d{2}(\/\d{2,4})?/g, "")  // remove datas
-    .replace(/\b\d+\b/g, "")                     // remove números isolados
-    .replace(/\s{2,}/g, " ")                     // remove espaços duplos
+    .replace(/\d{2}\/\d{2}(\/\d{2,4})?/g, "")
+    .replace(/\b\d+\b/g, "")
+    .replace(/\s{2,}/g, " ")
     .trim();
 }
 
@@ -113,10 +111,18 @@ ${JSON.stringify(payload)}`,
   );
 
   const raw = content[0].type === "text" ? content[0].text.trim() : "[]";
+  // DIAGNÓSTICO: ver o que o Haiku está retornando
+  console.log("[classify-batch] AI raw response:", raw.substring(0, 500));
   const match = raw.match(/\[[\s\S]*\]/);
-  if (!match) return [];
+  if (!match) {
+    console.warn("[classify-batch] AI não retornou JSON array. Response:", raw);
+    return [];
+  }
   let parsed: unknown;
-  try { parsed = JSON.parse(match[0]); } catch { return []; }
+  try { parsed = JSON.parse(match[0]); } catch (e) {
+    console.warn("[classify-batch] JSON parse falhou:", e);
+    return [];
+  }
   const validated = AIResultSchema.safeParse(parsed);
   if (!validated.success) {
     console.warn("[classify-batch] schema inválido na resposta da IA:", validated.error.message);
@@ -145,7 +151,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Busca upload + client_id
     const { data: upload, error: uploadErr } = await supabase
       .from("uploads")
       .select("id, client_id")
@@ -161,7 +166,6 @@ Deno.serve(async (req) => {
 
     const { client_id } = upload;
 
-    // Busca dados do cliente (nome + setor para contexto do Haiku)
     const { data: client } = await supabase
       .from("clients")
       .select("name, segment")
@@ -171,7 +175,6 @@ Deno.serve(async (req) => {
     const clientName = client?.name ?? "Cliente";
     const clientSegment = client?.segment ?? "Empresa";
 
-    // Busca transações pendentes do upload
     const { data: pending } = await supabase
       .from("transactions")
       .select("id, description, amount, client_id")
@@ -185,27 +188,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── CAMADA 1: Regras ativas ────────────────────────────────────────────────
-    // Filtra is_active=true; padrões mais longos têm prioridade (mais específicos)
+    // ── CAMADA 1: Regras ativas ───────────────────────────────────────────────
     const { data: rulesRaw } = await supabase
       .from("classification_rules")
       .select("pattern, category, is_recurring")
       .eq("client_id", client_id)
       .eq("is_active", true);
 
-    // Ordena por comprimento decrescente (padrão mais específico ganha no desempate)
     const rules: Rule[] = (rulesRaw ?? []).sort(
       (a, b) => b.pattern.length - a.pattern.length
     );
 
     const approvedByRule: string[] = [];
     const remainingAfterRules: TxRow[] = [];
-
-    // Decisão em memória — sem queries dentro do loop
     const ruleMatches: { tx: TxRow; match: Rule }[] = [];
+
     for (const tx of pending as TxRow[]) {
       const normalized = buildPattern(tx.description);
-      // Word-boundary match: padrão "PIX" não pode casar com "PIXBET"
       const match = rules.find((r) =>
         normalized === r.pattern || normalized.startsWith(r.pattern + " ")
       );
@@ -217,7 +216,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Batch-update transactions agrupadas pela mesma classificação (1 query por grupo)
     if (ruleMatches.length > 0) {
       const txGroups = new Map<string, { ids: string[]; category: string; is_recurring: boolean }>();
       for (const { tx, match } of ruleMatches) {
@@ -229,14 +227,9 @@ Deno.serve(async (req) => {
       }
       for (const { ids, category, is_recurring } of txGroups.values()) {
         await supabase.from("transactions").update({
-          category,
-          is_recurring,
-          status: "approved",
-          confidence: 100,
+          category, is_recurring, status: "approved", confidence: 100,
         }).in("id", ids);
       }
-
-      // Uma query para atualizar last_used em todas as regras usadas
       const usedPatterns = [...new Set(ruleMatches.map(({ match }) => match.pattern))];
       await supabase
         .from("classification_rules")
@@ -245,7 +238,7 @@ Deno.serve(async (req) => {
         .in("pattern", usedPatterns);
     }
 
-    // ── CAMADA 2: Recorrência (view recurrence_patterns) ──────────────────────
+    // ── CAMADA 2: Recorrência ─────────────────────────────────────────────────
     const approvedByRecurrence: string[] = [];
     const remainingForAI: TxRow[] = [];
 
@@ -257,12 +250,10 @@ Deno.serve(async (req) => {
 
       const recurrenceMap = new Map<string, string>();
       for (const r of recurrences ?? []) {
-        // modal_category é NULL em empate de MODE() — descartar para não aprovar sem categoria
         if (r.modal_category) recurrenceMap.set(r.pattern, r.modal_category);
       }
 
-      // Decisão em memória — sem queries dentro do loop
-      const recurrenceMatches = new Map<string, string[]>(); // category → ids
+      const recurrenceMatches = new Map<string, string[]>();
       for (const tx of remainingAfterRules) {
         const pattern = buildPattern(tx.description);
         const category = recurrenceMap.get(pattern);
@@ -275,19 +266,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Batch-update por categoria (1 query por categoria única)
       for (const [category, ids] of recurrenceMatches.entries()) {
         await supabase.from("transactions").update({
-          category,
-          is_recurring: true,
-          status: "approved",
-          confidence: 90,
+          category, is_recurring: true, status: "approved", confidence: 90,
         }).in("id", ids);
       }
     }
 
-    // ── CAMADA 3: Claude Haiku ─────────────────────────────────────────────────
-    // Categorias do banco (não hardcoded)
+    // ── CAMADA 3: Claude Haiku ────────────────────────────────────────────────
     const { data: categoriesRaw } = await supabase
       .from("categories")
       .select("name")
@@ -296,8 +282,9 @@ Deno.serve(async (req) => {
       .order("sort_order");
 
     const categoryNames = (categoriesRaw ?? []).map((c) => c.name);
+    // DIAGNÓSTICO: confirmar categorias carregadas
+    console.log("[classify-batch] categorias ativas:", categoryNames.length, JSON.stringify(categoryNames));
 
-    // Top padrões recorrentes para contexto do prompt
     const { data: topPatterns } = await supabase
       .from("recurrence_patterns")
       .select("pattern, modal_category, occurrences")
@@ -305,7 +292,6 @@ Deno.serve(async (req) => {
       .order("occurrences", { ascending: false })
       .limit(10);
 
-    // Se não há categorias cadastradas, camada 3 não tem como classificar — pular IA
     if (categoryNames.length === 0 && remainingForAI.length > 0) {
       console.warn("[classify-batch] cliente sem categorias ativas — pulando camada 3, todas ficam pending");
     }
@@ -317,23 +303,15 @@ Deno.serve(async (req) => {
     if (categoryNames.length > 0) {
       for (let i = 0; i < remainingForAI.length; i += BATCH_SIZE) {
         const batch = remainingForAI.slice(i, i + BATCH_SIZE);
-
         let results: AIResult[] = [];
         try {
-          results = await classifyWithAI(
-            batch,
-            categoryNames,
-            clientName,
-            clientSegment,
-            topPatterns ?? []
-          );
+          results = await classifyWithAI(batch, categoryNames, clientName, clientSegment, topPatterns ?? []);
         } catch (aiErr) {
           console.error("[classify-batch] AI batch failed after 3 retries, marking as pending:", aiErr);
           aiPending += batch.length;
           continue;
         }
 
-        // Agrupar por (category, is_recurring) para batch UPDATE — evita N+1 queries
         const resultIds = new Set(results.map((r) => r.id));
         const approvedGroups = new Map<string, { ids: string[]; category: string | null; is_recurring: boolean; confidence: number }>();
 
@@ -341,8 +319,7 @@ Deno.serve(async (req) => {
           const isKnownCategory = categoryNames.includes(r.cat);
           if (!isKnownCategory) {
             console.error(`[classify-batch] AI hallucinated category "${r.cat}" for tx ${r.id} — saving null`);
-          }
-          const category = isKnownCategory ? r.cat : null;
+         const category = isKnownCategory ? r.cat : null;
           const key = `${category}||${r.rec ?? false}||${r.conf ?? 0}`;
           if (!approvedGroups.has(key)) {
             approvedGroups.set(key, { ids: [], category, is_recurring: r.rec ?? false, confidence: r.conf ?? 0 });
@@ -351,17 +328,12 @@ Deno.serve(async (req) => {
           aiApproved++;
         }
 
-        // 1 query por grupo de classificação idêntica
         for (const { ids, category, is_recurring, confidence } of approvedGroups.values()) {
           await supabase.from("transactions").update({
-            category,
-            is_recurring,
-            confidence,
-            status: "approved",
+            category, is_recurring, confidence, status: "approved",
           }).in("id", ids);
         }
 
-        // Transações sem resultado da IA: contabilizar (já estão como pending no banco)
         for (const tx of batch) {
           if (!resultIds.has(tx.id)) aiPending++;
         }
@@ -370,7 +342,6 @@ Deno.serve(async (req) => {
       aiPending = remainingForAI.length;
     }
 
-    // Atualiza contadores do upload
     const totalApproved = approvedByRule.length + approvedByRecurrence.length + aiApproved;
     await supabase.from("uploads").update({
       status: "done",
@@ -379,22 +350,14 @@ Deno.serve(async (req) => {
     }).eq("id", upload_id);
 
     console.log("[classify-batch]", {
-      upload_id,
-      client_id,
+      upload_id, client_id,
       byRule: approvedByRule.length,
       byRecurrence: approvedByRecurrence.length,
-      aiApproved,
-      aiPending,
-      totalApproved,
+      aiApproved, aiPending, totalApproved,
     });
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        approved: totalApproved,
-        classified: totalApproved,
-        pending_manual: aiPending,
-      }),
+      JSON.stringify({ success: true, approved: totalApproved, classified: totalApproved, pending_manual: aiPending
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
