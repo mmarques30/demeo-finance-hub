@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { brl, formatDatePtBR } from "@/lib/utils";
 import { todayISO } from "@/lib/dateUtils";
 import { supabase } from "@/lib/supabase";
@@ -354,6 +355,7 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
   const [error, setError] = useState<string | null>(null);
   const [marking, setMarking] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (openTrigger) setShowModal(true);
@@ -383,7 +385,7 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
     if (err) {
       console.error("[ContasPanel] markPaid failed, rolling back:", err.message);
       setPayables(prev);
-      setError(err.message);
+      toast.error("Erro ao marcar como pago. Tente novamente.");
     }
     setMarking(null);
   }
@@ -396,10 +398,12 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
     setMarking(null);
   }
 
-  async function deletePayable(id: string) {
-    if (!confirm("Excluir este lançamento?")) return;
+  async function confirmDelete() {
+    if (!confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     const { error: err } = await supabase().from("payables").delete().eq("id", id);
-    if (err) setError(err.message);
+    if (err) toast.error("Erro ao excluir lançamento.");
     else setPayables((prev) => prev.filter((p) => p.id !== id));
   }
 
@@ -495,7 +499,7 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
             view={view}
             onMarkPaid={markPaid}
             onUndoPaid={undoPaid}
-            onDelete={deletePayable}
+            onDelete={setConfirmDeleteId}
           />
           <PayableSection
             title="Contas a Pagar"
@@ -505,7 +509,7 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
             view={view}
             onMarkPaid={markPaid}
             onUndoPaid={undoPaid}
-            onDelete={deletePayable}
+            onDelete={setConfirmDeleteId}
           />
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-2">
@@ -544,6 +548,42 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
             setShowModal(false);
           }}
         />
+      )}
+
+      {confirmDeleteId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.35)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmDeleteId(null); }}
+        >
+          <div className="bg-white flex flex-col" style={{ width: 400, borderTop: "3px solid #B06040" }}>
+            <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--line)" }}>
+              <div className="aurora-cap mb-0.5" style={{ color: "#B06040" }}>Excluir lançamento</div>
+              <div className="aurora-serif text-[18px]">Tem certeza que deseja excluir?</div>
+            </div>
+            <div className="px-6 py-4 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+              Esta ação não pode ser desfeita.
+            </div>
+            <div className="px-6 pb-5 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                className="text-[11px] uppercase px-4 py-2"
+                style={{ color: "var(--muted-foreground)", letterSpacing: "1.5px" }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="text-[11px] uppercase px-5 py-2"
+                style={{ background: "#B06040", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

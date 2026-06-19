@@ -22,7 +22,7 @@ export function computeHealthLevel(
   despesas: number,
   segment: string | null
 ): HealthLevel {
-  if (receitas <= 0) return "sem_dados";
+  if (receitas <= 0) return despesas > 0 ? "critico" : "sem_dados";
   const margem = ((receitas - despesas) / receitas) * 100;
   const bench = SEGMENT_BENCHMARKS[segment ?? ""] ?? SEGMENT_BENCHMARKS["default"];
   if (margem >= bench.healthy) return "saudavel";

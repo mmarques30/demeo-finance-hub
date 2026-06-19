@@ -9,7 +9,7 @@ import { useDFCForecast } from "@/hooks/useDFCForecast";
 import { RecorrenciasPanel } from "@/components/RecorrenciasPanel";
 import { ContasPanel } from "@/components/ContasPanel";
 import { ExtratosPanel } from "@/components/ExtratosPanel";
-import { computeDRE, type CatInfo } from "@/lib/dre";
+import { computeDRE, DRE_EBITDA_PIVOT, type CatInfo } from "@/lib/dre";
 import { computeHealthLevel, healthMargemPct } from "@/lib/healthScore";
 import { HealthAlertCard } from "@/components/HealthAlertCard";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -303,7 +303,7 @@ function DFCPage() {
                           {g.isExpense ? `(${brl(g.subtotal)})` : brl(g.subtotal)}
                         </td>
                       </tr>
-                      {g.name === "Despesa Variável" && (
+                      {g.name === DRE_EBITDA_PIVOT && (
                         <tr style={{ background: "#E8F0E4", borderTop: "2px solid var(--green)" }}>
                           <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 700 }}>= Resultado Operacional (EBITDA)</td>
                           <td className="px-6 py-3 text-right aurora-value text-[15px]" style={{ fontWeight: 700, color: dre.ebitda >= 0 ? "var(--green)" : "var(--expense)" }}>

@@ -43,18 +43,21 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
 
   const confirmMutation = useMutation({
     mutationFn: async ({ pattern, category }: { pattern: string; category: string }) => {
-      const { error } = await supabase().from("classification_rules").upsert(
-        {
-          client_id: clientId,
-          pattern,
-          category,
-          is_recurring: true,
-          hits: 2,
-          source: "approval",
-          is_active: true,
-        },
-        { onConflict: "client_id,pattern" }
-      );
+      // Delete any stale rules for this exact pattern before inserting fresh
+      await supabase()
+        .from("classification_rules")
+        .delete()
+        .eq("client_id", clientId)
+        .eq("pattern", pattern);
+      const { error } = await supabase().from("classification_rules").insert({
+        client_id: clientId,
+        pattern,
+        category,
+        is_recurring: true,
+        hits: 2,
+        source: "approval",
+        is_active: true,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -69,18 +72,20 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
 
   const rejectMutation = useMutation({
     mutationFn: async (pattern: string) => {
-      const { error } = await supabase().from("classification_rules").upsert(
-        {
-          client_id: clientId,
-          pattern,
-          category: null,
-          is_recurring: false,
-          hits: 0,
-          source: "rejected",
-          is_active: false,
-        },
-        { onConflict: "client_id,pattern" }
-      );
+      await supabase()
+        .from("classification_rules")
+        .delete()
+        .eq("client_id", clientId)
+        .eq("pattern", pattern);
+      const { error } = await supabase().from("classification_rules").insert({
+        client_id: clientId,
+        pattern,
+        category: null,
+        is_recurring: false,
+        hits: 0,
+        source: "rejected",
+        is_active: false,
+      });
       if (error) throw error;
     },
     onSuccess: () => {

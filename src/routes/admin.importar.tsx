@@ -728,7 +728,7 @@ function ImportarPage() {
                   style={{ border: "1px solid var(--line)" }}
                 >
                   <option value="">Selecione...</option>
-                  {CATEGORIAS.map((c) => <option key={c}>{c}</option>)}
+                  {(CATEGORIAS ?? []).map((c) => <option key={c}>{c}</option>)}
                 </select>
               </label>
 
@@ -768,7 +768,7 @@ function ImportarPage() {
       {editTx && (
         <EditTransactionModal
           tx={editTx}
-          categories={CATEGORIAS}
+          categories={CATEGORIAS ?? []}
           onClose={() => setEditTx(null)}
           onSave={(id, updates) => {
             setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));

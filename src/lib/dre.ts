@@ -20,6 +20,8 @@ export interface DREData {
 }
 
 export const DRE_GROUP_ORDER = ["Receita", "Despesa Fixa", "Despesa Variável", "Investimento", "Outros"];
+/** Grupo após o qual o EBITDA é calculado na DRE */
+export const DRE_EBITDA_PIVOT = "Despesa Variável";
 
 export function computeDRE(
   txs: { amount: number; category: string | null }[],

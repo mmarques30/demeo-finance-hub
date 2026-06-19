@@ -6,7 +6,7 @@ import { todayISO, firstOfMonthISO, lastOfMonthISO } from "@/lib/dateUtils";
 import { supabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
 import { computeForecastMonths, type ForecastMonth, type PayableProjection } from "@/hooks/useDFCForecast";
-import { computeDRE, type CatInfo, type DREData } from "@/lib/dre";
+import { computeDRE, DRE_EBITDA_PIVOT, type CatInfo, type DREData } from "@/lib/dre";
 
 export const Route = createFileRoute("/admin/relatorios")({
   component: RelatoriosPage,
@@ -134,7 +134,7 @@ function openPrintReport(
       </tr>
       <tr><td colspan="2" style="padding:4px"></td></tr>`);
     // Linha de EBITDA após Despesa Variável
-    if (g.name === "Despesa Variável") {
+    if (g.name === DRE_EBITDA_PIVOT) {
       dreRowsArr.push(`<tr style="background:#E8F0E4;border-top:2px solid #8FA688">
         <td style="font-weight:700;font-size:13px;padding:10px 10px;font-family:sans-serif">= Resultado Operacional (EBITDA)</td>
         <td style="text-align:right;font-weight:700;font-size:14px;color:${dre.ebitda >= 0 ? "#8FA688" : "#B8956A"};padding:10px">${brl(dre.ebitda)}</td>
@@ -287,7 +287,7 @@ function exportExcel(
       }
       dreXlsx.push({ Linha: `Subtotal ${g.name}`, Categoria: "", Valor: g.isExpense ? -g.subtotal : g.subtotal });
       dreXlsx.push({ Linha: "", Categoria: "", Valor: "" });
-      if (g.name === "Despesa Variável") {
+      if (g.name === DRE_EBITDA_PIVOT) {
         dreXlsx.push({ Linha: "= RESULTADO OPERACIONAL (EBITDA)", Categoria: "", Valor: dre.ebitda });
         dreXlsx.push({ Linha: "", Categoria: "", Valor: "" });
       }
@@ -469,23 +469,25 @@ function RelatoriosPage() {
   async function handlePDF(clientId: string) {
     const p = periods[clientId];
     if (!p) return;
+    const client = clients.find((c) => c.id === clientId);
+    if (!client) return;
     setExporting((e) => ({ ...e, [clientId]: "pdf" }));
     const [txs, forecast, catMap] = await Promise.all([fetchTxs(clientId, p), fetchForecast(clientId, p), fetchCategories(clientId)]);
-    const client = clients.find((c) => c.id === clientId)!;
     setExporting((e) => ({ ...e, [clientId]: null }));
     openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, catMap, "DFC Gerencial");
-    saveExportRecord(clientId, client.name, "pdf", p, forecast, format);
+    await saveExportRecord(clientId, client.name, "pdf", p, forecast, "DFC Gerencial");
   }
 
   async function handleExcel(clientId: string) {
     const p = periods[clientId];
     if (!p) return;
+    const client = clients.find((c) => c.id === clientId);
+    if (!client) return;
     setExporting((e) => ({ ...e, [clientId]: "excel" }));
     const [txs, forecast, catMap] = await Promise.all([fetchTxs(clientId, p), fetchForecast(clientId, p), fetchCategories(clientId)]);
-    const client = clients.find((c) => c.id === clientId)!;
     exportExcel(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, p.start, p.end, txs, forecast, catMap, "DFC Gerencial");
     setExporting((e) => ({ ...e, [clientId]: null }));
-    saveExportRecord(clientId, client.name, "xlsx", p, forecast, "DFC Gerencial");
+    await saveExportRecord(clientId, client.name, "xlsx", p, forecast, "DFC Gerencial");
   }
 
   const [reexporting, setReexporting] = useState<string | null>(null);

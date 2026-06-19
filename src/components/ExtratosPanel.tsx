@@ -358,7 +358,7 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
       {editTx && (
         <EditTxModal
           tx={editTx}
-          categories={categories}
+          categories={categories ?? []}
           onClose={() => setEditTx(null)}
           onSave={(updated) => {
             const uploadId = Object.entries(txMap).find(([, list]) => list?.some((t) => t.id === updated.id))?.[0];
