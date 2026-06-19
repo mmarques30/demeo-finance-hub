@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
-export function useCategories(clientId: string): string[] {
-  const [categories, setCategories] = useState<string[]>([]);
+export function useCategories(clientId: string): string[] | null {
+  const [categories, setCategories] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!clientId) return;
+    setCategories(null);
     supabase()
       .from("categories")
       .select("name")
@@ -13,7 +14,7 @@ export function useCategories(clientId: string): string[] {
       .eq("is_active", true)
       .order("sort_order")
       .then(({ data }) => {
-        if (data && data.length > 0) setCategories(data.map((c) => c.name));
+        setCategories((data ?? []).map((c) => c.name));
       });
   }, [clientId]);
 
