@@ -73,11 +73,11 @@ export function HeroLeadForm() {
       <div
         className="relative overflow-hidden"
         style={{
-          background: "#FFFFFF",
-          border: "1px solid rgba(28,45,69,0.1)",
+          background: "#EBF4FB",
+          border: "1px solid rgba(109,146,166,0.22)",
           borderRadius: 20,
           boxShadow:
-            "0 40px 80px -30px rgba(28,45,69,0.28), 0 24px 40px -20px rgba(40,76,43,0.14), inset 0 1px 0 rgba(255,255,255,0.6)",
+            "0 40px 80px -30px rgba(28,45,69,0.22), 0 24px 40px -20px rgba(40,76,43,0.10), inset 0 1px 0 rgba(255,255,255,0.7)",
           padding: 36,
         }}
       >
@@ -126,11 +126,11 @@ export function HeroLeadForm() {
       onSubmit={submit}
       className="relative overflow-hidden"
       style={{
-        background: "#FFFFFF",
-        border: "1px solid rgba(28,45,69,0.1)",
+        background: "#EBF4FB",
+        border: "1px solid rgba(109,146,166,0.22)",
         borderRadius: 20,
         boxShadow:
-          "0 40px 80px -30px rgba(28,45,69,0.28), 0 24px 40px -20px rgba(40,76,43,0.14), inset 0 1px 0 rgba(255,255,255,0.6)",
+          "0 40px 80px -30px rgba(28,45,69,0.22), 0 24px 40px -20px rgba(40,76,43,0.10), inset 0 1px 0 rgba(255,255,255,0.7)",
         padding: 30,
       }}
     >

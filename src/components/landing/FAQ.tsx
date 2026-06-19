@@ -16,7 +16,7 @@ const ITEMS = [
   },
   {
     q: "Como funciona o pagamento?",
-    a: "Mensalidade fixa por boleto ou Pix, no plano que cabe na sua empresa. Sem fidelidade, sem letra miúda. Você ajusta o plano se a empresa crescer.",
+    a: "Mensalidade fixa via boleto ou Pix, conforme contrato fechado e sem letras miúdas. O plano é totalmente ajustável se a empresa crescer.",
   },
   {
     q: "Você atende empresas de qual porte?",
@@ -24,7 +24,7 @@ const ITEMS = [
   },
   {
     q: "Posso cancelar quando quiser?",
-    a: "Sim. 30 dias de aviso prévio para a gente fechar o mês em curso. Sem multa, sem rancor. Aurora trabalha com confiança, não contrato amarrado.",
+    a: "O contrato inicial é anual — gestão financeira de verdade precisa de tempo para mostrar resultado e construir a base certa. Depois do primeiro ano, renovamos em ciclos menores. Precisando sair antes, conversamos: o aviso prévio é de 30 dias para fechar o mês em curso.",
   },
   {
     q: "E se eu já tenho contador?",
