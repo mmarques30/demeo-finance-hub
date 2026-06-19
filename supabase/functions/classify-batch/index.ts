@@ -302,6 +302,7 @@ Deno.serve(async (req) => {
       .limit(10);
 
     const BATCH_SIZE = 50;
+    let aiApproved = 0;
     let aiPending = 0;
 
     for (let i = 0; i < remainingForAI.length; i += BATCH_SIZE) {
@@ -329,15 +330,14 @@ Deno.serve(async (req) => {
         if (!isKnownCategory) {
           console.error(`[classify-batch] AI hallucinated category "${r.cat}" for tx ${r.id} — not in client categories, saving null`);
         }
-        // Camada 3 (AI) apenas sugere categoria — status sempre "pending" para revisão manual
         await supabase.from("transactions").update({
           category: isKnownCategory ? r.cat : null,
           is_recurring: r.rec ?? false,
           confidence: r.conf ?? 0,
-          status: "pending",
+          status: "approved",
         }).eq("id", r.id);
 
-        aiPending++;
+        aiApproved++;
       }
 
       // Transações sem resultado da IA ficam como pending
@@ -348,7 +348,7 @@ Deno.serve(async (req) => {
     }
 
     // Atualiza contadores do upload
-    const totalApproved = approvedByRule.length + approvedByRecurrence.length;
+    const totalApproved = approvedByRule.length + approvedByRecurrence.length + aiApproved;
     await supabase.from("uploads").update({
       status: "done",
       tx_classified: totalApproved,
@@ -360,6 +360,7 @@ Deno.serve(async (req) => {
       client_id,
       byRule: approvedByRule.length,
       byRecurrence: approvedByRecurrence.length,
+      aiApproved,
       aiPending,
       totalApproved,
     });
