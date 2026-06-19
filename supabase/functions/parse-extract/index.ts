@@ -257,8 +257,12 @@ function parseXLSX(buffer: ArrayBuffer, bankName: string): ParsedTransaction[] {
 
     let dateStr = rawDate;
     if (!isNaN(Number(rawDate))) {
-      const jsDate = XLSX.SSF.parse_date_code(Number(rawDate));
-      dateStr = `${jsDate.y}-${String(jsDate.m).padStart(2, "0")}-${String(jsDate.d).padStart(2, "0")}`;
+      try {
+        const jsDate = XLSX.SSF.parse_date_code(Number(rawDate));
+        dateStr = `${jsDate.y}-${String(jsDate.m).padStart(2, "0")}-${String(jsDate.d).padStart(2, "0")}`;
+      } catch {
+        continue; // célula numérica inválida (0, negativo, totalizador) — pular linha
+      }
     } else {
       dateStr = rawDate.includes("/") ? parseDate(rawDate, "DD/MM/YYYY") : rawDate;
     }
@@ -291,9 +295,18 @@ interface AITransaction {
   amount: number;
 }
 
+const MAX_PDF_BYTES = 20 * 1024 * 1024; // 20 MB — limite da API Claude para documentos
+
 async function parseWithAI(fileData: Blob, filename: string, bankName: string): Promise<ParsedTransaction[]> {
   const client = new Anthropic();
   const buffer = await fileData.arrayBuffer();
+
+  if (buffer.byteLength > MAX_PDF_BYTES) {
+    throw new Error(
+      `Arquivo muito grande (${(buffer.byteLength / 1024 / 1024).toFixed(1)} MB). O limite é 20 MB. Reduza o PDF e tente novamente.`
+    );
+  }
+
   const base64 = arrayBufferToBase64(buffer);
   const ext = filename.toLowerCase().split(".").pop() ?? "";
 
@@ -509,21 +522,22 @@ Deno.serve(async (req) => {
       status: "pending",
     }));
 
-    // Detecção de duplicatas: remove transações com mesmo (date, amount, description)
-    // já presentes no banco para este cliente (approved ou pending).
+    // Detecção de duplicatas: remove transações com mesmo (date, amount, description, bank)
+    // já presentes no banco para este cliente. Inclui bank para não descartar lançamentos
+    // legítimos de bancos diferentes com mesmo valor/data/descrição.
     const candidateDates = [...new Set(txRows.map((t) => t.date))];
     const { data: existing } = await supabase
       .from("transactions")
-      .select("date, amount, description")
+      .select("date, amount, description, bank")
       .eq("client_id", upload.client_id)
       .in("date", candidateDates)
       .in("status", ["approved", "pending"]);
 
     const existingKeys = new Set(
-      (existing ?? []).map((t) => `${t.date}|${t.amount}|${t.description}`)
+      (existing ?? []).map((t) => `${t.date}|${t.amount}|${t.description}|${t.bank ?? ""}`)
     );
     const deduped = txRows.filter(
-      (t) => !existingKeys.has(`${t.date}|${t.amount}|${t.description}`)
+      (t) => !existingKeys.has(`${t.date}|${t.amount}|${t.description}|${t.bank ?? ""}`)
     );
     const duplicatesCount = txRows.length - deduped.length;
 
