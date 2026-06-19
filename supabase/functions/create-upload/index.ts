@@ -169,7 +169,9 @@ Deno.serve(async (req) => {
           classified: classifyData.classified ?? 0,
           pending_manual: classifyData.pending_manual ?? 0,
         }),
-      }).catch(() => {});
+      }).catch((err) => {
+        console.error("[create-upload] n8n webhook falhou:", err?.message ?? err);
+      });
     }
 
     // 5. Busca transações pós-classificação (statuses atualizados)
