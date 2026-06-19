@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import React, { useState, useEffect, useMemo } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { brl } from "@/lib/utils";
+import { todayISO, firstOfMonthISO } from "@/lib/dateUtils";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { supabase } from "@/lib/supabase";
 import { useDFCForecast } from "@/hooks/useDFCForecast";
@@ -25,15 +26,6 @@ export const Route = createFileRoute("/admin/dfc")({
 interface ClientOption { id: string; name: string; segment: string | null; }
 interface Tx { id: string; date: string; description: string; amount: number; category: string | null; is_recurring: boolean; }
 
-function dfcTodayISO() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
-
-function dfcFirstOfMonthISO() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-}
 
 function prevRange(s: string, e: string) {
   const sMs = new Date(s + "T12:00:00").getTime();
@@ -67,8 +59,8 @@ function DFCPage() {
   const { clientId: preselectedId, tab: preselectedTab } = Route.useSearch();
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientId, setClientId] = useState(preselectedId ?? "");
-  const [startDate, setStartDate] = useState(dfcFirstOfMonthISO());
-  const [endDate, setEndDate] = useState(dfcTodayISO());
+  const [startDate, setStartDate] = useState(firstOfMonthISO());
+  const [endDate, setEndDate] = useState(todayISO());
   const [activeTab, setActiveTab] = useState<DFCTab>(
     VALID_TABS.includes(preselectedTab as DFCTab) ? (preselectedTab as DFCTab) : "dfc"
   );
@@ -208,7 +200,7 @@ function DFCPage() {
             <DateRangeFilter
               startDate={startDate}
               endDate={endDate}
-              maxDate={dfcTodayISO()}
+              maxDate={todayISO()}
               onStartChange={setStartDate}
               onEndChange={setEndDate}
             />
