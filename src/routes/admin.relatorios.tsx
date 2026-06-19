@@ -611,14 +611,28 @@ function RelatoriosPage() {
                     </td>
                     <td className="px-6 py-4">
                       {hasData ? (
-                        <select
-                          value={formats[c.id] ?? "DFC"}
-                          onChange={(e) => setFormats((prev) => ({ ...prev, [c.id]: e.target.value as ReportFormat }))}
-                          className="text-[11px] px-2 py-1.5 outline-none"
-                          style={{ border: "1px solid var(--line)", background: "#fff", color: "var(--foreground)" }}
-                        >
-                          {REPORT_FORMATS.map((f) => <option key={f} value={f}>{f === "DFC Gerencial" ? "Gerencial" : f}</option>)}
-                        </select>
+                        <div className="flex gap-1.5">
+                          {REPORT_FORMATS.map((f) => {
+                            const active = (formats[c.id] ?? "DFC") === f;
+                            return (
+                              <button
+                                key={f}
+                                type="button"
+                                onClick={() => setFormats((prev) => ({ ...prev, [c.id]: f }))}
+                                className="text-[10px] uppercase px-3 py-1.5 transition-colors"
+                                style={{
+                                  letterSpacing: "1.5px",
+                                  fontWeight: 500,
+                                  background: active ? "var(--navy)" : "transparent",
+                                  color: active ? "#fff" : "var(--muted-foreground)",
+                                  border: `1px solid ${active ? "var(--navy)" : "var(--line)"}`,
+                                }}
+                              >
+                                {f === "DFC Gerencial" ? "Gerencial" : f}
+                              </button>
+                            );
+                          })}
+                        </div>
                       ) : (
                         <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Sem dados</span>
                       )}

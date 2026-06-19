@@ -595,9 +595,9 @@ function HealthBadge({ health, margem, segment }: { health: HealthLevel; margem:
 
 export function StatusBadge({ status }: { status: string }) {
   const cfg =
-    status === "Fechado"    ? { bg: "rgba(74,103,65,0.10)",   color: "var(--green)" }
-    : status === "Pendente" ? { bg: "rgba(184,149,106,0.12)", color: "var(--tan)"   }
-    : /* Em andamento */      { bg: "rgba(27,57,77,0.08)",    color: "var(--navy)"  };
+    status === "Fechado"    ? { bg: "rgba(40,76,43,0.12)",    color: "#284C2B" }
+    : status === "Pendente" ? { bg: "rgba(184,149,106,0.15)", color: "#8C6A40" }
+    : /* Em andamento */      { bg: "rgba(28,45,69,0.12)",    color: "#1C2D45" };
   return (
     <span className="inline-flex items-center text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: cfg.bg, color: cfg.color, padding: "4px 12px", borderRadius: "999px", whiteSpace: "nowrap" }}>
       {status}
