@@ -82,7 +82,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
   const { data: session } = useSession();
   const adminEmail = session?.user?.email ?? "";
-  const adminName = session?.user?.user_metadata?.display_name ?? adminEmail || "Admin";
+  const adminName = (session?.user?.user_metadata?.display_name ?? adminEmail) || "Admin";
   const adminRole = "Gestora";
   const adminInitials = adminName.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
 
