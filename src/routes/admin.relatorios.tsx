@@ -92,7 +92,7 @@ function openPrintReport(
   format: ReportFormat = "DFC"
 ) {
   const showDFC = true;
-  const showDRE = false;
+  const showDRE = true;
   const showProjecao = true;
   const dfcTitle = format === "DFC Gerencial" ? "DFC Gerencial — Demonstrativo Executivo" : "Demonstrativo de Fluxo de Caixa";
   const d = computeReport(txs);
