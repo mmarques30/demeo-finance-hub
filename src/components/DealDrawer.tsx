@@ -1,10 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
+import { authHeaders } from "@/lib/auth";
 
 type Deal = {
   id: string;
+  stage_id: string;
   contact_name: string;
   contact_email: string | null;
   contact_phone: string | null;
@@ -17,6 +19,8 @@ type Deal = {
   lost_reason: string | null;
 };
 
+type Stage = { id: string; slug: string; label: string; is_lost: boolean; position: number };
+
 function brl(n: number) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -24,9 +28,17 @@ function brl(n: number) {
 export function DealDrawer({ dealId, onClose }: { dealId: string | null; onClose: () => void }) {
   const enabled = !!dealId;
   const qc = useQueryClient();
-  const [actKind, setActKind] = useState<"note" | "call" | "email" | "meeting" | "task">("note");
+  const [targetStageSlug, setTargetStageSlug] = useState("");
   const [actBody, setActBody] = useState("");
   const [savingAct, setSavingAct] = useState(false);
+
+  const { data: stages = [] } = useQuery<Stage[]>({
+    queryKey: ["deal_stages"],
+    queryFn: async () => {
+      const { data } = await supabase().from("deal_stages").select("id, slug, label, is_lost, position").order("position");
+      return (data ?? []) as Stage[];
+    },
+  });
   const { data } = useQuery({
     queryKey: ["deal", dealId],
     enabled,
@@ -139,45 +151,67 @@ export function DealDrawer({ dealId, onClose }: { dealId: string | null; onClose
               ))}
             </Section>
 
-            <Section title="Registrar atividade">
+            <Section title="Avançar etapa">
               <div className="flex flex-col gap-3 pt-1">
                 <select
-                  value={actKind}
-                  onChange={(e) => setActKind(e.target.value as typeof actKind)}
+                  value={targetStageSlug}
+                  onChange={(e) => setTargetStageSlug(e.target.value)}
                   className="aurora-input bg-white text-[12px]"
                 >
-                  {[
-                    { v: "note", l: "Nota" },
-                    { v: "call", l: "Ligação" },
-                    { v: "email", l: "E-mail" },
-                    { v: "meeting", l: "Reunião" },
-                    { v: "task", l: "Tarefa" },
-                  ].map((o) => (
-                    <option key={o.v} value={o.v}>{o.l}</option>
-                  ))}
+                  <option value="">— Selecione a etapa —</option>
+                  {stages
+                    .filter((s) => s.slug !== "lead" && s.id !== data?.deal?.stage_id)
+                    .map((s) => (
+                      <option key={s.id} value={s.slug}>{s.label}</option>
+                    ))}
                 </select>
                 <textarea
                   rows={3}
                   value={actBody}
                   onChange={(e) => setActBody(e.target.value)}
                   className="aurora-input text-[12px]"
-                  placeholder="O que aconteceu?"
+                  placeholder={
+                    stages.find((s) => s.slug === targetStageSlug)?.is_lost
+                      ? "Motivo da perda (obrigatório)"
+                      : "Observação (opcional)"
+                  }
                 />
                 <button
-                  disabled={!actBody.trim() || savingAct}
+                  disabled={
+                    !targetStageSlug ||
+                    (!!stages.find((s) => s.slug === targetStageSlug)?.is_lost && !actBody.trim()) ||
+                    savingAct
+                  }
                   onClick={async () => {
-                    if (!dealId || !actBody.trim()) return;
+                    if (!dealId || !targetStageSlug) return;
                     setSavingAct(true);
                     try {
-                      const { error } = await supabase()
-                        .from("deal_activities")
-                        .insert({ deal_id: dealId, kind: actKind, body: actBody.trim() });
-                      if (error) throw error;
+                      const isLost = stages.find((s) => s.slug === targetStageSlug)?.is_lost;
+                      const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+                      const res = await fetch(`${FUNCTIONS_URL}/deal-move`, {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({
+                          deal_id: dealId,
+                          to_stage_slug: targetStageSlug,
+                          ...(isLost && actBody.trim() ? { lost_reason: actBody.trim() } : {}),
+                        }),
+                      });
+                      if (!res.ok) throw new Error(await res.text());
+                      if (actBody.trim() && !isLost) {
+                        await supabase()
+                          .from("deal_activities")
+                          .insert({ deal_id: dealId, kind: targetStageSlug, body: actBody.trim() });
+                      }
                       setActBody("");
+                      setTargetStageSlug("");
                       qc.invalidateQueries({ queryKey: ["deal", dealId] });
-                      toast.success("Atividade registrada");
+                      qc.invalidateQueries({ queryKey: ["deals"] });
+                      qc.invalidateQueries({ queryKey: ["kpis", "pipeline"] });
+                      const stageLabel = stages.find((s) => s.slug === targetStageSlug)?.label ?? targetStageSlug;
+                      toast.success(`Deal movido para ${stageLabel}`);
                     } catch (e) {
-                      toast.error(e instanceof Error ? e.message : "Falha ao salvar");
+                      toast.error(e instanceof Error ? e.message : "Falha ao mover deal");
                     } finally {
                       setSavingAct(false);
                     }
@@ -185,7 +219,7 @@ export function DealDrawer({ dealId, onClose }: { dealId: string | null; onClose
                   className="self-start text-[10px] uppercase px-4 py-2 disabled:opacity-40"
                   style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
                 >
-                  {savingAct ? "Salvando…" : "Salvar →"}
+                  {savingAct ? "Movendo…" : "Avançar →"}
                 </button>
               </div>
             </Section>
