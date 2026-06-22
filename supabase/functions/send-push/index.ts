@@ -12,9 +12,9 @@ Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
 
-  const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
-  const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");
-  const vapidSubject = Deno.env.get("VAPID_SUBJECT");
+  const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY")?.trim();
+  const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY")?.trim();
+  const vapidSubject = Deno.env.get("VAPID_SUBJECT")?.trim();
 
   if (!vapidPublic || !vapidPrivate || !vapidSubject) {
     return new Response(
