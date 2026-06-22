@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
 import { authHeaders } from "@/lib/auth";
 
@@ -60,7 +61,7 @@ export function DealDrawer({ dealId, onClose }: { dealId: string | null; onClose
           .limit(20),
         sb
           .from("proposals")
-          .select("id, number, status, total_monthly, created_at")
+          .select("id, number, status, total_monthly, created_at, public_token")
           .eq("deal_id", dealId)
           .order("created_at", { ascending: false }),
       ]);
@@ -104,6 +105,11 @@ export function DealDrawer({ dealId, onClose }: { dealId: string | null; onClose
                 label="Valor previsto"
                 value={data.deal.expected_value ? brl(Number(data.deal.expected_value)) : "—"}
               />
+              {data.deal.lost_reason && (
+                <div className="col-span-2">
+                  <Info label="Observação" value={data.deal.lost_reason} />
+                </div>
+              )}
             </div>
 
             <Section title="Histórico de etapas">
@@ -139,13 +145,22 @@ export function DealDrawer({ dealId, onClose }: { dealId: string | null; onClose
             <Section title="Propostas">
               {data.proposals.length === 0 && <Empty />}
               {data.proposals.map((p: any) => (
-                <div key={p.id} className="flex justify-between text-[12px] py-2" style={{ borderBottom: "1px solid var(--line)" }}>
+                <div key={p.id} className="flex justify-between items-center text-[12px] py-2" style={{ borderBottom: "1px solid var(--line)" }}>
                   <div>
                     <div style={{ fontWeight: 500 }}>{p.number}</div>
                     <div className="aurora-cap">{p.status}</div>
                   </div>
-                  <div className="aurora-serif text-[16px]" style={{ color: "var(--green)" }}>
-                    {brl(Number(p.total_monthly))}
+                  <div className="flex items-center gap-3">
+                    <div className="aurora-serif text-[16px]" style={{ color: "var(--green)" }}>
+                      {brl(Number(p.total_monthly))}
+                    </div>
+                    <Link
+                      to="/admin/propostas"
+                      className="aurora-link text-[10px] uppercase"
+                      style={{ letterSpacing: "1px" }}
+                    >
+                      Ver →
+                    </Link>
                   </div>
                 </div>
               ))}
