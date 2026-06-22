@@ -222,9 +222,9 @@ function ClientePage() {
               <div className="text-[13px]">{client.segment}</div>
             </div>
           )}
-          {client.monthly_closing_day != null && (
-            <div className="flex-1 min-w-[150px]">
-              <div className="aurora-cap mb-2">Fechamento mensal</div>
+          <div className="flex-1 min-w-[150px]">
+            <div className="aurora-cap mb-2">Fechamento mensal</div>
+            {client.monthly_closing_day != null ? (
               <div className="flex items-center gap-2.5">
                 <div style={{ width: 40, height: 40, border: "1px solid var(--green)", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(74,103,65,0.06)" }}>
                   <span style={{ fontSize: 20, fontWeight: 700, color: "var(--green)", fontFamily: "serif" }}>
@@ -235,8 +235,10 @@ function ClientePage() {
                   de cada<br />mês
                 </span>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Não configurado</div>
+            )}
+          </div>
         </div>
 
         {/* Alerta de saúde financeira */}
