@@ -49,6 +49,7 @@ function PipelinePage() {
   const [drawerDealId, setDrawerDealId] = useState<string | null>(null);
   const [dragDealId, setDragDealId] = useState<string | null>(null);
   const [lossModal, setLossModal] = useState<{ deal_id: string; to_stage_slug: string } | null>(null);
+  const [newDealModal, setNewDealModal] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const { data: stages = [] } = useQuery({
@@ -138,6 +139,15 @@ function PipelinePage() {
         title="Pipeline"
         emphasis="de captação"
         description="Arraste cards entre colunas. Drop em Perdido pede o motivo."
+        right={
+          <button
+            onClick={() => setNewDealModal(true)}
+            className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase"
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+          >
+            + Nova deal
+          </button>
+        }
       />
 
       <div className="px-8 lg:px-12 pb-12 flex flex-col gap-8">
@@ -168,6 +178,18 @@ function PipelinePage() {
       </div>
 
       <DealDrawer dealId={drawerDealId} onClose={() => setDrawerDealId(null)} />
+
+      {newDealModal && (
+        <NewDealModal
+          stages={stages}
+          onClose={() => setNewDealModal(false)}
+          onCreated={() => {
+            qc.invalidateQueries({ queryKey: ["deals"] });
+            qc.invalidateQueries({ queryKey: ["kpis", "pipeline"] });
+            setNewDealModal(false);
+          }}
+        />
+      )}
 
       {lossModal && (
         <LossReasonModal
@@ -327,5 +349,116 @@ function LossReasonModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function NewDealModal({
+  stages,
+  onClose,
+  onCreated,
+}: {
+  stages: Stage[];
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const leadStage = stages.find((s) => s.slug === "lead");
+  const [form, setForm] = useState({
+    contact_name: "",
+    company: "",
+    contact_email: "",
+    contact_phone: "",
+    service_type: "",
+    expected_value: "",
+    source: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (!form.contact_name.trim() || !leadStage) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase()
+        .from("deals")
+        .insert({
+          contact_name: form.contact_name.trim(),
+          company: form.company.trim() || null,
+          contact_email: form.contact_email.trim() || null,
+          contact_phone: form.contact_phone.trim() || null,
+          service_type: form.service_type.trim() || null,
+          expected_value: form.expected_value ? Number(form.expected_value) : null,
+          stage_id: leadStage.id,
+          notes: form.source ? `Fonte: ${form.source}` : null,
+        });
+      if (error) throw error;
+      toast.success(`Deal "${form.contact_name}" criado`);
+      onCreated();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao criar deal");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const f = (k: keyof typeof form, v: string) => setForm((p) => ({ ...p, [k]: v }));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white p-8 max-w-[520px] w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="aurora-cap mb-2">Novo contato</div>
+        <h3 className="aurora-serif text-[24px] mb-6">Adicionar deal manualmente</h3>
+        <div className="flex flex-col gap-4">
+          <Field label="Nome *">
+            <input autoFocus value={form.contact_name} onChange={(e) => f("contact_name", e.target.value)} className="aurora-input" placeholder="Nome do contato" />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Empresa">
+              <input value={form.company} onChange={(e) => f("company", e.target.value)} className="aurora-input" />
+            </Field>
+            <Field label="Telefone">
+              <input value={form.contact_phone} onChange={(e) => f("contact_phone", e.target.value)} className="aurora-input" placeholder="(11) 91234-5678" />
+            </Field>
+          </div>
+          <Field label="E-mail">
+            <input type="email" value={form.contact_email} onChange={(e) => f("contact_email", e.target.value)} className="aurora-input" />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Serviço de interesse">
+              <input value={form.service_type} onChange={(e) => f("service_type", e.target.value)} className="aurora-input" placeholder="Ex: Fechamento mensal" />
+            </Field>
+            <Field label="Valor previsto (R$)">
+              <input type="number" value={form.expected_value} onChange={(e) => f("expected_value", e.target.value)} className="aurora-input" />
+            </Field>
+          </div>
+          <Field label="Fonte do lead">
+            <select value={form.source} onChange={(e) => f("source", e.target.value)} className="aurora-input bg-white">
+              <option value="">Selecione…</option>
+              {["WhatsApp", "Instagram", "Indicação", "LinkedIn", "Outro"].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button onClick={onClose} className="aurora-link">Cancelar</button>
+          <button
+            disabled={!form.contact_name.trim() || saving}
+            onClick={save}
+            className="text-[10px] uppercase px-5 py-2.5 disabled:opacity-50"
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+          >
+            {saving ? "Salvando…" : "Criar deal →"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <div className="aurora-cap mb-1.5">{label}</div>
+      {children}
+    </label>
   );
 }

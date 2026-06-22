@@ -1,4 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
 type Deal = {
@@ -21,6 +23,10 @@ function brl(n: number) {
 
 export function DealDrawer({ dealId, onClose }: { dealId: string | null; onClose: () => void }) {
   const enabled = !!dealId;
+  const qc = useQueryClient();
+  const [actKind, setActKind] = useState<"note" | "call" | "email" | "meeting" | "task">("note");
+  const [actBody, setActBody] = useState("");
+  const [savingAct, setSavingAct] = useState(false);
   const { data } = useQuery({
     queryKey: ["deal", dealId],
     enabled,
@@ -131,6 +137,57 @@ export function DealDrawer({ dealId, onClose }: { dealId: string | null; onClose
                   </div>
                 </div>
               ))}
+            </Section>
+
+            <Section title="Registrar atividade">
+              <div className="flex flex-col gap-3 pt-1">
+                <select
+                  value={actKind}
+                  onChange={(e) => setActKind(e.target.value as typeof actKind)}
+                  className="aurora-input bg-white text-[12px]"
+                >
+                  {[
+                    { v: "note", l: "Nota" },
+                    { v: "call", l: "Ligação" },
+                    { v: "email", l: "E-mail" },
+                    { v: "meeting", l: "Reunião" },
+                    { v: "task", l: "Tarefa" },
+                  ].map((o) => (
+                    <option key={o.v} value={o.v}>{o.l}</option>
+                  ))}
+                </select>
+                <textarea
+                  rows={3}
+                  value={actBody}
+                  onChange={(e) => setActBody(e.target.value)}
+                  className="aurora-input text-[12px]"
+                  placeholder="O que aconteceu?"
+                />
+                <button
+                  disabled={!actBody.trim() || savingAct}
+                  onClick={async () => {
+                    if (!dealId || !actBody.trim()) return;
+                    setSavingAct(true);
+                    try {
+                      const { error } = await supabase()
+                        .from("deal_activities")
+                        .insert({ deal_id: dealId, kind: actKind, body: actBody.trim() });
+                      if (error) throw error;
+                      setActBody("");
+                      qc.invalidateQueries({ queryKey: ["deal", dealId] });
+                      toast.success("Atividade registrada");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Falha ao salvar");
+                    } finally {
+                      setSavingAct(false);
+                    }
+                  }}
+                  className="self-start text-[10px] uppercase px-4 py-2 disabled:opacity-40"
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                >
+                  {savingAct ? "Salvando…" : "Salvar →"}
+                </button>
+              </div>
             </Section>
           </>
         ) : (
