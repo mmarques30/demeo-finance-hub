@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { supabase } from "@/lib/supabase";
+import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
+import { authHeaders } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin/contratos/novo")({
   component: NovoContrato,
@@ -30,6 +31,7 @@ function NovoContrato() {
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [terminationDays, setTerminationDays] = useState(30);
   const [saving, setSaving] = useState(false);
+  const [result, setResult] = useState<{ pdf_url: string | null; number: string } | null>(null);
 
   const { data: proposals = [] } = useQuery({
     queryKey: ["proposals", "accepted"],
@@ -63,8 +65,25 @@ function NovoContrato() {
         .select()
         .single();
       if (error) throw error;
-      toast.success(`Contrato ${data.number} criado`);
-      navigate({ to: "/admin/contratos" });
+
+      toast.success(`Contrato ${data.number} criado — gerando PDF…`);
+
+      // Gera PDF via edge function
+      const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+      const res = await fetch(`${FUNCTIONS_URL}/contract-generate`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ contract_id: data.id }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        toast.error(`PDF não gerado: ${j.error ?? "falha na EF"}`);
+        navigate({ to: "/admin/contratos" });
+        return;
+      }
+      const out = await res.json();
+      setResult({ pdf_url: out.pdf_url, number: data.number });
+      toast.success("PDF gerado com sucesso");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao criar");
     } finally {
@@ -142,28 +161,55 @@ function NovoContrato() {
                   className="aurora-input"
                 />
               </label>
-              <div className="flex gap-3 items-center mt-2">
-                <button
-                  disabled={saving}
-                  onClick={createContract}
-                  className="text-[10px] uppercase px-6 py-3 disabled:opacity-50"
-                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
-                >
-                  {saving ? "Gerando…" : "Criar contrato →"}
-                </button>
-                <button
-                  disabled
-                  title="Em breve: integração com ClickSign para assinatura digital"
-                  className="text-[10px] uppercase px-4 py-2.5 opacity-50 cursor-not-allowed"
-                  style={{ border: "1px solid var(--line)", letterSpacing: "2px" }}
-                >
-                  Enviar para ClickSign (em breve)
-                </button>
-              </div>
-              <p className="text-[11px] mt-2" style={{ color: "var(--muted-foreground)" }}>
-                O número AURORA-CTR-YYYY-NNNN é atribuído automaticamente. O PDF herda o layout da proposta:
-                capa com símbolo Aurora, partes, objeto, valor, prazo, foro. Footer: tagline + número.
-              </p>
+              {!result ? (
+                <div className="flex gap-3 items-center mt-2">
+                  <button
+                    disabled={saving}
+                    onClick={createContract}
+                    className="text-[10px] uppercase px-6 py-3 disabled:opacity-50"
+                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+                  >
+                    {saving ? "Gerando…" : "Criar contrato →"}
+                  </button>
+                  <button
+                    disabled
+                    title="Em breve: integração com ClickSign para assinatura digital"
+                    className="text-[10px] uppercase px-4 py-2.5 opacity-50 cursor-not-allowed"
+                    style={{ border: "1px solid var(--line)", letterSpacing: "2px" }}
+                  >
+                    Enviar para ClickSign (em breve)
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4 mt-2">
+                  <div className="aurora-cap" style={{ color: "var(--green)" }}>Contrato {result.number} criado</div>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {result.pdf_url && (
+                      <a
+                        href={result.pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="aurora-card p-5 text-center"
+                        style={{ borderColor: "var(--green)" }}
+                      >
+                        <div className="aurora-cap mb-1">PDF</div>
+                        <div className="aurora-serif text-[16px]" style={{ color: "var(--green)" }}>
+                          Abrir contrato →
+                        </div>
+                      </a>
+                    )}
+                    <button
+                      onClick={() => navigate({ to: "/admin/contratos" })}
+                      className="aurora-card p-5 text-center"
+                    >
+                      <div className="aurora-cap mb-1">Lista</div>
+                      <div className="aurora-serif text-[16px]" style={{ color: "var(--navy)" }}>
+                        Ver todos os contratos →
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>

@@ -3,6 +3,12 @@ project_id = "ofvhmiugqkpzlgziqnjb"
 [functions.lead-intake]
 verify_jwt = false
 
+[functions.contract-generate]
+verify_jwt = true
+
+[functions.proposal-send]
+verify_jwt = true
+
 [functions.pending-count]
 verify_jwt = false
 

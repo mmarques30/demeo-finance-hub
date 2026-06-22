@@ -66,7 +66,8 @@ function NovaProposta() {
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [emitting, setEmitting] = useState(false);
-  const [result, setResult] = useState<{ pdf_url: string | null; public_url: string; number: string } | null>(null);
+  const [result, setResult] = useState<{ pdf_url: string | null; public_url: string; number: string; proposal_id?: string } | null>(null);
+  const [sending, setSending] = useState(false);
 
   const { data: openDeals = [] } = useQuery({
     queryKey: ["deals", "open"],
@@ -166,7 +167,7 @@ function NovaProposta() {
         throw new Error(j.error ?? "Falha ao gerar PDF");
       }
       const out = await res.json();
-      setResult(out);
+      setResult({ ...out, proposal_id: proposal.id });
       toast.success("Proposta emitida");
       goStep(5);
     } catch (e) {
@@ -475,16 +476,37 @@ function NovaProposta() {
                   <div className="aurora-link mt-2">Copiar →</div>
                 </button>
               </div>
-              <div className="mt-4 flex gap-3">
-                <button
-                  disabled
-                  title="Em breve: enviar via Resend pela edge proposal-send"
-                  className="text-[10px] uppercase px-4 py-2 opacity-50 cursor-not-allowed"
-                  style={{ border: "1px solid var(--line)", letterSpacing: "2px" }}
-                >
-                  Enviar por e-mail (em breve)
-                </button>
-              </div>
+              {draft.client_email && result?.proposal_id && (
+                <div className="mt-4 flex gap-3">
+                  <button
+                    disabled={sending}
+                    onClick={async () => {
+                      setSending(true);
+                      try {
+                        const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+                        const r = await fetch(`${FUNCTIONS_URL}/proposal-send`, {
+                          method: "POST",
+                          headers,
+                          body: JSON.stringify({ proposal_id: result.proposal_id }),
+                        });
+                        if (!r.ok) {
+                          const j = await r.json().catch(() => ({}));
+                          throw new Error(j.error ?? "Falha ao enviar");
+                        }
+                        toast.success(`E-mail enviado para ${draft.client_email}`);
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : "Falha ao enviar");
+                      } finally {
+                        setSending(false);
+                      }
+                    }}
+                    className="text-[10px] uppercase px-4 py-2 disabled:opacity-50"
+                    style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "2px" }}
+                  >
+                    {sending ? "Enviando…" : "Enviar por e-mail →"}
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
