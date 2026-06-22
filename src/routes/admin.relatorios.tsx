@@ -174,16 +174,12 @@ function openPrintReport(
 </style>
 </head>
 <body>
-  <svg width="140" height="47" viewBox="0 0 420 88" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Aurora · Gestão Financeira">
-    <line x1="30" y1="80" x2="30" y2="46" stroke="#4A6741" stroke-width="1.6" stroke-linecap="round"/>
-    <line x1="30" y1="80" x2="47" y2="51" stroke="#4A6741" stroke-width="1.6" stroke-linecap="round" opacity="0.75"/>
-    <line x1="30" y1="80" x2="13" y2="51" stroke="#4A6741" stroke-width="1.6" stroke-linecap="round" opacity="0.75"/>
-    <line x1="30" y1="80" x2="59" y2="61" stroke="#4A6741" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
-    <line x1="30" y1="80" x2="1" y2="61" stroke="#4A6741" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
-    <path d="M6 80 A24 24 0 0 1 54 80" stroke="#4A6741" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-    <circle cx="30" cy="80" r="2" fill="#4A6741"/>
-    <text x="76" y="62" font-family="'Cormorant Garamond',serif" font-size="52" font-weight="300" fill="#1C1C19" letter-spacing="-2">Aurora</text>
-    <text x="77" y="80" font-family="'Jost',sans-serif" font-size="9" font-weight="300" fill="#7A7260" letter-spacing="2.5">GESTÃO FINANCEIRA</text>
+  <svg width="200" height="69" viewBox="0 0 400 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Aurora · Gestão Financeira">
+    <rect x="0" y="26" width="12" height="40" rx="6" fill="#4A6741"/>
+    <rect x="17" y="14" width="12" height="52" rx="6" fill="#4A6741" opacity=".65"/>
+    <rect x="34" y="4" width="12" height="62" rx="6" fill="#4A6741" opacity=".38"/>
+    <text x="58" y="60" font-family="'Cormorant Garamond',serif" font-size="50" font-weight="300" fill="#1C1C19" letter-spacing="-2">Aurora</text>
+    <text x="59" y="78" font-family="'Jost',sans-serif" font-size="9" font-weight="300" fill="#7A7260" letter-spacing="2.5">GESTÃO FINANCEIRA</text>
   </svg>
   <h1>${clientName}</h1>
   <div class="sub">Período: ${periodoLabel} &nbsp;·&nbsp; Gerado em ${today}</div>
