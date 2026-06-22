@@ -1,14 +1,10 @@
 // Aurora · Edge Function: send-push
-// SCAFFOLD — não ativo ainda. Ativar após configurar VAPID keys como Supabase Secrets.
-//
-// Para ativar:
-//   1. Gerar VAPID keys: npx web-push generate-vapid-keys
-//   2. Registrar como secrets do Supabase:
-//      supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:tech@iaplicada.com
-//   3. Conectar este endpoint ao workflow n8n como step paralelo ao e-mail
+// Envia Web Push para todas as subscriptions registradas.
+// Requer Supabase Secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders as getCorsHeaders, handlePreflight } from "../_shared/cors.ts";
+import webpush from "npm:web-push@3.6.7";
 
 Deno.serve(async (req) => {
   const preflightRes = handlePreflight(req);
@@ -22,15 +18,14 @@ Deno.serve(async (req) => {
 
   if (!vapidPublic || !vapidPrivate || !vapidSubject) {
     return new Response(
-      JSON.stringify({
-        ok: false,
-        message: "VAPID keys não configuradas. Veja os comentários deste arquivo para ativar.",
-      }),
+      JSON.stringify({ ok: false, message: "VAPID keys não configuradas." }),
       { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
   try {
+    webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -50,18 +45,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    // TODO: importar web-push via esm.sh e enviar para cada subscription
-    // Exemplo:
-    // import webpush from "https://esm.sh/web-push@3.6.7";
-    // webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
-    // for (const sub of subscriptions) {
-    //   await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-    //     JSON.stringify({ title, body, url })
-    //   );
-    // }
+    const payload = JSON.stringify({
+      title: title ?? "Aurora",
+      body: body ?? "",
+      url: url ?? "/admin/pendentes",
+    });
+
+    let sent = 0;
+    const errors: string[] = [];
+
+    for (const sub of subscriptions) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          payload
+        );
+        sent++;
+      } catch (e) {
+        const err = e as { statusCode?: number; message?: string };
+        errors.push(err.message ?? String(e));
+        // Remove subscriptions expiradas (410 Gone)
+        if (err.statusCode === 410) {
+          await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+        }
+      }
+    }
 
     return new Response(
-      JSON.stringify({ ok: true, sent: subscriptions.length, message: "Scaffold — ativar após configurar VAPID." }),
+      JSON.stringify({ ok: true, sent, ...(errors.length ? { errors } : {}) }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

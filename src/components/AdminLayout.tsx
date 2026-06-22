@@ -5,6 +5,9 @@ import { LogoMark } from "./Logo";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/auth";
 import { useClickOutside, useLocalStorage } from "@/hooks/useClickOutside";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+
+const PUSH_ADMIN_EMAIL = "maria.tech@iaplicada.com";
 
 type SidebarItem = {
   to: string;
@@ -78,9 +81,19 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const path = location.pathname;
 
   const { data: session } = useSession();
-  const adminName = session?.user?.user_metadata?.display_name ?? session?.user?.email ?? "Admin";
+  const adminEmail = session?.user?.email ?? "";
+  const adminName = session?.user?.user_metadata?.display_name ?? adminEmail || "Admin";
   const adminRole = "Gestora";
   const adminInitials = adminName.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
+
+  const push = usePushNotifications();
+  const showBell = adminEmail === PUSH_ADMIN_EMAIL && push.isSupported;
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(console.error);
+    }
+  }, []);
 
   const { data: pendentesCount = 0 } = useQuery({
     queryKey: ["pendentes", "count"],
@@ -234,6 +247,40 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Bell: push notifications (admin only) */}
+            {showBell && (
+              <button
+                onClick={() =>
+                  push.isSubscribed ? push.unsubscribe() : push.subscribe(adminEmail)
+                }
+                disabled={push.loading}
+                title={push.isSubscribed ? "Desativar notificações push" : "Ativar notificações push"}
+                className="flex items-center justify-center transition-all"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 999,
+                  border: "1px solid #EFEFEF",
+                  background: push.isSubscribed ? "rgba(40,76,43,0.07)" : "transparent",
+                  color: push.isSubscribed ? "var(--green)" : "var(--muted-foreground)",
+                  cursor: push.loading ? "wait" : "pointer",
+                  opacity: push.loading ? 0.6 : 1,
+                }}
+              >
+                {push.isSubscribed ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                  </svg>
+                )}
+              </button>
+            )}
+
             {/* Dropdown user */}
             <div ref={userRef} className="relative">
               <button
