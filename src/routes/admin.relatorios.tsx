@@ -150,12 +150,13 @@ function openPrintReport(
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório — ${clientName} — ${periodoLabel}</title>
+<title>Relatório Aurora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&family=Jost:wght@300&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Georgia,'Times New Roman',serif;color:#1B3950;background:#fff;padding:48px}
-  .cap{font-family:sans-serif;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8FA688}
-  h1{font-size:36px;font-weight:normal;margin:6px 0 4px}
+  body{font-family:Georgia,'Times New Roman',serif;color:#1B3950;background:#fff;padding:16mm}
+  h1{font-size:36px;font-weight:normal;margin:16px 0 4px}
   .sub{font-size:13px;color:#888;margin-bottom:40px;font-family:sans-serif}
   .sec{margin-bottom:36px}
   .sec-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#8FA688;margin-bottom:12px;font-family:sans-serif}
@@ -168,12 +169,22 @@ function openPrintReport(
   table{width:100%;border-collapse:collapse;font-size:12px;font-family:sans-serif}
   th{text-align:left;padding:8px 10px;background:#F8F6F1;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#888}
   td{padding:8px 10px;border-bottom:1px solid #E8E3D9}
-  @page{size:A4;margin:16mm}
-  @media print{body{padding:0}}
+  @page{size:A4;margin:0}
+  @media print{body{padding:16mm}}
 </style>
 </head>
 <body>
-  <div class="cap">Aurora · Relatório Financeiro</div>
+  <svg width="140" height="47" viewBox="0 0 420 88" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Aurora · Gestão Financeira">
+    <line x1="30" y1="80" x2="30" y2="46" stroke="#4A6741" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="30" y1="80" x2="47" y2="51" stroke="#4A6741" stroke-width="1.6" stroke-linecap="round" opacity="0.75"/>
+    <line x1="30" y1="80" x2="13" y2="51" stroke="#4A6741" stroke-width="1.6" stroke-linecap="round" opacity="0.75"/>
+    <line x1="30" y1="80" x2="59" y2="61" stroke="#4A6741" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
+    <line x1="30" y1="80" x2="1" y2="61" stroke="#4A6741" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
+    <path d="M6 80 A24 24 0 0 1 54 80" stroke="#4A6741" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <circle cx="30" cy="80" r="2" fill="#4A6741"/>
+    <text x="76" y="62" font-family="'Cormorant Garamond',serif" font-size="52" font-weight="300" fill="#1C1C19" letter-spacing="-2">Aurora</text>
+    <text x="77" y="80" font-family="'Jost',sans-serif" font-size="9" font-weight="300" fill="#7A7260" letter-spacing="2.5">GESTÃO FINANCEIRA</text>
+  </svg>
   <h1>${clientName}</h1>
   <div class="sub">Período: ${periodoLabel} &nbsp;·&nbsp; Gerado em ${today}</div>
 
