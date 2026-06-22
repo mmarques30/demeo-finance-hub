@@ -7,8 +7,6 @@ import { useSession } from "@/lib/auth";
 import { useClickOutside, useLocalStorage } from "@/hooks/useClickOutside";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
-const PUSH_ADMIN_EMAIL = "maria.tech@iaplicada.com";
-
 type SidebarItem = {
   to: string;
   label: string;
@@ -87,7 +85,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const adminInitials = adminName.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
 
   const push = usePushNotifications();
-  const showBell = adminEmail === PUSH_ADMIN_EMAIL && push.isSupported;
+  const showBell = !!adminEmail && push.isSupported;
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
