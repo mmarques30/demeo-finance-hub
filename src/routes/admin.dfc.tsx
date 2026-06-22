@@ -23,7 +23,7 @@ export const Route = createFileRoute("/admin/dfc")({
   head: () => ({ meta: [{ title: "DFC · Aurora" }] }),
 });
 
-interface ClientOption { id: string; name: string; segment: string | null; }
+interface ClientOption { id: string; name: string; segment: string | null; monthly_closing_day: number | null; }
 interface Tx { id: string; date: string; description: string; amount: number; category: string | null; is_recurring: boolean; }
 
 
@@ -73,7 +73,7 @@ function DFCPage() {
 
   // Carrega lista de clientes; valida preselectedId e usa fallback se inválido
   useEffect(() => {
-    supabase().from("clients").select("id, name, segment").is("deleted_at", null).order("name").then(({ data }) => {
+    supabase().from("clients").select("id, name, segment, monthly_closing_day").is("deleted_at", null).order("name").then(({ data }) => {
       if (data && data.length > 0) {
         setClients(data as ClientOption[]);
         const exists = preselectedId && data.some((c: ClientOption) => c.id === preselectedId);
@@ -216,6 +216,29 @@ function DFCPage() {
           </div>
         }
       />
+
+      {/* Card: fechamento mensal */}
+      {activeClient && (
+        <div className="px-8 lg:px-12 pt-5 pb-1">
+          <div className="inline-flex items-center gap-3 aurora-card py-3 px-5">
+            <div className="aurora-cap mr-1">Fechamento mensal</div>
+            {activeClient.monthly_closing_day != null ? (
+              <>
+                <div style={{ width: 36, height: 36, border: "1px solid var(--green)", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(74,103,65,0.06)" }}>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: "var(--green)", fontFamily: "serif" }}>
+                    {activeClient.monthly_closing_day}
+                  </span>
+                </div>
+                <span className="text-[11px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.4 }}>
+                  de cada<br />mês
+                </span>
+              </>
+            ) : (
+              <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Não configurado</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tab bar */}
       <div className="flex gap-1 px-8 lg:px-12 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
