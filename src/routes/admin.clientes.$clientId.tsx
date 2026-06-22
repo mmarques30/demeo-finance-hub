@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { StatusBadge } from "./admin.index";
 import { brl, formatDatePtBR, monthOptions, monthRangeDates } from "@/lib/utils";
 import { computeHealthLevel, healthMargemPct } from "@/lib/healthScore";
 import { HealthAlertCard } from "@/components/HealthAlertCard";
 import { supabase } from "@/lib/supabase";
+import { computeDRE, DRE_EBITDA_PIVOT, type CatInfo, type DREData } from "@/lib/dre";
 
 export const Route = createFileRoute("/admin/clientes/$clientId")({
   component: ClientePage,
@@ -21,6 +22,7 @@ interface ClientDetail {
   last_upload_at: string | null;
   created_at: string;
   segment: string | null;
+  monthly_closing_day: number | null;
   client_banks: { bank_name: string }[];
 }
 
@@ -31,6 +33,7 @@ interface Tx {
   amount: number;
   category: string | null;
   status: string;
+  is_recurring: boolean;
 }
 
 interface UploadHistory {
@@ -45,7 +48,7 @@ interface UploadHistory {
 
 const PERIODS = monthOptions(12);
 
-type ActiveTab = "lancamentos" | "importacoes";
+type ActiveTab = "lancamentos" | "importacoes" | "painel";
 
 function ClientePage() {
   const { clientId } = Route.useParams();
@@ -59,6 +62,8 @@ function ClientePage() {
   const [uploads, setUploads] = useState<UploadHistory[]>([]);
   const [uploadsLoading, setUploadsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>("lancamentos");
+  const [catMap, setCatMap] = useState<Map<string, CatInfo>>(new Map());
+  const [catMapLoaded, setCatMapLoaded] = useState(false);
 
   useEffect(() => {
     supabase()
@@ -92,7 +97,7 @@ function ClientePage() {
     setTxLoading(true);
     supabase()
       .from("transactions")
-      .select("id, date, description, amount, category, status")
+      .select("id, date, description, amount, category, status, is_recurring")
       .eq("client_id", clientId)
       .in("status", ["approved", "pending"])
       .gte("date", start)
@@ -103,6 +108,21 @@ function ClientePage() {
         setTxLoading(false);
       });
   }, [clientId, period]);
+
+  useEffect(() => {
+    if (activeTab !== "painel" || catMapLoaded || !clientId) return;
+    supabase()
+      .from("categories")
+      .select("name, group_name, type")
+      .eq("client_id", clientId)
+      .eq("is_active", true)
+      .then(({ data }) => {
+        const map = new Map<string, CatInfo>();
+        for (const c of data ?? []) map.set(c.name, { group_name: c.group_name, type: c.type });
+        setCatMap(map);
+        setCatMapLoaded(true);
+      });
+  }, [activeTab, catMapLoaded, clientId]);
 
   const receita = useMemo(
     () => tx.filter((t) => t.status === "approved" && t.amount > 0).reduce((s, t) => s + t.amount, 0),
@@ -120,6 +140,11 @@ function ClientePage() {
     [receita, despesas, client]
   );
   const margem = useMemo(() => healthMargemPct(receita, despesas), [receita, despesas]);
+
+  const dre = useMemo<DREData>(
+    () => computeDRE(tx.filter((t) => t.status === "approved"), catMap),
+    [tx, catMap]
+  );
 
   if (loading) {
     return (
@@ -197,6 +222,21 @@ function ClientePage() {
               <div className="text-[13px]">{client.segment}</div>
             </div>
           )}
+          {client.monthly_closing_day != null && (
+            <div className="flex-1 min-w-[150px]">
+              <div className="aurora-cap mb-2">Fechamento mensal</div>
+              <div className="flex items-center gap-2.5">
+                <div style={{ width: 40, height: 40, border: "1px solid var(--green)", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(74,103,65,0.06)" }}>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: "var(--green)", fontFamily: "serif" }}>
+                    {client.monthly_closing_day}
+                  </span>
+                </div>
+                <span className="text-[11px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.4 }}>
+                  de cada<br />mês
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Alerta de saúde financeira */}
@@ -205,9 +245,9 @@ function ClientePage() {
         {/* Abas */}
         <div style={{ borderBottom: "2px solid var(--line)", marginBottom: -8 }}>
           <div className="flex">
-            {(["lancamentos", "importacoes"] as const).map((tab) => {
+            {(["lancamentos", "importacoes", "painel"] as const).map((tab) => {
               const isActive = activeTab === tab;
-              const label = tab === "lancamentos" ? "Lançamentos" : "Importações";
+              const label = tab === "lancamentos" ? "Lançamentos" : tab === "importacoes" ? "Importações" : "Painel DFC / DRE";
               return (
                 <button
                   key={tab}
@@ -326,6 +366,91 @@ function ClientePage() {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ── Aba: Painel DFC / DRE ────────────────────────────────────────────── */}
+        {activeTab === "painel" && (
+          <>
+            {/* Seletor de período */}
+            <div className="flex items-center gap-3">
+              <span className="aurora-cap">Período</span>
+              <select value={period} onChange={(e) => setPeriod(e.target.value)} className="bg-white px-3 py-2 text-[12px]" style={{ border: "1px solid var(--line)" }}>
+                {PERIODS.map((p) => <option key={p}>{p}</option>)}
+              </select>
+            </div>
+
+            {/* DFC */}
+            <div>
+              <div className="aurora-cap mb-4">Demonstrativo de Fluxo de Caixa</div>
+              <div className="grid md:grid-cols-4 gap-5">
+                <KpiCard label="Receitas"    value={brl(receita)}   tone="green" />
+                <KpiCard label="Despesas"    value={brl(despesas)}  tone="tan" />
+                <KpiCard label="Resultado"   value={brl(saldo)}     tone={saldo >= 0 ? "green" : "tan"} />
+                <KpiCard label="Lançamentos" value={String(tx.filter((t) => t.status === "approved").length)} tone="navy" />
+              </div>
+            </div>
+
+            {/* DRE */}
+            <div>
+              <div className="aurora-cap mb-4">DRE — Demonstrativo do Resultado do Exercício</div>
+              {!catMapLoaded ? (
+                <div className="aurora-card px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                  Carregando categorias…
+                </div>
+              ) : dre.groups.length === 0 ? (
+                <div className="aurora-card px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                  Nenhum lançamento classificado no período.
+                </div>
+              ) : (
+                <div className="aurora-card p-0 overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr style={{ background: "#F8F6F1" }}>
+                        <th className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>Conta</th>
+                        <th className="text-right px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dre.groups.flatMap((g) => {
+                        const isReceita = g.name === "Receita";
+                        const color = isReceita ? "var(--green)" : "var(--tan)";
+                        const rows = [
+                          <tr key={g.name + "_hdr"} style={{ background: "#F8F6F1" }}>
+                            <td colSpan={2} className="px-6 py-2 aurora-cap" style={{ fontWeight: 600, color: "var(--muted-foreground)" }}>
+                              {!isReceita && "(−) "}{g.name}
+                            </td>
+                          </tr>,
+                          ...g.lines.map((l) => (
+                            <tr key={g.name + "_" + l.cat} style={{ borderTop: "1px solid var(--line)" }}>
+                              <td className="px-6 py-2.5 text-[12px]" style={{ paddingLeft: 32, color: "var(--muted-foreground)" }}>{l.cat}</td>
+                              <td className="px-6 py-2.5 text-right text-[13px]" style={{ color }}>{isReceita ? brl(l.total) : `(${brl(l.total)})`}</td>
+                            </tr>
+                          )),
+                          <tr key={g.name + "_sub"} style={{ borderTop: "1px solid var(--line)" }}>
+                            <td className="px-6 py-3 text-[12px]" style={{ fontWeight: 600 }}>Subtotal {g.name}</td>
+                            <td className="px-6 py-3 text-right" style={{ fontSize: 14, fontWeight: 700, color }}>{isReceita ? brl(g.subtotal) : `(${brl(g.subtotal)})`}</td>
+                          </tr>,
+                        ];
+                        if (g.name === DRE_EBITDA_PIVOT) {
+                          rows.push(
+                            <tr key="ebitda" style={{ background: "rgba(143,166,136,0.12)", borderTop: "2px solid var(--green)" }}>
+                              <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 700 }}>= Resultado Operacional (EBITDA)</td>
+                              <td className="px-6 py-3 text-right" style={{ fontSize: 15, fontWeight: 700, color: dre.ebitda >= 0 ? "var(--green)" : "var(--tan)" }}>{brl(dre.ebitda)}</td>
+                            </tr>
+                          );
+                        }
+                        return rows;
+                      })}
+                      <tr style={{ background: "var(--navy)" }}>
+                        <td className="px-6 py-4 text-[13px]" style={{ fontWeight: 700, color: "#fff" }}>= Resultado Líquido do Período</td>
+                        <td className="px-6 py-4 text-right" style={{ fontSize: 16, fontWeight: 700, color: dre.resultadoLiquido >= 0 ? "#A8D5A2" : "#F4A57E" }}>{brl(dre.resultadoLiquido)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </>
