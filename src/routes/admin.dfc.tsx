@@ -188,57 +188,53 @@ function DFCPage() {
         emphasis="de fluxo de caixa"
         description="Análise consolidada do período com comparativo, drill-down por categoria e projeção dos próximos 3 meses."
         right={
-          <div className="flex items-center gap-3 flex-wrap justify-end">
-            <select
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="bg-white px-3 py-2.5 text-[12px]"
-              style={{ border: "1px solid var(--line)" }}
-            >
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <DateRangeFilter
-              startDate={startDate}
-              endDate={endDate}
-              maxDate={todayISO()}
-              onStartChange={setStartDate}
-              onEndChange={setEndDate}
-            />
-            {activeTab === "contas" && (
-              <button
-                onClick={() => setContasTrigger((n) => n + 1)}
-                className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
-                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-3 flex-wrap justify-end">
+              <select
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className="bg-white px-3 py-2.5 text-[12px]"
+                style={{ border: "1px solid var(--line)" }}
               >
-                + Novo
-              </button>
+                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <DateRangeFilter
+                startDate={startDate}
+                endDate={endDate}
+                maxDate={todayISO()}
+                onStartChange={setStartDate}
+                onEndChange={setEndDate}
+              />
+              {activeTab === "contas" && (
+                <button
+                  onClick={() => setContasTrigger((n) => n + 1)}
+                  className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+                >
+                  + Novo
+                </button>
+              )}
+            </div>
+            {activeClient && (
+              <div className="flex items-center gap-2 justify-end">
+                <span className="aurora-cap">Fechamento mensal</span>
+                {activeClient.monthly_closing_day != null ? (
+                  <>
+                    <div style={{ width: 28, height: 28, border: "1px solid var(--green)", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(74,103,65,0.06)" }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--green)", fontFamily: "serif" }}>
+                        {activeClient.monthly_closing_day}
+                      </span>
+                    </div>
+                    <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>de cada mês</span>
+                  </>
+                ) : (
+                  <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Não configurado</span>
+                )}
+              </div>
             )}
           </div>
         }
       />
-
-      {/* Card: fechamento mensal */}
-      {activeClient && (
-        <div className="px-8 lg:px-12 pt-5 pb-1">
-          <div className="inline-flex items-center gap-3 aurora-card py-3 px-5">
-            <div className="aurora-cap mr-1">Fechamento mensal</div>
-            {activeClient.monthly_closing_day != null ? (
-              <>
-                <div style={{ width: 36, height: 36, border: "1px solid var(--green)", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(74,103,65,0.06)" }}>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: "var(--green)", fontFamily: "serif" }}>
-                    {activeClient.monthly_closing_day}
-                  </span>
-                </div>
-                <span className="text-[11px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.4 }}>
-                  de cada<br />mês
-                </span>
-              </>
-            ) : (
-              <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Não configurado</span>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Tab bar */}
       <div className="flex gap-1 px-8 lg:px-12 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
