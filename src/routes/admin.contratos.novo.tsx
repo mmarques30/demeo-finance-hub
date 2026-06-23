@@ -30,8 +30,13 @@ function NovoContrato() {
   const [selected, setSelected] = useState<AcceptedProposal | null>(null);
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [terminationDays, setTerminationDays] = useState(30);
+  const [clientAddress, setClientAddress] = useState("");
+  const [oneOff, setOneOff] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [contractId, setContractId] = useState<string | null>(null);
   const [result, setResult] = useState<{ pdf_url: string | null; number: string } | null>(null);
+  const [sent, setSent] = useState(false);
 
   const { data: proposals = [] } = useQuery({
     queryKey: ["proposals", "accepted"],
@@ -52,23 +57,25 @@ function NovoContrato() {
       const { data, error } = await supabase()
         .from("contracts")
         .insert({
-          proposal_id: selected.id,
-          deal_id: selected.deal_id,
-          client_name: selected.client_name,
-          client_email: selected.client_email,
-          client_document: selected.client_document,
-          total_monthly: selected.total_monthly,
-          start_date: startDate,
+          proposal_id:             selected.id,
+          deal_id:                 selected.deal_id,
+          client_name:             selected.client_name,
+          client_email:            selected.client_email,
+          client_document:         selected.client_document,
+          total_monthly:           selected.total_monthly,
+          total_one_off:           oneOff > 0 ? oneOff : null,
+          client_address:          clientAddress.trim() || null,
+          start_date:              startDate,
           termination_notice_days: terminationDays,
-          signature_provider: "manual",
+          signature_provider:      "manual",
         })
         .select()
         .single();
       if (error) throw error;
 
       toast.success(`Contrato ${data.number} criado — gerando PDF…`);
+      setContractId(data.id);
 
-      // Gera PDF via edge function
       const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
       const res = await fetch(`${FUNCTIONS_URL}/contract-generate`, {
         method: "POST",
@@ -88,6 +95,30 @@ function NovoContrato() {
       toast.error(e instanceof Error ? e.message : "Falha ao criar");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function sendContract() {
+    if (!contractId) return;
+    setSending(true);
+    try {
+      const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+      const res = await fetch(`${FUNCTIONS_URL}/contract-send`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ contract_id: contractId }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(`Falha ao enviar: ${j.error ?? "erro desconhecido"}`);
+        return;
+      }
+      setSent(true);
+      toast.success(`Contrato enviado para ${j.sent_to}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao enviar");
+    } finally {
+      setSending(false);
     }
   }
 
@@ -144,12 +175,36 @@ function NovoContrato() {
               <Info label="CNPJ/CPF" value={selected.client_document ?? "—"} />
               <Info label="Valor mensal" value={brl(Number(selected.total_monthly))} />
               <label>
+                <div className="aurora-cap mb-2">Endereço do contratante</div>
+                <input
+                  type="text"
+                  value={clientAddress}
+                  onChange={(e) => setClientAddress(e.target.value)}
+                  placeholder="Rua, número – Bairro – Cidade – UF, CEP"
+                  className="aurora-input"
+                  disabled={!!result}
+                />
+              </label>
+              <label>
+                <div className="aurora-cap mb-2">Valor de implantação (R$) — opcional</div>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={oneOff}
+                  onChange={(e) => setOneOff(Number(e.target.value))}
+                  className="aurora-input"
+                  disabled={!!result}
+                />
+              </label>
+              <label>
                 <div className="aurora-cap mb-2">Data de início</div>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="aurora-input"
+                  disabled={!!result}
                 />
               </label>
               <label>
@@ -159,30 +214,23 @@ function NovoContrato() {
                   value={terminationDays}
                   onChange={(e) => setTerminationDays(Number(e.target.value))}
                   className="aurora-input"
+                  disabled={!!result}
                 />
               </label>
               {!result ? (
-                <div className="flex gap-3 items-center mt-2">
-                  <button
-                    disabled={saving}
-                    onClick={createContract}
-                    className="text-[10px] uppercase px-6 py-3 disabled:opacity-50"
-                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
-                  >
-                    {saving ? "Gerando…" : "Criar contrato →"}
-                  </button>
-                  <button
-                    disabled
-                    title="Em breve: integração com ClickSign para assinatura digital"
-                    className="text-[10px] uppercase px-4 py-2.5 opacity-50 cursor-not-allowed"
-                    style={{ border: "1px solid var(--line)", letterSpacing: "2px" }}
-                  >
-                    Enviar para ClickSign (em breve)
-                  </button>
-                </div>
+                <button
+                  disabled={saving}
+                  onClick={createContract}
+                  className="text-[10px] uppercase px-6 py-3 disabled:opacity-50 mt-2"
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+                >
+                  {saving ? "Gerando…" : "Criar contrato →"}
+                </button>
               ) : (
                 <div className="flex flex-col gap-4 mt-2">
-                  <div className="aurora-cap" style={{ color: "var(--green)" }}>Contrato {result.number} criado</div>
+                  <div className="aurora-cap" style={{ color: "var(--green)" }}>
+                    Contrato {result.number} criado
+                  </div>
                   <div className="grid md:grid-cols-2 gap-3">
                     {result.pdf_url && (
                       <a
@@ -198,16 +246,37 @@ function NovoContrato() {
                         </div>
                       </a>
                     )}
-                    <button
-                      onClick={() => navigate({ to: "/admin/contratos" })}
-                      className="aurora-card p-5 text-center"
-                    >
-                      <div className="aurora-cap mb-1">Lista</div>
-                      <div className="aurora-serif text-[16px]" style={{ color: "var(--navy)" }}>
-                        Ver todos os contratos →
+                    {sent ? (
+                      <div
+                        className="aurora-card p-5 text-center"
+                        style={{ borderColor: "var(--green)", background: "rgba(74,103,65,0.04)" }}
+                      >
+                        <div className="aurora-cap mb-1" style={{ color: "var(--green)" }}>Enviado</div>
+                        <div className="aurora-serif text-[16px]" style={{ color: "var(--green)" }}>
+                          E-mail enviado ✓
+                        </div>
                       </div>
-                    </button>
+                    ) : (
+                      <button
+                        disabled={sending}
+                        onClick={sendContract}
+                        className="aurora-card p-5 text-center disabled:opacity-50"
+                        style={{ borderColor: "var(--navy)" }}
+                      >
+                        <div className="aurora-cap mb-1">Enviar</div>
+                        <div className="aurora-serif text-[16px]" style={{ color: "var(--navy)" }}>
+                          {sending ? "Enviando…" : "Enviar contrato →"}
+                        </div>
+                      </button>
+                    )}
                   </div>
+                  <button
+                    onClick={() => navigate({ to: "/admin/contratos" })}
+                    className="text-[10px] uppercase mt-1"
+                    style={{ color: "var(--muted-foreground)", letterSpacing: "1.5px" }}
+                  >
+                    Ver todos os contratos →
+                  </button>
                 </div>
               )}
             </div>

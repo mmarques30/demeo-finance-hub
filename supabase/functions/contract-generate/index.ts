@@ -1,5 +1,5 @@
 // supabase/functions/contract-generate/index.ts
-// POST autenticado. Gera PDF do contrato no modelo Claudia de Meo com 17 cláusulas.
+// POST autenticado. Gera PDF do contrato no modelo real Claudia de Meo (17 cláusulas).
 
 import { z } from "https://esm.sh/zod@3.23.8";
 import {
@@ -13,29 +13,29 @@ import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.
 
 const BodySchema = z.object({ contract_id: z.string().uuid() });
 
-// Paleta
+// Paleta Aurora
 const GREEN = rgb(0x4A / 255, 0x67 / 255, 0x41 / 255);
 const NAVY  = rgb(0x1B / 255, 0x39 / 255, 0x4D / 255);
 const MUTED = rgb(0x7A / 255, 0x72 / 255, 0x60 / 255);
 const LINE  = rgb(0xE2 / 255, 0xD8 / 255, 0xCC / 255);
 const TEXT  = rgb(0x1C / 255, 0x1C / 255, 0x19 / 255);
 
-// Dados Claudia de Meo (para assinatura legal)
+// Dados legais da Contratada
 const CM_NAME    = "Claudia de Meo – Gestão financeira";
 const CM_CNPJ    = "41.062.652/0001-38";
-const CM_ADDRESS = "Rua Gravatás, 140 – Bairro Colina Verde – Limeira-SP – CEP: 13.482-553";
+const CM_ADDRESS = "Rua Gravatás, 140 – Bairro Colina Verde – Limeira – SP, CEP: 13.482-553";
 const CM_CITY    = "Limeira";
 
-// Marca Aurora (usada no cabeçalho e rodapé)
+// Marca Aurora (cabeçalho / rodapé)
 const AURORA_EMAIL   = "claudia@aurora.com.br";
 const AURORA_WEBSITE = "bit.ly/sitegestao";
 
-const A4 = { width: 595.28, height: 841.89 };
-const ML = 50;
-const MR = 50;
-const TW = A4.width - ML - MR;
-const TOP_CONTENT = A4.height - 90; // Y inicial após o header
-const BOT_LIMIT   = 62;             // Y mínimo antes do footer
+const A4         = { width: 595.28, height: 841.89 };
+const ML         = 50;
+const MR         = 50;
+const TW         = A4.width - ML - MR;
+const TOP_CONTENT = A4.height - 90;
+const BOT_LIMIT   = 62;
 
 function brl(n: number): string {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -46,17 +46,23 @@ function ptBR(dateStr: string): string {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-// Símbolo Aurora (sol nascendo) — versão pequena para header
+// Calcula data de término: startDate + 12 meses - 1 dia (ex: 12/05/2026 → 11/05/2027)
+function endDate(startStr: string, months = 12): string {
+  const d = new Date(startStr + "T12:00:00Z");
+  d.setMonth(d.getMonth() + months);
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+// Símbolo Aurora (sol nascendo) — header
 function drawAuroraSymbol(page: PDFPage, cx: number, cyAnchor: number, R: number) {
   const ln = (x1: number, y1: number, x2: number, y2: number, op = 1, th = 1.4) =>
     page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, color: GREEN, thickness: th, opacity: op });
-
   ln(cx, cyAnchor, cx, cyAnchor + R);
   ln(cx, cyAnchor, cx + R * 0.78, cyAnchor + R * 0.78, 0.7);
   ln(cx, cyAnchor, cx - R * 0.78, cyAnchor + R * 0.78, 0.7);
   ln(cx, cyAnchor, cx + R, cyAnchor + R * 0.45, 0.35, 1);
   ln(cx, cyAnchor, cx - R, cyAnchor + R * 0.45, 0.35, 1);
-
   const segs = 16;
   let prev = { x: cx - R * 0.95, y: cyAnchor };
   for (let i = 1; i <= segs; i++) {
@@ -68,8 +74,6 @@ function drawAuroraSymbol(page: PDFPage, cx: number, cyAnchor: number, R: number
   }
   page.drawCircle({ x: cx, y: cyAnchor, size: 2, color: GREEN });
 }
-
-// --- Renderização de cabeçalho e rodapé ---
 
 function drawHeader(page: PDFPage, fontBold: PDFFont, font: PDFFont) {
   drawAuroraSymbol(page, ML + 14, A4.height - 50, 14);
@@ -87,11 +91,7 @@ function drawHeader(page: PDFPage, fontBold: PDFFont, font: PDFFont) {
 }
 
 function drawFooter(page: PDFPage, number: string, font: PDFFont) {
-  page.drawLine({
-    start: { x: ML, y: 44 },
-    end: { x: A4.width - MR, y: 44 },
-    color: LINE, thickness: 0.5,
-  });
+  page.drawLine({ start: { x: ML, y: 44 }, end: { x: A4.width - MR, y: 44 }, color: LINE, thickness: 0.5 });
   const left = `${AURORA_WEBSITE}  |  ${AURORA_EMAIL}`;
   page.drawText(left, { x: ML, y: 30, font, size: 8, color: MUTED });
   page.drawText(number, {
@@ -100,14 +100,13 @@ function drawFooter(page: PDFPage, number: string, font: PDFFont) {
   });
 }
 
-// --- Documento fluente (cursor de página) ---
+// --- Cursor de documento ---
 
 interface DocCtx {
   pdf: PDFDocument;
   fontBold: PDFFont;
   fontSans: PDFFont;
   fontSerif: PDFFont;
-  fontSerifItalic: PDFFont;
   number: string;
   curPage: PDFPage | null;
   curY: number;
@@ -125,9 +124,8 @@ function ensurePage(ctx: DocCtx, needed = 30): PDFPage {
 }
 
 function textLine(ctx: DocCtx, text: string, font: PDFFont, size: number, color = TEXT, x = ML) {
-  const needed = size * 2;
-  const page = ensurePage(ctx, needed);
-  page.drawText(text, { x, y: ctx.curY, font, size, color });
+  ensurePage(ctx, size * 2);
+  ctx.curPage!.drawText(text, { x, y: ctx.curY, font, size, color });
   ctx.curY -= size * 1.6;
 }
 
@@ -146,26 +144,22 @@ function paragraph(ctx: DocCtx, text: string, font: PDFFont, size: number, color
     }
   }
   if (line) textLine(ctx, line, font, size, color, x);
-  ctx.curY -= lh * 0.3; // margem após parágrafo
+  ctx.curY -= lh * 0.25;
 }
 
-function gap(ctx: DocCtx, h = 10) {
-  ctx.curY -= h;
-}
+function gap(ctx: DocCtx, h = 10) { ctx.curY -= h; }
 
 function sectionTitle(ctx: DocCtx, title: string) {
   gap(ctx, 14);
   ensurePage(ctx, 36);
-  textLine(ctx, title.toUpperCase(), ctx.fontBold, 9, GREEN);
+  textLine(ctx, title, ctx.fontBold, 10, TEXT);
   gap(ctx, 2);
 }
 
-function clauseTitle(ctx: DocCtx, ordinal: string, subject: string) {
-  gap(ctx, 10);
-  ensurePage(ctx, 40);
-  const label = `Cláusula ${ordinal} – ${subject}`;
-  textLine(ctx, label, ctx.fontBold, 10, NAVY);
-  gap(ctx, 2);
+function clauseLabel(ctx: DocCtx, ordinal: string) {
+  gap(ctx, 8);
+  ensurePage(ctx, 36);
+  textLine(ctx, `Cláusula ${ordinal}.`, ctx.fontBold, 10, TEXT);
 }
 
 Deno.serve(async (req) => {
@@ -173,6 +167,15 @@ Deno.serve(async (req) => {
   if (pre) return pre;
   const origin = req.headers.get("origin");
 
+  try {
+    return await handleRequest(req, origin);
+  } catch (err) {
+    console.error("[contract-generate] Unhandled error:", err);
+    return jsonResponse({ error: String(err) }, 500, origin);
+  }
+});
+
+async function handleRequest(req: Request, origin: string | null): Promise<Response> {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405, origin);
 
   const user = await userFromAuthHeader(req);
@@ -199,223 +202,238 @@ Deno.serve(async (req) => {
   const { data: items } = contract.proposal_id
     ? await sb
         .from("proposal_items")
-        .select("description, unit, quantity, unit_price, total, services(name)")
+        .select("description, services(name)")
         .eq("proposal_id", contract.proposal_id)
         .order("position")
     : { data: [] };
 
   // --- Monta PDF ---
-  const pdf = await PDFDocument.create();
-  const fontSerif       = await pdf.embedFont("Times-Roman");
-  const fontSerifItalic = await pdf.embedFont("Times-Italic");
-  const fontSans        = await pdf.embedFont("Helvetica");
-  const fontSansBold    = await pdf.embedFont("Helvetica-Bold");
+  const pdf           = await PDFDocument.create();
+  const fontSerif     = await pdf.embedFont("Times-Roman");
+  const fontSans      = await pdf.embedFont("Helvetica");
+  const fontSansBold  = await pdf.embedFont("Helvetica-Bold");
 
-  const number  = contract.number ?? "CTR-DRAFT";
-  const startPtBR = ptBR(contract.start_date);
-  const noticeDays: number = contract.termination_notice_days ?? 30;
-  const monthly = Number(contract.total_monthly ?? 0);
-  const oneOff  = Number((contract as Record<string, unknown>).total_one_off ?? 0);
-
-  const clientName = contract.client_name ?? "—";
-  const clientDoc  = contract.client_document ?? "";
-  const clientAddr = String((contract as Record<string, unknown>).client_address ?? "");
+  const number       = contract.number ?? "CTR-DRAFT";
+  const startStr     = contract.start_date as string;
+  const startPtBR    = ptBR(startStr);
+  const endDateStr   = endDate(startStr, 12);
+  const noticeDays   = contract.termination_notice_days ?? 30;
+  const monthly      = Number(contract.total_monthly ?? 0);
+  const oneOff       = Number(contract.total_one_off ?? 0);
+  const clientName   = contract.client_name ?? "—";
+  const clientDoc    = contract.client_document ?? "";
+  const clientAddr   = (contract as Record<string, unknown>).client_address as string ?? "";
+  const clientEmail  = contract.client_email ?? "";
 
   const ctx: DocCtx = {
-    pdf, fontBold: fontSansBold, fontSans, fontSerif, fontSerifItalic,
+    pdf, fontBold: fontSansBold, fontSans, fontSerif,
     number, curPage: null, curY: 0,
   };
 
-  // Primeira página
   ensurePage(ctx);
 
   // === TÍTULO ===
-  textLine(ctx, "CONTRATO DE PRESTAÇÃO DE SERVIÇOS", fontSansBold, 14, NAVY);
-  gap(ctx, 4);
-  ensurePage(ctx, 2);
+  textLine(ctx, "CONTRATO DE PRESTAÇÃO DE SERVIÇOS", fontSansBold, 13, NAVY);
+  gap(ctx, 6);
   ctx.curPage!.drawLine({
-    start: { x: ML, y: ctx.curY },
-    end: { x: A4.width - MR, y: ctx.curY },
-    color: GREEN, thickness: 1,
+    start: { x: ML, y: ctx.curY }, end: { x: A4.width - MR, y: ctx.curY }, color: LINE, thickness: 0.6,
   });
   gap(ctx, 20);
 
   // === IDENTIFICAÇÃO DAS PARTES ===
-  sectionTitle(ctx, "IDENTIFICAÇÃO DAS PARTES CONTRATANTES");
-
-  textLine(ctx, "CONTRATANTE:", fontSansBold, 10, TEXT);
-  gap(ctx, 2);
-  paragraph(ctx, clientName, fontSerif, 11);
-  if (clientDoc) paragraph(ctx, `CNPJ: ${clientDoc}`, fontSans, 10, MUTED);
-  if (clientAddr) paragraph(ctx, clientAddr, fontSans, 10, MUTED);
+  textLine(ctx, "IDENTIFICAÇÃO DAS PARTES CONTRATANTES", fontSansBold, 10, TEXT);
   gap(ctx, 12);
 
-  textLine(ctx, "CONTRATADO:", fontSansBold, 10, TEXT);
-  gap(ctx, 2);
-  paragraph(ctx, CM_NAME, fontSerif, 11);
-  paragraph(ctx, `CNPJ: ${CM_CNPJ}`, fontSans, 10, MUTED);
-  paragraph(ctx, CM_ADDRESS, fontSans, 10, MUTED);
-  gap(ctx, 8);
-
-  // === CLÁUSULAS ===
-
-  clauseTitle(ctx, "1ª", "DO OBJETO");
+  textLine(ctx, "CONTRATANTE:", fontSansBold, 10, TEXT);
+  gap(ctx, 4);
   paragraph(ctx,
-    "O presente contrato tem por objeto a prestação de serviços de gestão e assessoria financeira " +
-    "pela CONTRATADA à CONTRATANTE, compreendendo os serviços abaixo discriminados:",
+    `${clientName}, pessoa jurídica de direito privado, CNPJ nº ${clientDoc}` +
+    (clientAddr ? `, com sede na ${clientAddr}.` : "."),
+    fontSerif, 11);
+  gap(ctx, 10);
+
+  textLine(ctx, "CONTRATADO:", fontSansBold, 10, TEXT);
+  gap(ctx, 4);
+  paragraph(ctx,
+    `${CM_NAME}, pessoa jurídica, CNPJ ${CM_CNPJ}, com sede na ${CM_ADDRESS}.`,
+    fontSerif, 11);
+  gap(ctx, 12);
+
+  paragraph(ctx,
+    "As partes acima identificadas têm, entre si, justo e acertado o presente Contrato de " +
+    "Prestação de Serviços, que regerá pelas cláusulas seguintes e pelas condições de preço, " +
+    "forma e termo de pagamento descritas no presente, e em conformidade à Legislação Vigente.",
+    fontSerif, 11);
+
+  // === Cláusula 1ª — DO OBJETO DO CONTRATO ===
+  sectionTitle(ctx, "DO OBJETO DO CONTRATO");
+  clauseLabel(ctx, "1ª");
+  paragraph(ctx,
+    "É objeto do presente contrato, prestado ao CONTRATANTE, os seguintes serviços:",
     fontSerif, 11);
   gap(ctx, 4);
   if (items && items.length > 0) {
     for (const it of items) {
       const svc = (it.services as { name?: string } | null)?.name ?? it.description ?? "";
-      paragraph(ctx, `• ${svc}`, fontSerif, 11, TEXT, ML + 8, TW - 8);
+      paragraph(ctx, svc, fontSerif, 11, TEXT, ML + 10, TW - 10);
     }
   } else {
-    paragraph(ctx, "• Conforme escopo acordado na proposta vinculada.", fontSerif, 11, TEXT, ML + 8, TW - 8);
+    paragraph(ctx, "Serviços conforme escopo acordado na proposta vinculada.", fontSerif, 11, TEXT, ML + 10, TW - 10);
   }
 
-  clauseTitle(ctx, "2ª", "DA EXECUÇÃO");
+  // === Cláusulas 2ª e 3ª — DA EXECUÇÃO DOS SERVIÇOS ===
+  sectionTitle(ctx, "DA EXECUÇÃO DOS SERVIÇOS");
+  clauseLabel(ctx, "2ª");
   paragraph(ctx,
-    "Os serviços serão prestados de forma remota, com ferramentas digitais de gestão, podendo haver " +
-    "atendimento presencial quando solicitado pela CONTRATANTE ou a critério da CONTRATADA, " +
-    "previamente combinado entre as partes.",
+    "O CONTRATADO executará as atividades de forma EXCLUSIVAMENTE remota, nos dias e horários " +
+    "de sua conveniência, porém sempre comprometido com o prazo de entrega acordado com o CONTRATANTE.",
     fontSerif, 11);
 
-  clauseTitle(ctx, "3ª", "DOS SISTEMAS DE GESTÃO");
+  clauseLabel(ctx, "3ª");
   paragraph(ctx,
-    "Os custos com sistemas de gestão (ERP, plataformas financeiras e similares) necessários à " +
-    "execução dos serviços são de responsabilidade da CONTRATANTE, salvo disposição em contrário " +
-    "estabelecida em adendo a este instrumento.",
+    "Se a CONTRATANTE arcará com 100% do valor referente ao sistema online exclusivo adotado para " +
+    "o trabalho da gestão financeira, esse valor com validade de um ano, a partir da data da implantação " +
+    "do sistema, nos primeiros 6 meses de trabalho o sistema será ofertado pela CONTRATADA, após esse " +
+    "período será de responsabilidade da CONTRATANTE.",
     fontSerif, 11);
 
-  clauseTitle(ctx, "4ª", "DAS OBRIGAÇÕES DO CONTRATADO");
-  paragraph(ctx, "Constituem obrigações da CONTRATADA:", fontSerif, 11);
-  gap(ctx, 4);
-  const obrigContratado = [
-    "I – prestar os serviços com diligência, pontualidade e qualidade técnica;",
-    "II – manter absoluto sigilo sobre as informações financeiras e operacionais da CONTRATANTE;",
-    "III – comunicar eventuais irregularidades ou inconsistências financeiras identificadas durante a execução dos serviços;",
-    "IV – disponibilizar relatórios e demonstrativos periódicos conforme acordado entre as partes.",
-  ];
-  for (const ob of obrigContratado) {
-    paragraph(ctx, ob, fontSerif, 11, TEXT, ML + 8, TW - 8);
-  }
-
-  clauseTitle(ctx, "5ª", "DAS OBRIGAÇÕES DO CONTRATANTE");
-  paragraph(ctx, "Constituem obrigações da CONTRATANTE:", fontSerif, 11);
-  gap(ctx, 4);
-  const obrigContratante = [
-    "I – fornecer todos os documentos, informações, acessos e sistemas necessários à execução dos serviços;",
-    "II – realizar os pagamentos nos prazos e condições estabelecidos neste contrato;",
-    "III – comunicar, com antecedência mínima de 5 (cinco) dias úteis, qualquer alteração relevante em suas operações financeiras que impacte na prestação dos serviços.",
-  ];
-  for (const ob of obrigContratante) {
-    paragraph(ctx, ob, fontSerif, 11, TEXT, ML + 8, TW - 8);
-  }
-
-  clauseTitle(ctx, "6ª", "DO PAGAMENTO");
+  // === Cláusula 4ª — DAS OBRIGAÇÕES DO CONTRATADO ===
+  sectionTitle(ctx, "DAS OBRIGAÇÕES DO CONTRATADO");
+  clauseLabel(ctx, "4ª");
   paragraph(ctx,
-    `Pelos serviços prestados, a CONTRATANTE pagará à CONTRATADA o valor mensal de ${brl(monthly)}, ` +
-    "PRÉ PAGO, com vencimento até o dia 05 (cinco) de cada mês, mediante transferência bancária ou PIX.",
+    "Fica responsável o CONTRATADO por executar os serviços com qualidade, zelar pelas informações " +
+    "cedidas pelo CONTRATANTE, fornece status dos serviços que estão sendo realizados.",
     fontSerif, 11);
+
+  // === Cláusula 5ª — DAS OBRIGAÇÕES DO CONTRATANTE ===
+  sectionTitle(ctx, "DAS OBRIGAÇÕES DO CONTRATANTE");
+  clauseLabel(ctx, "5ª");
+  paragraph(ctx,
+    "O CONTRATANTE deverá fornecer ao CONTRATADO todas as informações e acessos necessários à " +
+    "realização do serviço, devendo especificar os detalhes necessários à perfeita execução dele, " +
+    "e a forma de como ele deve ser entregue.",
+    fontSerif, 11);
+
+  // === Cláusulas 6ª e 7ª — DO PAGAMENTO ===
+  sectionTitle(ctx, "DO PAGAMENTO");
+  clauseLabel(ctx, "6ª");
+  let payText =
+    `Pela prestação dos serviços acertados neste instrumento, a CONTRATANTE pagará ao CONTRATADO ` +
+    `o valor mensal de ${brl(monthly)} ("Remuneração Mensal"), pela execução dos serviços descritos no escopo acima`;
   if (oneOff > 0) {
-    gap(ctx, 6);
-    paragraph(ctx,
-      `O presente contrato prevê ainda o pagamento único de implantação no valor de ${brl(oneOff)}, ` +
-      "a ser quitado na data de assinatura deste instrumento.",
-      fontSerif, 11);
+    payText += ` e ${brl(oneOff)} no ato deste, valor único de implantação`;
   }
+  payText += ", conforme proposta.";
+  paragraph(ctx, payText, fontSerif, 11);
   gap(ctx, 6);
   paragraph(ctx,
-    "Os honorários mensais serão reajustados anualmente com base na variação acumulada do IGPM " +
-    "(Índice Geral de Preços do Mercado), ou pelo IPCA caso o IGPM apresente variação negativa, " +
-    "considerando os últimos 12 (doze) meses.",
+    "O pagamento da Remuneração Mensal é no formato PRÉ PAGO e deverá ser feito até o dia 05 de cada mês.",
     fontSerif, 11);
-
-  clauseTitle(ctx, "7ª", "DA MORA");
+  gap(ctx, 6);
   paragraph(ctx,
-    "O não pagamento na data de vencimento ensejará multa de 2% (dois por cento) sobre o valor " +
-    "devido, acrescida de juros moratórios equivalentes à taxa CDI ao dia, calculados pro rata die, " +
-    "sem prejuízo da possibilidade de rescisão contratual por inadimplência.",
+    "O valor da Remuneração Mensal será reajustado anualmente, tendo como base, os índices previstos " +
+    "e acumulados no período anual do IGPM, em caso de falta deste índice, o reajuste da mensalidade " +
+    "terá por base a média da variação dos índices inflacionários do ano corrente ao da execução.",
     fontSerif, 11);
-
-  clauseTitle(ctx, "8ª", "DAS DESPESAS");
+  gap(ctx, 6);
   paragraph(ctx,
-    "As despesas relacionadas diretamente à execução dos serviços, tais como deslocamentos, " +
-    "hospedagens, cartórios e materiais específicos solicitados pela CONTRATANTE, não estão incluídas " +
-    "nos honorários mensais e serão cobradas à parte, mediante apresentação de comprovantes fiscais.",
+    "Assim o valor dos serviços será reajustado logo que a empresa aumente a média de seu faturamento, " +
+    "segundo a tabela de valores de cobrança do CONTRATADO.",
     fontSerif, 11);
 
-  clauseTitle(ctx, "9ª", "DA APROVAÇÃO DE DESPESAS");
+  clauseLabel(ctx, "7ª");
   paragraph(ctx,
-    "Toda despesa extraordinária deverá ser previamente autorizada pela CONTRATANTE por escrito ou " +
-    "por meio eletrônico rastreável (e-mail ou mensagem), sob pena de não reembolso.",
+    "A falta de pagamento de qualquer das parcelas da Remuneração Mensal, devidas pelo CONTRATANTE " +
+    "ao CONTRATADO, acarretará ao pagamento de multa moratória compensatória, de 2% (dois por cento) " +
+    "sobre o valor em atraso, acrescido da taxa de juros de 1% (um por cento) ao mês calculados " +
+    "pro-rata die incidentes sobre o valor corrigido pela aplicação de 100% (cem por cento) do CDI.",
     fontSerif, 11);
 
-  clauseTitle(ctx, "10ª", "DA RESCISÃO IMOTIVADA");
+  // === Cláusulas 8ª e 9ª — DAS DESPESAS ===
+  sectionTitle(ctx, "DAS DESPESAS");
+  clauseLabel(ctx, "8ª");
   paragraph(ctx,
-    `Qualquer das partes poderá rescindir este contrato sem justa causa mediante aviso prévio de ` +
-    `${noticeDays} (${noticeDays === 30 ? "trinta" : String(noticeDays)}) dias, por escrito, ` +
-    "ao encerramento do mês calendário em curso.",
+    "Despesas e custos que se fizerem necessários para a prestação do serviço, tais como fotocópias, " +
+    "impressões, telefonemas, transporte, pedágio, hospedagem, taxas administrativas cobradas por " +
+    "órgãos públicos, dentre outras, deverão ser arcados pela CONTRATANTE.",
     fontSerif, 11);
 
-  clauseTitle(ctx, "11ª", "DA RESCISÃO ANTECIPADA");
+  clauseLabel(ctx, "9ª");
   paragraph(ctx,
-    "Em caso de rescisão antecipada pela CONTRATANTE sem justa causa, antes de completado o prazo " +
-    "mínimo previsto na Cláusula 13ª, serão devidos os honorários correspondentes ao período " +
-    "remanescente até o término do prazo mínimo contratual.",
+    "Tais despesas previstas na cláusula 8ª deverão ser previamente submetidas à aprovação do " +
+    "CONTRATANTE pelo CONTRATADO antes de qualquer pagamento. Para fins de controle financeiro " +
+    "será enviado relatório com os gastos discriminados, bem como comprovantes dos respectivos.",
     fontSerif, 11);
 
-  clauseTitle(ctx, "12ª", "DA RESCISÃO POR JUSTA CAUSA");
+  // === Cláusulas 10ª, 11ª, 12ª — DA RESCISÃO IMOTIVADA ===
+  sectionTitle(ctx, "DA RESCISÃO IMOTIVADA");
+  clauseLabel(ctx, "10ª");
   paragraph(ctx,
-    "O descumprimento de qualquer cláusula deste instrumento por qualquer das partes facultará à " +
-    "parte inocente a rescisão imediata, sem prejuízo das penalidades cabíveis e do direito de " +
-    "indenização por perdas e danos.",
+    `Poderá o presente instrumento ser rescindido por qualquer uma das partes, em qualquer momento, ` +
+    `sem que haja qualquer tipo de motivo relevante, não obstante a outra parte deverá ser avisada ` +
+    `previamente por escrito, no prazo de ${noticeDays} dias, a partir de ${startPtBR}.`,
     fontSerif, 11);
 
-  clauseTitle(ctx, "13ª", "DO PRAZO");
+  clauseLabel(ctx, "11ª");
   paragraph(ctx,
-    `O presente contrato terá vigência de 12 (doze) meses, com início em ${startPtBR}, ` +
-    "renovando-se automaticamente por iguais períodos, salvo manifestação contrária de qualquer " +
-    `das partes com antecedência mínima de ${noticeDays} dias antes do término da vigência.`,
+    "Caso o CONTRATANTE já tenha realizado o pagamento pelo serviço, e mesmo assim, requisite a " +
+    "rescisão imotivada do presente contrato, terá o valor da quantia paga devolvido, deduzindo-se " +
+    "2% de taxas administrativas. O pagamento deverá ser proporcional aos dias trabalhados no mês da rescisão.",
     fontSerif, 11);
 
-  clauseTitle(ctx, "14ª", "DAS CONDIÇÕES GERAIS");
+  clauseLabel(ctx, "12ª");
   paragraph(ctx,
-    "O presente contrato não estabelece qualquer vínculo empregatício entre as partes, tratando-se " +
-    "de relação de natureza exclusivamente civil e comercial, regida pelas disposições do Código " +
-    "Civil Brasileiro (Lei nº 10.406/2002) e demais legislações aplicáveis.",
+    "Caso seja o CONTRATADO quem requeira a rescisão imotivada, deverá devolver a quantia que se " +
+    "refere aos serviços por ele não prestados ao CONTRATANTE, acrescentado de 2% de taxas administrativas.",
     fontSerif, 11);
 
-  clauseTitle(ctx, "15ª", "DA CONFIDENCIALIDADE");
+  // === Cláusula 13ª — DO PRAZO ===
+  sectionTitle(ctx, "DO PRAZO");
+  clauseLabel(ctx, "13ª");
   paragraph(ctx,
-    "As partes comprometem-se a manter absoluto sigilo sobre todas as informações de natureza " +
-    "financeira, contábil, operacional e estratégica a que tiverem acesso em decorrência deste " +
-    "contrato, tanto durante a vigência quanto pelo prazo de 5 (cinco) anos após o seu encerramento.",
+    `O presente contrato terá vigência de 12 (doze) meses até ${endDateStr}, sendo que a partir ` +
+    "desta data, prorroga-se até que uma das partes manifeste interesse em rescindi-lo de acordo " +
+    "com a Cláusula 10ª.",
     fontSerif, 11);
 
-  clauseTitle(ctx, "16ª", "DAS PENALIDADES POR VIOLAÇÃO DE CONFIDENCIALIDADE");
+  // === Cláusula 14ª — DAS CONDIÇÕES GERAIS ===
+  sectionTitle(ctx, "DAS CONDIÇÕES GERAIS");
+  clauseLabel(ctx, "14ª");
   paragraph(ctx,
-    "A violação da cláusula de confidencialidade sujeitará a parte infratora à responsabilização " +
-    "civil e criminal, bem como ao pagamento de indenização por perdas e danos, sem prejuízo de " +
-    "outras sanções aplicáveis na forma da lei.",
+    "Fica compactuado entre as partes a total inexistência de vínculo trabalhista entre as partes " +
+    "contratantes, excluindo as obrigações previdenciárias e os encargos sociais.",
     fontSerif, 11);
 
-  clauseTitle(ctx, "17ª", "DO FORO");
+  // === Cláusulas 15ª e 16ª — DA CONFIDENCIALIDADE ===
+  sectionTitle(ctx, "DA CONFIDENCIALIDADE");
+  clauseLabel(ctx, "15ª");
   paragraph(ctx,
-    "Fica eleito o foro da Comarca de Limeira, Estado de São Paulo, para dirimir quaisquer " +
-    "controvérsias decorrentes deste instrumento, com renúncia expressa a qualquer outro, " +
-    "por mais privilegiado que seja.",
+    "Todos os dados disponibilizados pelo CONTRATANTE ao CONTRATADO para a execução deste contrato " +
+    "permanecerão em SIGILO.",
     fontSerif, 11);
 
-  // === ASSINATURA ===
-  gap(ctx, 30);
+  clauseLabel(ctx, "16ª");
+  paragraph(ctx,
+    "O CONTRATADO compromete-se a manter a confidencialidade de todas as informações a que tiver " +
+    "acesso para realização dos serviços acordados. Se necessário o CONTRATADO fornecerá termo de " +
+    "confidencialidade específico à CONTRATANTE.",
+    fontSerif, 11);
+
+  // === Cláusula 17ª — DO FORO ===
+  sectionTitle(ctx, "DO FORO");
+  clauseLabel(ctx, "17ª");
+  paragraph(ctx,
+    "Para dirimir quaisquer controvérsias oriundas do presente contrato, as partes elegem o foro " +
+    "da comarca de Limeira – SP.",
+    fontSerif, 11);
+
+  // === ENCERRAMENTO E ASSINATURAS ===
+  gap(ctx, 20);
   ensurePage(ctx, 160);
-
-  paragraph(ctx,
-    `${CM_CITY}, ${new Date(contract.start_date + "T12:00:00Z").toLocaleDateString("pt-BR")}.`,
-    fontSerif, 11, MUTED);
-  gap(ctx, 48);
+  paragraph(ctx, "Por estarem assim justos e contratados, firmam o presente instrumento.", fontSerif, 11, MUTED);
+  gap(ctx, 14);
+  paragraph(ctx, `${CM_CITY}, ${startPtBR}.`, fontSerif, 11, MUTED);
+  gap(ctx, 52);
 
   const lineW = 200;
   const col2  = A4.width / 2 + 20;
@@ -425,8 +443,8 @@ Deno.serve(async (req) => {
   ctx.curPage!.drawLine({ start: { x: col2, y: sigY }, end: { x: col2 + lineW, y: sigY }, color: TEXT, thickness: 0.5 });
   ctx.curY -= 16;
 
-  ctx.curPage!.drawText("CLAUDIA DE MEO",    { x: ML,   y: ctx.curY, font: fontSansBold, size: 10, color: TEXT });
-  ctx.curPage!.drawText(clientName.slice(0, 30).toUpperCase(), { x: col2, y: ctx.curY, font: fontSansBold, size: 10, color: TEXT });
+  ctx.curPage!.drawText("CLAUDIA DE MEO", { x: ML, y: ctx.curY, font: fontSansBold, size: 10, color: TEXT });
+  ctx.curPage!.drawText(clientName.slice(0, 32).toUpperCase(), { x: col2, y: ctx.curY, font: fontSansBold, size: 10, color: TEXT });
   ctx.curY -= 14;
 
   ctx.curPage!.drawText(`CNPJ: ${CM_CNPJ}`, { x: ML, y: ctx.curY, font: fontSans, size: 9, color: MUTED });
@@ -434,7 +452,6 @@ Deno.serve(async (req) => {
     ctx.curPage!.drawText(`CNPJ: ${clientDoc}`, { x: col2, y: ctx.curY, font: fontSans, size: 9, color: MUTED });
   }
 
-  // Fecha última página
   drawFooter(ctx.curPage!, ctx.number, fontSans);
 
   const pdfBytes = await pdf.save();
@@ -445,7 +462,7 @@ Deno.serve(async (req) => {
     .from("contracts")
     .upload(path, pdfBytes, { upsert: true, contentType: "application/pdf" });
   if (upErr) {
-    console.error(upErr);
+    console.error("[contract-generate] storage:", upErr);
     return jsonResponse({ error: "Falha ao salvar PDF" }, 500, origin);
   }
 
@@ -453,7 +470,12 @@ Deno.serve(async (req) => {
     .from("contracts")
     .createSignedUrl(path, 60 * 60 * 24 * 30);
 
-  await sb.from("contracts").update({ pdf_url: signed?.signedUrl ?? null }).eq("id", body.contract_id);
+  await sb.from("contracts").update({
+    pdf_url: signed?.signedUrl ?? null,
+  }).eq("id", body.contract_id);
 
-  return jsonResponse({ pdf_url: signed?.signedUrl ?? null, number }, 200, origin);
-});
+  return jsonResponse(
+    { pdf_url: signed?.signedUrl ?? null, number, client_email: clientEmail },
+    200, origin,
+  );
+}
