@@ -8,7 +8,7 @@ import {
   rgb,
   PDFPage,
   PDFFont,
-} from "https://esm.sh/pdf-lib@1.17.1";
+} from "npm:pdf-lib@1.17.1";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
 
