@@ -266,11 +266,15 @@ function InviteModal({
         headers,
         body: JSON.stringify({ client_id: clientId, email, display_name: name, portal_role: role }),
       });
-      const json = await res.json();
-      if (!res.ok) { setError(json.error ?? "Erro ao criar usuário"); return; }
+      let json: Record<string, unknown> = {};
+      try { json = await res.json(); } catch { /* body não era JSON */ }
+      if (!res.ok) {
+        setError((json.error as string) ?? `Erro HTTP ${res.status}. Tente novamente.`);
+        return;
+      }
       onSuccess();
-    } catch {
-      setError("Erro de conexão. Tente novamente.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
     }

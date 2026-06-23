@@ -130,8 +130,9 @@ function computeDRE(
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
+  const pre = handlePreflight(req);
+  if (pre) return pre;
   const origin = req.headers.get("origin") ?? "";
-  if (req.method === "OPTIONS") return handlePreflight(origin);
   if (req.method !== "POST") return jsonResponse({ error: "method not allowed" }, 405, origin);
 
   // Auth
