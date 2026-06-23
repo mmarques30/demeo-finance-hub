@@ -34,6 +34,25 @@ export function useIsAdmin() {
   });
 }
 
+export type PortalRole = "owner" | "financeiro";
+
+export function usePortalRole() {
+  const { data: session } = useSession();
+  return useQuery({
+    queryKey: ["auth", "portalRole", session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async (): Promise<PortalRole> => {
+      const { data } = await supabase()
+        .from("user_client_mapping")
+        .select("portal_role")
+        .eq("user_id", session!.user.id)
+        .maybeSingle();
+      return (data?.portal_role as PortalRole) ?? "owner";
+    },
+    staleTime: 60_000,
+  });
+}
+
 export async function authHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase().auth.getSession();
   const token = data.session?.access_token;

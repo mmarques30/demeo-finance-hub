@@ -5,7 +5,8 @@ import { StatusBadge } from "./admin.index";
 import { brl, formatDatePtBR, monthOptions, monthRangeDates } from "@/lib/utils";
 import { computeHealthLevel, healthMargemPct } from "@/lib/healthScore";
 import { HealthAlertCard } from "@/components/HealthAlertCard";
-import { supabase } from "@/lib/supabase";
+import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
+import { authHeaders } from "@/lib/auth";
 import { computeDRE, DRE_EBITDA_PIVOT, type CatInfo, type DREData } from "@/lib/dre";
 
 export const Route = createFileRoute("/admin/clientes/$clientId")({
@@ -48,7 +49,7 @@ interface UploadHistory {
 
 const PERIODS = monthOptions(12);
 
-type ActiveTab = "lancamentos" | "importacoes" | "painel";
+type ActiveTab = "lancamentos" | "importacoes" | "painel" | "usuarios";
 
 function ClientePage() {
   const { clientId } = Route.useParams();
@@ -64,6 +65,17 @@ function ClientePage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("lancamentos");
   const [catMap, setCatMap] = useState<Map<string, CatInfo>>(new Map());
   const [catMapLoaded, setCatMapLoaded] = useState(false);
+
+  // Usuários do portal
+  interface PortalUser { id: string; user_id: string; email: string | null; display_name: string | null; portal_role: string; }
+  const [portalUsers, setPortalUsers] = useState<PortalUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newRole, setNewRole] = useState<"owner" | "financeiro">("owner");
+  const [addingUser, setAddingUser] = useState(false);
+  const [addUserError, setAddUserError] = useState<string | null>(null);
+  const [addUserSuccess, setAddUserSuccess] = useState(false);
 
   useEffect(() => {
     supabase()
@@ -123,6 +135,55 @@ function ClientePage() {
         setCatMapLoaded(true);
       });
   }, [activeTab, catMapLoaded, clientId]);
+
+  function loadPortalUsers() {
+    if (!clientId) return;
+    setUsersLoading(true);
+    supabase()
+      .from("user_client_mapping")
+      .select("id, user_id, email, display_name, portal_role")
+      .eq("client_id", clientId)
+      .order("display_name")
+      .then(({ data }) => {
+        setPortalUsers((data ?? []) as PortalUser[]);
+        setUsersLoading(false);
+      });
+  }
+
+  useEffect(() => {
+    if (activeTab === "usuarios") loadPortalUsers();
+  }, [activeTab, clientId]);
+
+  async function handleAddUser(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newEmail || !newName) return;
+    setAddingUser(true);
+    setAddUserError(null);
+    setAddUserSuccess(false);
+    try {
+      const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+      const res = await fetch(`${FUNCTIONS_URL}/create-client-user`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ client_id: clientId, email: newEmail, display_name: newName, portal_role: newRole }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setAddUserError(json.error ?? "Erro ao criar usuário"); return; }
+      setAddUserSuccess(true);
+      setNewEmail(""); setNewName(""); setNewRole("owner");
+      loadPortalUsers();
+    } catch {
+      setAddUserError("Erro de conexão. Tente novamente.");
+    } finally {
+      setAddingUser(false);
+    }
+  }
+
+  async function handleRemoveUser(userId: string) {
+    if (!confirm("Remover acesso deste usuário ao portal?")) return;
+    await supabase().from("user_client_mapping").delete().eq("user_id", userId).eq("client_id", clientId);
+    loadPortalUsers();
+  }
 
   const receita = useMemo(
     () => tx.filter((t) => t.status === "approved" && t.amount > 0).reduce((s, t) => s + t.amount, 0),
@@ -247,9 +308,9 @@ function ClientePage() {
         {/* Abas */}
         <div style={{ borderBottom: "2px solid var(--line)", marginBottom: -8 }}>
           <div className="flex">
-            {(["lancamentos", "importacoes", "painel"] as const).map((tab) => {
+            {(["lancamentos", "importacoes", "painel", "usuarios"] as const).map((tab) => {
               const isActive = activeTab === tab;
-              const label = tab === "lancamentos" ? "Lançamentos" : tab === "importacoes" ? "Importações" : "Painel DFC / DRE";
+              const label = tab === "lancamentos" ? "Lançamentos" : tab === "importacoes" ? "Importações" : tab === "painel" ? "Painel DFC / DRE" : "Usuários do Portal";
               return (
                 <button
                   key={tab}
@@ -527,6 +588,138 @@ function ClientePage() {
                 </tbody>
               </table>
             )}
+          </div>
+        )}
+
+        {/* ── Aba: Usuários do Portal ──────────────────────────────────────── */}
+        {activeTab === "usuarios" && (
+          <div className="flex flex-col gap-6">
+            {/* Lista de usuários */}
+            <div className="aurora-card p-0 overflow-hidden">
+              <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
+                <div className="aurora-cap mb-0.5">Usuários do portal</div>
+                <div className="aurora-serif text-[20px]">
+                  Acesso ao <em className="italic" style={{ color: "var(--green)" }}>Portal do Cliente</em>
+                </div>
+              </div>
+              {usersLoading ? (
+                <div className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando…</div>
+              ) : portalUsers.length === 0 ? (
+                <div className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                  Nenhum usuário com acesso ao portal deste cliente.
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr style={{ background: "#FAFAF8" }}>
+                      {["Nome", "E-mail", "Perfil", ""].map((h) => (
+                        <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {portalUsers.map((u) => (
+                      <tr key={u.id} style={{ borderTop: "1px solid var(--line)" }}>
+                        <td className="px-6 py-3 text-[13px]">{u.display_name ?? "—"}</td>
+                        <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{u.email ?? "—"}</td>
+                        <td className="px-6 py-3">
+                          <span className="text-[9px] uppercase px-2 py-0.5" style={{ background: "var(--line)", letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>
+                            {u.portal_role === "owner" ? "Proprietário" : "Financeiro"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-right">
+                          <button
+                            onClick={() => handleRemoveUser(u.user_id)}
+                            className="text-[10px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70"
+                            style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px" }}
+                          >
+                            Remover
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Formulário de novo usuário */}
+            <div className="aurora-card">
+              <div className="aurora-cap mb-1">Adicionar usuário</div>
+              <div className="aurora-serif text-[20px] mb-6">
+                Convidar <em className="italic" style={{ color: "var(--green)" }}>novo acesso</em>
+              </div>
+              <form onSubmit={handleAddUser} className="flex flex-col gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="aurora-cap block mb-1.5">Nome completo</label>
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Maria Silva"
+                      required
+                      className="w-full px-4 py-2.5 text-[13px]"
+                      style={{ border: "1px solid var(--line)", background: "var(--linen)" }}
+                    />
+                  </div>
+                  <div>
+                    <label className="aurora-cap block mb-1.5">E-mail</label>
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="maria@empresa.com"
+                      required
+                      className="w-full px-4 py-2.5 text-[13px]"
+                      style={{ border: "1px solid var(--line)", background: "var(--linen)" }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="aurora-cap block mb-1.5">Perfil de acesso</label>
+                  <div className="flex gap-3">
+                    {(["owner", "financeiro"] as const).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setNewRole(r)}
+                        className="px-5 py-2 text-[10px] uppercase transition-all"
+                        style={{
+                          letterSpacing: "1.5px",
+                          border: "1px solid",
+                          borderColor: newRole === r ? "var(--green)" : "var(--line)",
+                          color: newRole === r ? "var(--green)" : "var(--muted-foreground)",
+                          background: newRole === r ? "rgba(74,103,65,0.06)" : "transparent",
+                        }}
+                      >
+                        {r === "owner" ? "Proprietário (acesso total)" : "Financeiro (sem saldo/downloads)"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {addUserError && (
+                  <div className="text-[12px] px-4 py-3" style={{ background: "rgba(192,126,72,0.1)", color: "var(--tan)" }}>
+                    {addUserError}
+                  </div>
+                )}
+                {addUserSuccess && (
+                  <div className="text-[12px] px-4 py-3" style={{ background: "rgba(74,103,65,0.08)", color: "var(--green)" }}>
+                    Usuário criado e convite enviado por e-mail.
+                  </div>
+                )}
+                <div>
+                  <button
+                    type="submit"
+                    disabled={addingUser || !newEmail || !newName}
+                    className="text-[10px] uppercase px-7 py-3.5 disabled:opacity-50 transition-opacity"
+                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+                  >
+                    {addingUser ? "Criando…" : "Enviar convite →"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>
