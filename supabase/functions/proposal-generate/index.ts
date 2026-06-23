@@ -131,6 +131,15 @@ Deno.serve(async (req) => {
   if (pre) return pre;
   const origin = req.headers.get("origin");
 
+  try {
+    return await handleRequest(req, origin);
+  } catch (err) {
+    console.error("[proposal-generate] Unhandled error:", err);
+    return jsonResponse({ error: String(err) }, 500, origin);
+  }
+});
+
+async function handleRequest(req: Request, origin: string | null): Promise<Response> {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405, origin);
 
   const user = await userFromAuthHeader(req);
@@ -359,4 +368,4 @@ Deno.serve(async (req) => {
     200,
     origin,
   );
-});
+}
