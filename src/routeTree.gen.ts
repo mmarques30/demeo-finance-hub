@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ConfigurarAcessoRouteImport } from './routes/configurar-acesso'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminServicosRouteImport } from './routes/admin.servicos'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin.relatorios'
 import { Route as AdminRegrasRouteImport } from './routes/admin.regras'
@@ -24,8 +26,6 @@ import { Route as AdminDfcRouteImport } from './routes/admin.dfc'
 import { Route as AdminContratosRouteImport } from './routes/admin.contratos'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
-import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
-import { Route as ConfigurarAcessoRouteImport } from './routes/configurar-acesso'
 import { Route as AdminPropostasIndexRouteImport } from './routes/admin.propostas.index'
 import { Route as AdminContratosIndexRouteImport } from './routes/admin.contratos.index'
 import { Route as PPropostaTokenRouteImport } from './routes/p.proposta.$token'
@@ -44,6 +44,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfigurarAcessoRoute = ConfigurarAcessoRouteImport.update({
+  id: '/configurar-acesso',
+  path: '/configurar-acesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -52,6 +57,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/admin/usuarios',
+  path: '/admin/usuarios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminServicosRoute = AdminServicosRouteImport.update({
@@ -109,16 +119,6 @@ const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
   path: '/admin/categorias',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
-  id: '/admin/usuarios',
-  path: '/admin/usuarios',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConfigurarAcessoRoute = ConfigurarAcessoRouteImport.update({
-  id: '/configurar-acesso',
-  path: '/configurar-acesso',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminPropostasIndexRoute = AdminPropostasIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -158,11 +158,10 @@ const AdminClientesClientIdRoute = AdminClientesClientIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/configurar-acesso': typeof ConfigurarAcessoRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
-  '/admin/usuarios': typeof AdminUsuariosRoute
-  '/configurar-acesso': typeof ConfigurarAcessoRoute
   '/admin/clientes': typeof AdminClientesRouteWithChildren
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
@@ -173,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/admin/regras': typeof AdminRegrasRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
@@ -184,11 +184,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/configurar-acesso': typeof ConfigurarAcessoRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
-  '/admin/usuarios': typeof AdminUsuariosRoute
-  '/configurar-acesso': typeof ConfigurarAcessoRoute
   '/admin/clientes': typeof AdminClientesRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
   '/admin/importar': typeof AdminImportarRoute
@@ -197,6 +196,7 @@ export interface FileRoutesByTo {
   '/admin/regras': typeof AdminRegrasRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin': typeof AdminIndexRoute
   '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
@@ -209,11 +209,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/configurar-acesso': typeof ConfigurarAcessoRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
-  '/admin/usuarios': typeof AdminUsuariosRoute
-  '/configurar-acesso': typeof ConfigurarAcessoRoute
   '/admin/clientes': typeof AdminClientesRouteWithChildren
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
@@ -224,6 +223,7 @@ export interface FileRoutesById {
   '/admin/regras': typeof AdminRegrasRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/clientes/$clientId': typeof AdminClientesClientIdRoute
   '/admin/contratos/novo': typeof AdminContratosNovoRoute
@@ -237,11 +237,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/configurar-acesso'
     | '/login'
     | '/portal'
-    | '/configurar-acesso'
     | '/admin/categorias'
-    | '/admin/usuarios'
     | '/admin/clientes'
     | '/admin/contratos'
     | '/admin/dfc'
@@ -252,6 +251,7 @@ export interface FileRouteTypes {
     | '/admin/regras'
     | '/admin/relatorios'
     | '/admin/servicos'
+    | '/admin/usuarios'
     | '/admin/'
     | '/admin/clientes/$clientId'
     | '/admin/contratos/novo'
@@ -263,11 +263,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/configurar-acesso'
     | '/login'
     | '/portal'
-    | '/configurar-acesso'
     | '/admin/categorias'
-    | '/admin/usuarios'
     | '/admin/clientes'
     | '/admin/dfc'
     | '/admin/importar'
@@ -276,6 +275,7 @@ export interface FileRouteTypes {
     | '/admin/regras'
     | '/admin/relatorios'
     | '/admin/servicos'
+    | '/admin/usuarios'
     | '/admin'
     | '/admin/clientes/$clientId'
     | '/admin/contratos/novo'
@@ -287,11 +287,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/configurar-acesso'
     | '/login'
     | '/portal'
-    | '/configurar-acesso'
     | '/admin/categorias'
-    | '/admin/usuarios'
     | '/admin/clientes'
     | '/admin/contratos'
     | '/admin/dfc'
@@ -302,6 +301,7 @@ export interface FileRouteTypes {
     | '/admin/regras'
     | '/admin/relatorios'
     | '/admin/servicos'
+    | '/admin/usuarios'
     | '/admin/'
     | '/admin/clientes/$clientId'
     | '/admin/contratos/novo'
@@ -314,11 +314,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConfigurarAcessoRoute: typeof ConfigurarAcessoRoute
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRoute
-  ConfigurarAcessoRoute: typeof ConfigurarAcessoRoute
   AdminCategoriasRoute: typeof AdminCategoriasRoute
-  AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminClientesRoute: typeof AdminClientesRouteWithChildren
   AdminContratosRoute: typeof AdminContratosRouteWithChildren
   AdminDfcRoute: typeof AdminDfcRoute
@@ -329,6 +328,7 @@ export interface RootRouteChildren {
   AdminRegrasRoute: typeof AdminRegrasRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminServicosRoute: typeof AdminServicosRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminInsightsPrecificacaoRoute: typeof AdminInsightsPrecificacaoRoute
   PPropostaTokenRoute: typeof PPropostaTokenRoute
@@ -350,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/configurar-acesso': {
+      id: '/configurar-acesso'
+      path: '/configurar-acesso'
+      fullPath: '/configurar-acesso'
+      preLoaderRoute: typeof ConfigurarAcessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -362,6 +369,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/servicos': {
@@ -439,20 +453,6 @@ declare module '@tanstack/react-router' {
       path: '/admin/categorias'
       fullPath: '/admin/categorias'
       preLoaderRoute: typeof AdminCategoriasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/usuarios': {
-      id: '/admin/usuarios'
-      path: '/admin/usuarios'
-      fullPath: '/admin/usuarios'
-      preLoaderRoute: typeof AdminUsuariosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/configurar-acesso': {
-      id: '/configurar-acesso'
-      path: '/configurar-acesso'
-      fullPath: '/configurar-acesso'
-      preLoaderRoute: typeof ConfigurarAcessoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/propostas/': {
@@ -549,11 +549,10 @@ const AdminPropostasRouteWithChildren = AdminPropostasRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConfigurarAcessoRoute: ConfigurarAcessoRoute,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRoute,
-  ConfigurarAcessoRoute: ConfigurarAcessoRoute,
   AdminCategoriasRoute: AdminCategoriasRoute,
-  AdminUsuariosRoute: AdminUsuariosRoute,
   AdminClientesRoute: AdminClientesRouteWithChildren,
   AdminContratosRoute: AdminContratosRouteWithChildren,
   AdminDfcRoute: AdminDfcRoute,
@@ -564,6 +563,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRegrasRoute: AdminRegrasRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminServicosRoute: AdminServicosRoute,
+  AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminInsightsPrecificacaoRoute: AdminInsightsPrecificacaoRoute,
   PPropostaTokenRoute: PPropostaTokenRoute,
@@ -571,3 +571,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
