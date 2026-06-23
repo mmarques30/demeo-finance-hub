@@ -11,7 +11,6 @@ export const Route = createFileRoute("/admin/usuarios")({
 });
 
 interface PortalUser {
-  id: string;
   user_id: string;
   client_id: string;
   email: string | null;
@@ -35,7 +34,7 @@ function UsuariosPage() {
     queryFn: async () => {
       const { data } = await supabase()
         .from("user_client_mapping")
-        .select("id, user_id, client_id, email, display_name, portal_role, clients(name)")
+        .select("user_id, client_id, email, display_name, portal_role, clients(name)")
         .order("display_name");
       return (data ?? []) as PortalUser[];
     },
@@ -56,16 +55,24 @@ function UsuariosPage() {
 
   // Atualizar role
   const updateRole = useMutation({
-    mutationFn: async ({ id, role }: { id: string; role: "owner" | "financeiro" }) => {
-      await supabase().from("user_client_mapping").update({ portal_role: role }).eq("id", id);
+    mutationFn: async ({ userId, clientId, role }: { userId: string; clientId: string; role: "owner" | "financeiro" }) => {
+      await supabase()
+        .from("user_client_mapping")
+        .update({ portal_role: role })
+        .eq("user_id", userId)
+        .eq("client_id", clientId);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "portalUsers"] }),
   });
 
   // Revogar acesso
   const revokeAccess = useMutation({
-    mutationFn: async (id: string) => {
-      await supabase().from("user_client_mapping").delete().eq("id", id);
+    mutationFn: async ({ userId, clientId }: { userId: string; clientId: string }) => {
+      await supabase()
+        .from("user_client_mapping")
+        .delete()
+        .eq("user_id", userId)
+        .eq("client_id", clientId);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "portalUsers"] }),
   });
@@ -165,7 +172,7 @@ function UsuariosPage() {
               </thead>
               <tbody>
                 {filtered.map((u) => (
-                  <tr key={u.id} style={{ borderTop: "1px solid var(--line)" }}>
+                  <tr key={`${u.user_id}-${u.client_id}`} style={{ borderTop: "1px solid var(--line)" }}>
                     <td className="px-5 py-3 text-[13px]" style={{ fontWeight: 500 }}>
                       {u.display_name ?? "—"}
                     </td>
@@ -176,13 +183,13 @@ function UsuariosPage() {
                       {u.clients?.name ?? "—"}
                     </td>
                     <td className="px-5 py-3">
-                      {/* Role toggle inline */}
                       <div className="flex gap-1.5">
                         {(["owner", "financeiro"] as const).map((r) => (
                           <button
                             key={r}
                             onClick={() => {
-                              if (u.portal_role !== r) updateRole.mutate({ id: u.id, role: r });
+                              if (u.portal_role !== r)
+                                updateRole.mutate({ userId: u.user_id, clientId: u.client_id, role: r });
                             }}
                             className="text-[9px] uppercase px-2.5 py-1 transition-all"
                             style={{
@@ -204,7 +211,7 @@ function UsuariosPage() {
                       <button
                         onClick={() => {
                           if (confirm(`Revogar acesso de ${u.display_name ?? u.email} ao portal?`)) {
-                            revokeAccess.mutate(u.id);
+                            revokeAccess.mutate({ userId: u.user_id, clientId: u.client_id });
                           }
                         }}
                         className="text-[9px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70"
