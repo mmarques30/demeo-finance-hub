@@ -64,6 +64,28 @@ const PRESETS = [
   { label: "Este ano",     start: () => firstOfYearISO(),    end: () => todayISO() },
 ] as const;
 
+interface ClosingAlertItem {
+  clientId: string;
+  clientName: string;
+  daysUntil: number;
+  closingDay: number;
+}
+
+function getClosingInfo(closingDay: number): { daysUntil: number; period: string } {
+  const today = new Date();
+  const todayDay = today.getDate();
+  let closingDate: Date;
+  if (closingDay >= todayDay) {
+    closingDate = new Date(today.getFullYear(), today.getMonth(), closingDay);
+  } else {
+    closingDate = new Date(today.getFullYear(), today.getMonth() + 1, closingDay);
+  }
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), todayDay);
+  const daysUntil = Math.round((closingDate.getTime() - startOfToday.getTime()) / 86400000);
+  const period = `${closingDate.getFullYear()}-${String(closingDate.getMonth() + 1).padStart(2, "0")}`;
+  return { daysUntil, period };
+}
+
 function AdminDashboard() {
   const [clientes, setClientes] = useState<ClientSummary[]>([]);
   const [totalPendentes, setTotalPendentes] = useState(0);
@@ -72,6 +94,7 @@ function AdminDashboard() {
   const [endDate, setEndDate] = useState(todayISO());
   const [activePreset, setActivePreset] = useState<string>("Este mês");
   const [trendData, setTrendData] = useState<TrendPoint[]>([]);
+  const [closingAlerts, setClosingAlerts] = useState<ClosingAlertItem[]>([]);
 
   useEffect(() => {
     const fetchTrend = async () => {
@@ -98,6 +121,38 @@ function AdminDashboard() {
       );
     };
     fetchTrend();
+  }, []);
+
+  useEffect(() => {
+    async function fetchClosingAlerts() {
+      const { data: clientsData } = await supabase()
+        .from("clients")
+        .select("id, name, monthly_closing_day")
+        .is("deleted_at", null)
+        .not("monthly_closing_day", "is", null);
+      if (!clientsData?.length) return;
+
+      const candidates = (clientsData as { id: string; name: string; monthly_closing_day: number }[])
+        .map((c) => ({ ...c, ...getClosingInfo(c.monthly_closing_day) }))
+        .filter((c) => c.daysUntil >= 0 && c.daysUntil <= 5);
+
+      if (!candidates.length) { setClosingAlerts([]); return; }
+
+      const { data: completions } = await supabase()
+        .from("monthly_closings")
+        .select("client_id, period")
+        .in("client_id", candidates.map((c) => c.id))
+        .not("completed_at", "is", null);
+
+      const completedSet = new Set((completions ?? []).map((c: { client_id: string; period: string }) => `${c.client_id}_${c.period}`));
+
+      setClosingAlerts(
+        candidates
+          .filter((c) => !completedSet.has(`${c.id}_${c.period}`))
+          .map((c) => ({ clientId: c.id, clientName: c.name, daysUntil: c.daysUntil, closingDay: c.monthly_closing_day }))
+      );
+    }
+    fetchClosingAlerts();
   }, []);
 
   const loadDashboard = useCallback(async (start: string, end: string) => {
@@ -227,6 +282,45 @@ function AdminDashboard() {
       />
 
       <div className="px-6 lg:px-10 py-10 flex flex-col gap-10">
+
+        {/* Banner de alerta de fechamento */}
+        {closingAlerts.length > 0 && (
+          <div
+            className="flex items-start gap-4"
+            style={{
+              background: "rgba(184,149,106,0.10)",
+              border: "1px solid rgba(184,149,106,0.35)",
+              borderLeft: "4px solid var(--tan)",
+              padding: "14px 20px",
+              borderRadius: "var(--radius-md)",
+            }}
+          >
+            <span style={{ fontSize: 20, lineHeight: 1 }}>📅</span>
+            <div className="flex flex-col gap-1">
+              <div
+                className="text-[11px] uppercase"
+                style={{ letterSpacing: "2px", fontWeight: 700, color: "var(--tan)" }}
+              >
+                Fechamento se aproxima
+              </div>
+              <div className="text-[13px] flex flex-wrap gap-x-5 gap-y-1" style={{ color: "var(--foreground)" }}>
+                {closingAlerts.map((a) => (
+                  <span key={a.clientId}>
+                    <strong>{a.clientName}</strong>
+                    {" — "}
+                    {a.daysUntil === 0
+                      ? "hoje"
+                      : a.daysUntil === 1
+                      ? "amanhã"
+                      : `em ${a.daysUntil} dia${a.daysUntil !== 1 ? "s" : ""}`}
+                    {" "}
+                    <span style={{ color: "var(--muted-foreground)", fontSize: 11 }}>(dia {a.closingDay})</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Filtro de período */}
         <div className="flex flex-wrap items-center gap-3">

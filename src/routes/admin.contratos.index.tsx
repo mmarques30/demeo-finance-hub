@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { supabase } from "@/lib/supabase";
 
-export const Route = createFileRoute("/admin/contratos/")({
+export const Route = createFileRoute("/admin/contratos")({
   component: ContratosListing,
   head: () => ({ meta: [{ title: "Contratos · Aurora" }] }),
 });

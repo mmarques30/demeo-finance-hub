@@ -231,7 +231,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             {/* Breadcrumb dinâmico */}
             <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
               <Link
-                to="/admin/"
+                to="/admin"
                 className="hidden sm:inline hover:opacity-70 transition-opacity"
                 style={{ color: "var(--muted-foreground)", textDecoration: "none" }}
               >
