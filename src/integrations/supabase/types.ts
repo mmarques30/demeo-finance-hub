@@ -181,6 +181,7 @@ export type Database = {
       }
       contracts: {
         Row: {
+          client_address: string | null
           client_document: string | null
           client_email: string | null
           client_name: string
@@ -196,8 +197,10 @@ export type Database = {
           status: string
           termination_notice_days: number
           total_monthly: number
+          total_one_off: number | null
         }
         Insert: {
+          client_address?: string | null
           client_document?: string | null
           client_email?: string | null
           client_name: string
@@ -213,8 +216,10 @@ export type Database = {
           status?: string
           termination_notice_days?: number
           total_monthly: number
+          total_one_off?: number | null
         }
         Update: {
+          client_address?: string | null
           client_document?: string | null
           client_email?: string | null
           client_name?: string
@@ -230,6 +235,7 @@ export type Database = {
           status?: string
           termination_notice_days?: number
           total_monthly?: number
+          total_one_off?: number | null
         }
         Relationships: [
           {
