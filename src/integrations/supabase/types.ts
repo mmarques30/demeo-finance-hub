@@ -949,6 +949,7 @@ export type Database = {
           exported_at: string
           forecast_json: Json | null
           id: string
+          pdf_url: string | null
           period_label: string
           report_format: string | null
           start_date: string
@@ -961,6 +962,7 @@ export type Database = {
           exported_at?: string
           forecast_json?: Json | null
           id?: string
+          pdf_url?: string | null
           period_label: string
           report_format?: string | null
           start_date: string
@@ -973,6 +975,7 @@ export type Database = {
           exported_at?: string
           forecast_json?: Json | null
           id?: string
+          pdf_url?: string | null
           period_label?: string
           report_format?: string | null
           start_date?: string
@@ -1204,16 +1207,25 @@ export type Database = {
         Row: {
           client_id: string
           created_at: string
+          display_name: string | null
+          email: string | null
+          portal_role: string
           user_id: string
         }
         Insert: {
           client_id: string
           created_at?: string
+          display_name?: string | null
+          email?: string | null
+          portal_role?: string
           user_id: string
         }
         Update: {
           client_id?: string
           created_at?: string
+          display_name?: string | null
+          email?: string | null
+          portal_role?: string
           user_id?: string
         }
         Relationships: [
@@ -1316,6 +1328,7 @@ export type Database = {
       }
       build_pattern: { Args: { raw: string }; Returns: string }
       current_client_id: { Args: never; Returns: string }
+      current_portal_role: { Args: never; Returns: string }
       expire_proposals: { Args: never; Returns: Json }
       expire_stale_rules: { Args: never; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
