@@ -1,12 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { LogoMark } from "@/components/Logo";
 import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
 import { useSession, usePortalRole } from "@/lib/auth";
 import { authHeaders } from "@/lib/auth";
 import { brl, monthOptions, monthRangeDates } from "@/lib/utils";
 import { computeDRE, DRE_EBITDA_PIVOT, type CatInfo, type DREData } from "@/lib/dre";
+import { useDFCForecast } from "@/hooks/useDFCForecast";
 
 export const Route = createFileRoute("/portal")({
   component: PortalPage,
@@ -19,14 +20,29 @@ interface PortalFeatures { dfc: boolean; projecao: boolean; download: boolean; }
 const DEFAULT_FEATURES: PortalFeatures = { dfc: true, projecao: false, download: false };
 
 function PortalPage() {
-  const { data: session } = useSession();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { data: session, isLoading: sessionLoading } = useSession();
   const { data: portalRole = "owner" } = usePortalRole();
   const isOwner = portalRole === "owner";
 
   const clientId = session?.user?.user_metadata?.client_id as string | undefined;
 
-  const [tab, setTab] = useState<"dfc" | "dre">("dfc");
+  // Auth guard — redireciona para login se não há sessão
+  useEffect(() => {
+    if (!sessionLoading && !session) {
+      navigate({ to: "/login" });
+    }
+  }, [session, sessionLoading, navigate]);
+
+  const [tab, setTab] = useState<"dfc" | "dre" | "projecao">("dfc");
   const [downloading, setDownloading] = useState(false);
+
+  async function handleSignOut() {
+    await supabase().auth.signOut();
+    qc.clear();
+    navigate({ to: "/login" });
+  }
 
   const { data: client } = useQuery({
     queryKey: ["portal", "client", clientId],
@@ -128,6 +144,12 @@ function PortalPage() {
   });
   const catMap = catMapData ?? new Map<string, CatInfo>();
 
+  // Projeção — só carrega quando feature habilitada e clientId disponível
+  const forecast = useDFCForecast(
+    features.projecao && clientId ? clientId : "",
+    mesAtual,
+  );
+
   const receitas = txMes.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const despesas = txMes.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const saldo = txAll.reduce((s, t) => s + t.amount, 0);
@@ -190,13 +212,16 @@ function PortalPage() {
     URL.revokeObjectURL(url);
   }
 
-  if (isLoading && !client) {
+  // Enquanto verifica sessão, não renderiza nada (o useEffect vai redirecionar se necessário)
+  if (sessionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--linen)" }}>
-        <div className="aurora-cap">Carregando portal…</div>
+        <div className="aurora-cap">Carregando…</div>
       </div>
     );
   }
+
+  if (!session) return null; // redirect em andamento
 
   return (
     <div className="min-h-screen" style={{ background: "var(--linen)" }}>
@@ -217,7 +242,7 @@ function PortalPage() {
               Acesso Financeiro
             </span>
           )}
-          <Link to="/login" className="aurora-link">Sair</Link>
+          <button onClick={handleSignOut} className="aurora-link text-[12px]">Sair</button>
         </div>
       </header>
 
@@ -262,10 +287,10 @@ function PortalPage() {
             {/* Abas DFC / DRE */}
             <div className="aurora-card p-0 overflow-hidden">
               <div className="flex" style={{ borderBottom: "1px solid var(--line)" }}>
-                {(["dfc", "dre"] as const).map((t) => (
+                {(["dfc", "dre", ...(features.projecao ? ["projecao" as const] : [])] as const).map((t) => (
                   <button
                     key={t}
-                    onClick={() => setTab(t)}
+                    onClick={() => setTab(t as "dfc" | "dre" | "projecao")}
                     className="px-8 py-4 text-[10px] uppercase transition-colors"
                     style={{
                       letterSpacing: "2px",
@@ -275,7 +300,7 @@ function PortalPage() {
                       background: "transparent",
                     }}
                   >
-                    {t === "dfc" ? "Fluxo de Caixa" : "Resultado (DRE)"}
+                    {t === "dfc" ? "Fluxo de Caixa" : t === "dre" ? "Resultado (DRE)" : "Projeção"}
                   </button>
                 ))}
               </div>
@@ -322,6 +347,10 @@ function PortalPage() {
 
                 {tab === "dre" && (
                   <DREView dre={dre} mesLabel={mesLabelCap} />
+                )}
+
+                {tab === "projecao" && features.projecao && (
+                  <ProjecaoView forecast={forecast} />
                 )}
               </div>
             </div>
@@ -448,6 +477,117 @@ function DREView({ dre, mesLabel }: { dre: DREData; mesLabel: string }) {
             </tr>
           </tbody>
         </table>
+      </div>
+    </>
+  );
+}
+
+// ─── Projeção View ─────────────────────────────────────────────────────────────
+
+import type { ForecastMonth } from "@/hooks/useDFCForecast";
+
+const MES_LABEL = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+function ProjecaoView({ forecast }: { forecast: ForecastMonth[] }) {
+  if (forecast.length === 0) {
+    return (
+      <div className="text-center py-10 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+        Dados insuficientes para gerar projeção. Importe pelo menos 3 meses de extratos.
+      </div>
+    );
+  }
+
+  const maxVal = Math.max(...forecast.flatMap((f) => [f.rec, f.des]), 1);
+
+  return (
+    <>
+      <div className="aurora-cap mb-1">Projeção financeira</div>
+      <div className="aurora-serif text-[22px] mb-6">
+        Próximos <em className="italic" style={{ color: "var(--green)" }}>{forecast.length} meses</em>
+      </div>
+
+      {/* Gráfico de barras agrupadas */}
+      <div className="grid gap-3 mb-8" style={{ gridTemplateColumns: `repeat(${forecast.length}, 1fr)` }}>
+        {forecast.map((f) => {
+          const [yyyy, mm] = f.mes.split("-");
+          const label = MES_LABEL[Number(mm) - 1];
+          const saldo = f.rec - f.des;
+          return (
+            <div key={f.mes} className="flex flex-col items-center gap-1">
+              <div className="text-[9px] uppercase" style={{ letterSpacing: "1px", color: saldo >= 0 ? "var(--green)" : "var(--tan)" }}>
+                {brl(saldo)}
+              </div>
+              <div className="w-full flex gap-0.5 items-end h-[120px]">
+                {/* Barra receitas */}
+                <div
+                  className="flex-1"
+                  style={{
+                    height: `${(f.rec / maxVal) * 100}%`,
+                    minHeight: f.rec > 0 ? 3 : 0,
+                    background: "var(--green)",
+                    opacity: 0.7,
+                    borderRadius: "3px 3px 0 0",
+                  }}
+                />
+                {/* Barra despesas */}
+                <div
+                  className="flex-1"
+                  style={{
+                    height: `${(f.des / maxVal) * 100}%`,
+                    minHeight: f.des > 0 ? 3 : 0,
+                    background: "var(--tan)",
+                    opacity: 0.6,
+                    borderRadius: "3px 3px 0 0",
+                  }}
+                />
+              </div>
+              <div className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>{label}</div>
+              <div className="text-[9px]" style={{ color: "var(--muted-foreground)" }}>{yyyy}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legenda */}
+      <div className="flex gap-6 mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3" style={{ background: "var(--green)", opacity: 0.7 }} />
+          <span className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>Receitas</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3" style={{ background: "var(--tan)", opacity: 0.6 }} />
+          <span className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>Despesas</span>
+        </div>
+      </div>
+
+      {/* Tabela detalhada */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-[12px]">
+          <thead>
+            <tr style={{ background: "#F8F6F1" }}>
+              {["Mês", "Receitas", "Despesas", "Resultado"].map((h) => (
+                <th key={h} className="text-left px-4 py-2.5 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {forecast.map((f) => {
+              const [yyyy, mm] = f.mes.split("-");
+              const saldo = f.rec - f.des;
+              return (
+                <tr key={f.mes} style={{ borderBottom: "1px solid var(--line)" }}>
+                  <td className="px-4 py-3" style={{ fontWeight: 500 }}>{MES_LABEL[Number(mm) - 1]} {yyyy}</td>
+                  <td className="px-4 py-3" style={{ color: "var(--green)" }}>{brl(f.rec)}</td>
+                  <td className="px-4 py-3" style={{ color: "var(--tan)" }}>{brl(f.des)}</td>
+                  <td className="px-4 py-3" style={{ fontWeight: 600, color: saldo >= 0 ? "var(--green)" : "var(--tan)" }}>{brl(saldo)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-4 text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+        * Projeção baseada no histórico de transações. Valores confirmados de contas a pagar/receber são incorporados quando disponíveis.
       </div>
     </>
   );
