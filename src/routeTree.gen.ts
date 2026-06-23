@@ -24,6 +24,8 @@ import { Route as AdminDfcRouteImport } from './routes/admin.dfc'
 import { Route as AdminContratosRouteImport } from './routes/admin.contratos'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
+import { Route as AdminPropostasIndexRouteImport } from './routes/admin.propostas.index'
+import { Route as AdminContratosIndexRouteImport } from './routes/admin.contratos.index'
 import { Route as PPropostaTokenRouteImport } from './routes/p.proposta.$token'
 import { Route as AdminPropostasNovaRouteImport } from './routes/admin.propostas.nova'
 import { Route as AdminInsightsPrecificacaoRouteImport } from './routes/admin.insights.precificacao'
@@ -105,6 +107,16 @@ const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
   path: '/admin/categorias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPropostasIndexRoute = AdminPropostasIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminPropostasRoute,
+} as any)
+const AdminContratosIndexRoute = AdminContratosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminContratosRoute,
+} as any)
 const PPropostaTokenRoute = PPropostaTokenRouteImport.update({
   id: '/p/proposta/$token',
   path: '/p/proposta/$token',
@@ -153,6 +165,8 @@ export interface FileRoutesByFullPath {
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
+  '/admin/contratos/': typeof AdminContratosIndexRoute
+  '/admin/propostas/': typeof AdminPropostasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -160,12 +174,10 @@ export interface FileRoutesByTo {
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRouteWithChildren
-  '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
   '/admin/importar': typeof AdminImportarRoute
   '/admin/pendentes': typeof AdminPendentesRoute
   '/admin/pipeline': typeof AdminPipelineRoute
-  '/admin/propostas': typeof AdminPropostasRouteWithChildren
   '/admin/regras': typeof AdminRegrasRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/servicos': typeof AdminServicosRoute
@@ -175,6 +187,8 @@ export interface FileRoutesByTo {
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
+  '/admin/contratos': typeof AdminContratosIndexRoute
+  '/admin/propostas': typeof AdminPropostasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -198,6 +212,8 @@ export interface FileRoutesById {
   '/admin/insights/precificacao': typeof AdminInsightsPrecificacaoRoute
   '/admin/propostas/nova': typeof AdminPropostasNovaRoute
   '/p/proposta/$token': typeof PPropostaTokenRoute
+  '/admin/contratos/': typeof AdminContratosIndexRoute
+  '/admin/propostas/': typeof AdminPropostasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -222,6 +238,8 @@ export interface FileRouteTypes {
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
+    | '/admin/contratos/'
+    | '/admin/propostas/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -229,12 +247,10 @@ export interface FileRouteTypes {
     | '/portal'
     | '/admin/categorias'
     | '/admin/clientes'
-    | '/admin/contratos'
     | '/admin/dfc'
     | '/admin/importar'
     | '/admin/pendentes'
     | '/admin/pipeline'
-    | '/admin/propostas'
     | '/admin/regras'
     | '/admin/relatorios'
     | '/admin/servicos'
@@ -244,6 +260,8 @@ export interface FileRouteTypes {
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
+    | '/admin/contratos'
+    | '/admin/propostas'
   id:
     | '__root__'
     | '/'
@@ -266,6 +284,8 @@ export interface FileRouteTypes {
     | '/admin/insights/precificacao'
     | '/admin/propostas/nova'
     | '/p/proposta/$token'
+    | '/admin/contratos/'
+    | '/admin/propostas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -395,6 +415,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCategoriasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/propostas/': {
+      id: '/admin/propostas/'
+      path: '/'
+      fullPath: '/admin/propostas/'
+      preLoaderRoute: typeof AdminPropostasIndexRouteImport
+      parentRoute: typeof AdminPropostasRoute
+    }
+    '/admin/contratos/': {
+      id: '/admin/contratos/'
+      path: '/'
+      fullPath: '/admin/contratos/'
+      preLoaderRoute: typeof AdminContratosIndexRouteImport
+      parentRoute: typeof AdminContratosRoute
+    }
     '/p/proposta/$token': {
       id: '/p/proposta/$token'
       path: '/p/proposta/$token'
@@ -447,10 +481,12 @@ const AdminClientesRouteWithChildren = AdminClientesRoute._addFileChildren(
 
 interface AdminContratosRouteChildren {
   AdminContratosNovoRoute: typeof AdminContratosNovoRoute
+  AdminContratosIndexRoute: typeof AdminContratosIndexRoute
 }
 
 const AdminContratosRouteChildren: AdminContratosRouteChildren = {
   AdminContratosNovoRoute: AdminContratosNovoRoute,
+  AdminContratosIndexRoute: AdminContratosIndexRoute,
 }
 
 const AdminContratosRouteWithChildren = AdminContratosRoute._addFileChildren(
@@ -459,10 +495,12 @@ const AdminContratosRouteWithChildren = AdminContratosRoute._addFileChildren(
 
 interface AdminPropostasRouteChildren {
   AdminPropostasNovaRoute: typeof AdminPropostasNovaRoute
+  AdminPropostasIndexRoute: typeof AdminPropostasIndexRoute
 }
 
 const AdminPropostasRouteChildren: AdminPropostasRouteChildren = {
   AdminPropostasNovaRoute: AdminPropostasNovaRoute,
+  AdminPropostasIndexRoute: AdminPropostasIndexRoute,
 }
 
 const AdminPropostasRouteWithChildren = AdminPropostasRoute._addFileChildren(
@@ -491,12 +529,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

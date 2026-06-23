@@ -578,6 +578,100 @@ export type Database = {
           },
         ]
       }
+      monthly_closings: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          period: string
+          step1_done: boolean
+          step2_done: boolean
+          step3_done: boolean
+          step4_done: boolean
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          period: string
+          step1_done?: boolean
+          step2_done?: boolean
+          step3_done?: boolean
+          step4_done?: boolean
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          period?: string
+          step1_done?: boolean
+          step2_done?: boolean
+          step3_done?: boolean
+          step4_done?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_closings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_revenue_entries: {
+        Row: {
+          client_id: string
+          created_at: string
+          entry_date: string
+          gross_amount: number
+          id: string
+          invoice_ref: string
+          period: string
+          sales_channel: string
+          taxes_withheld: number
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          entry_date: string
+          gross_amount?: number
+          id?: string
+          invoice_ref?: string
+          period: string
+          sales_channel?: string
+          taxes_withheld?: number
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          entry_date?: string
+          gross_amount?: number
+          id?: string
+          invoice_ref?: string
+          period?: string
+          sales_channel?: string
+          taxes_withheld?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_revenue_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payables: {
         Row: {
           amount: number

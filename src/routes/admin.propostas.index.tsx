@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { supabase, AURORA_APP_URL } from "@/lib/supabase";
 
-export const Route = createFileRoute("/admin/propostas")({
+export const Route = createFileRoute("/admin/propostas/")({
   component: PropostasListing,
   head: () => ({ meta: [{ title: "Propostas · Aurora" }] }),
 });
