@@ -50,8 +50,10 @@ function periodToDates(period: string): { start: string; end: string; label: str
 
 function drawHeader(page: PDFPage, fontBold: PDFFont, font: PDFFont) {
   const barW = 7; const barGap = 4; const yBot = A4.height - 59;
-  ([{ h: 20, op: 1.00 }, { h: 26, op: 0.65 }, { h: 31, op: 0.38 }]
-    as Array<{ h: number; op: number }>).forEach((b, i) => {
+  const bars: Array<{ h: number; op: number }> = [
+    { h: 20, op: 1.00 }, { h: 26, op: 0.65 }, { h: 31, op: 0.38 },
+  ];
+  bars.forEach((b, i) => {
     page.drawRectangle({ x: ML + i * (barW + barGap), y: yBot, width: barW, height: b.h, color: GREEN, opacity: b.op });
   });
   const textX = ML + 3 * (barW + barGap) + 5;
