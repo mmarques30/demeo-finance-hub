@@ -4,7 +4,6 @@
 import { z } from "https://esm.sh/zod@3.23.8";
 import {
   PDFDocument,
-  StandardFonts,
   rgb,
   PDFPage,
   PDFFont,
@@ -207,10 +206,10 @@ Deno.serve(async (req) => {
 
   // --- Monta PDF ---
   const pdf = await PDFDocument.create();
-  const fontSerif       = await pdf.embedFont(StandardFonts.TimesRoman);
-  const fontSerifItalic = await pdf.embedFont(StandardFonts.TimesItalic);
-  const fontSans        = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontSansBold    = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const fontSerif       = await pdf.embedFont("Times-Roman");
+  const fontSerifItalic = await pdf.embedFont("Times-Italic");
+  const fontSans        = await pdf.embedFont("Helvetica");
+  const fontSansBold    = await pdf.embedFont("Helvetica-Bold");
 
   const number  = contract.number ?? "CTR-DRAFT";
   const startPtBR = ptBR(contract.start_date);
