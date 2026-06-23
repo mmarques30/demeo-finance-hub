@@ -10,8 +10,15 @@ const ALLOWED_ORIGINS = [
   "http://localhost:8080",
 ];
 
+function isAllowed(origin: string | null): boolean {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  // Lovable preview URLs: https://*.lovable.app
+  return /^https:\/\/[a-z0-9-]+\.lovable\.app$/.test(origin);
+}
+
 export function corsHeaders(origin: string | null): Record<string, string> {
-  const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const allowed = isAllowed(origin) ? (origin as string) : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allowed,
     "Access-Control-Allow-Headers":
