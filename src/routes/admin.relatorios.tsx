@@ -344,8 +344,21 @@ interface ExportRecord {
   report_format: string | null;
 }
 
+interface RevenueEntry {
+  id: string;
+  entry_date: string;
+  invoice_ref: string;
+  sales_channel: string;
+  gross_amount: number;
+  taxes_withheld: number;
+}
+
+interface DetTxRow extends Tx {
+  bank: string;
+}
+
 // ─── componente principal ─────────────────────────────────────────────────────
-type RelTab = "exportar" | "historico";
+type RelTab = "exportar" | "historico" | "detalhamento";
 
 const REPORT_FORMATS = ["DFC", "DFC Gerencial"] as const;
 type ReportFormat = typeof REPORT_FORMATS[number];
@@ -360,6 +373,17 @@ function RelatoriosPage() {
   const [histLoading, setHistLoading] = useState(false);
   const [histFilter, setHistFilter] = useState<string>("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // ─── Detalhamento tab state ────────────────────────────────────────────────
+  const [detClientId, setDetClientId] = useState("");
+  const [detStart, setDetStart] = useState(firstOfMonthISO(-1));
+  const [detEnd, setDetEnd] = useState(lastOfMonthISO(-1));
+  const [detBanks, setDetBanks] = useState<string[]>([]);
+  const [detBankFilter, setDetBankFilter] = useState("todos");
+  const [detRevenues, setDetRevenues] = useState<RevenueEntry[]>([]);
+  const [detTxs, setDetTxs] = useState<DetTxRow[]>([]);
+  const [detLoading, setDetLoading] = useState(false);
+  const [detExporting, setDetExporting] = useState<"excel" | "pdf" | null>(null);
 
   useEffect(() => {
     supabase()
@@ -390,6 +414,48 @@ function RelatoriosPage() {
   }
 
   useEffect(() => { loadHistory(); }, []);
+
+  useEffect(() => {
+    if (clients.length > 0 && !detClientId) setDetClientId(clients[0].id);
+  }, [clients, detClientId]);
+
+  useEffect(() => {
+    if (!detClientId) return;
+    supabase()
+      .from("client_banks")
+      .select("bank_name")
+      .eq("client_id", detClientId)
+      .then(({ data }) => {
+        setDetBanks((data ?? []).map((b) => b.bank_name));
+        setDetBankFilter("todos");
+      });
+  }, [detClientId]);
+
+  useEffect(() => {
+    if (activeTab !== "detalhamento" || !detClientId) return;
+    setDetLoading(true);
+    Promise.all([
+      supabase()
+        .from("transactions")
+        .select("date, description, bank, amount, category, is_recurring, installment_number, installment_total, installment_group_id")
+        .eq("client_id", detClientId)
+        .eq("status", "approved")
+        .gte("date", detStart)
+        .lte("date", detEnd)
+        .order("date"),
+      (supabase() as any)
+        .from("monthly_revenue_entries")
+        .select("id, entry_date, invoice_ref, sales_channel, gross_amount, taxes_withheld")
+        .eq("client_id", detClientId)
+        .gte("entry_date", detStart)
+        .lte("entry_date", detEnd)
+        .order("entry_date"),
+    ]).then(([{ data: txData }, { data: revData }]: [{ data: unknown }, { data: unknown }]) => {
+      setDetTxs((txData as DetTxRow[] | null) ?? []);
+      setDetRevenues((revData as RevenueEntry[] | null) ?? []);
+      setDetLoading(false);
+    });
+  }, [activeTab, detClientId, detStart, detEnd]);
 
   async function saveExportRecord(clientId: string, clientName: string, type: "pdf" | "xlsx", p: ClientPeriod, forecast: ForecastMonth[], format: ReportFormat) {
     await supabase().from("report_exports").insert({
@@ -514,6 +580,191 @@ function RelatoriosPage() {
     setReexporting(null);
   }
 
+  async function handleDetalhamentoPDF() {
+    if (!detClientId || detExporting) return;
+    const client = clients.find((c) => c.id === detClientId);
+    if (!client) return;
+    setDetExporting("pdf");
+    const exportTxs = detBankFilter === "todos" ? detTxs : detTxs.filter((t) => t.bank === detBankFilter);
+    const totalBruto = detRevenues.reduce((s, r) => s + Number(r.gross_amount), 0);
+    const totalImpostos = detRevenues.reduce((s, r) => s + Number(r.taxes_withheld), 0);
+    const totalLiquido = totalBruto - totalImpostos;
+    const totalEntradas = exportTxs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+    const totalSaidas = exportTxs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+    const resultado = totalEntradas - totalSaidas;
+    const periodoLabel = `${fmtLabel(detStart)} – ${fmtLabel(detEnd)}`;
+    const today = new Date().toLocaleDateString("pt-BR");
+
+    const revRows = detRevenues.map((r) => {
+      const liq = Number(r.gross_amount) - Number(r.taxes_withheld);
+      return `<tr>
+        <td>${new Date(r.entry_date + "T12:00:00").toLocaleDateString("pt-BR")}</td>
+        <td>${r.invoice_ref || "—"}</td>
+        <td>${r.sales_channel || "—"}</td>
+        <td style="text-align:right;color:#8FA688">${brl(Number(r.gross_amount))}</td>
+        <td style="text-align:right;color:#B8956A">(${brl(Number(r.taxes_withheld))})</td>
+        <td style="text-align:right;color:#1B3950;font-weight:600">${brl(liq)}</td>
+      </tr>`;
+    }).join("");
+
+    const txRows = exportTxs.map((t) => `<tr>
+        <td>${new Date(t.date + "T12:00:00").toLocaleDateString("pt-BR")}</td>
+        <td style="color:#888">${t.bank || "—"}</td>
+        <td>${t.description}</td>
+        <td style="color:#888">${t.category || "—"}</td>
+        <td style="text-align:right;color:${t.amount >= 0 ? "#8FA688" : "#B8956A"}">${t.amount < 0 ? `(${brl(Math.abs(t.amount))})` : brl(t.amount)}</td>
+      </tr>`).join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Detalhamento Aurora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&family=Jost:wght@300&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Georgia,'Times New Roman',serif;color:#1B3950;background:#fff;padding:16mm}
+  h1{font-size:36px;font-weight:normal;margin:16px 0 4px}
+  .sub{font-size:13px;color:#888;margin-bottom:40px;font-family:sans-serif}
+  .sec{margin-bottom:36px}
+  .sec-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#8FA688;margin-bottom:12px;font-family:sans-serif}
+  table{width:100%;border-collapse:collapse;font-size:12px;font-family:sans-serif}
+  th{text-align:left;padding:8px 10px;background:#F8F6F1;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#888}
+  td{padding:8px 10px;border-bottom:1px solid #E8E3D9}
+  .total-row td{font-weight:700;background:#1B3950;color:#fff;border-bottom:none}
+  @page{size:A4;margin:0}
+  @media print{body{padding:16mm}}
+</style>
+</head>
+<body>
+  <svg width="200" height="69" viewBox="0 0 400 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="26" width="12" height="40" rx="6" fill="#4A6741"/>
+    <rect x="17" y="14" width="12" height="52" rx="6" fill="#4A6741" opacity=".65"/>
+    <rect x="34" y="4" width="12" height="62" rx="6" fill="#4A6741" opacity=".38"/>
+    <text x="58" y="60" font-family="'Cormorant Garamond',serif" font-size="50" font-weight="300" fill="#1C1C19" letter-spacing="-2">Aurora</text>
+    <text x="59" y="78" font-family="'Jost',sans-serif" font-size="9" font-weight="300" fill="#7A7260" letter-spacing="2.5">GESTÃO FINANCEIRA</text>
+  </svg>
+  <h1>${client.name}</h1>
+  <div class="sub">Período: ${periodoLabel}${detBankFilter !== "todos" ? ` &nbsp;·&nbsp; Banco: ${detBankFilter}` : ""} &nbsp;·&nbsp; Gerado em ${today}</div>
+
+  <div class="sec">
+    <div class="sec-title">Receitas Brutas — Regime de Competência</div>
+    <table>
+      <thead>
+        <tr><th>Data</th><th>NF / Referência</th><th>Canal de Venda</th><th style="text-align:right">Valor Bruto</th><th style="text-align:right">Impostos Retidos</th><th style="text-align:right">Valor Líquido</th></tr>
+      </thead>
+      <tbody>
+        ${revRows}
+        <tr class="total-row">
+          <td colspan="3">Totais</td>
+          <td style="text-align:right;color:#A8D5A2">${brl(totalBruto)}</td>
+          <td style="text-align:right;color:#F4A57E">(${brl(totalImpostos)})</td>
+          <td style="text-align:right;color:#fff">${brl(totalLiquido)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Movimentações — Regime de Caixa</div>
+    <table>
+      <thead>
+        <tr><th>Data</th><th>Banco</th><th>Descrição</th><th>Categoria</th><th style="text-align:right">Valor</th></tr>
+      </thead>
+      <tbody>
+        ${txRows}
+        <tr style="background:#F8F6F1"><td colspan="4" style="font-weight:600">Total Entradas</td><td style="text-align:right;color:#8FA688;font-weight:700">${brl(totalEntradas)}</td></tr>
+        <tr><td colspan="4">Total Saídas</td><td style="text-align:right;color:#B8956A">(${brl(totalSaidas)})</td></tr>
+        <tr class="total-row">
+          <td colspan="4">Resultado</td>
+          <td style="text-align:right;color:${resultado >= 0 ? "#A8D5A2" : "#F4A57E"}">${brl(resultado)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:48px;padding-top:16px;border-top:1px solid #E8E3D9;font-size:11px;color:#aaa;font-family:sans-serif">
+    Aurora · ${today}
+  </div>
+</body>
+</html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;border:none";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument ?? iframe.contentWindow!.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    iframe.contentWindow!.focus();
+    iframe.contentWindow!.print();
+    setTimeout(() => document.body.removeChild(iframe), 1000);
+
+    await supabase().from("report_exports").insert({
+      client_id: detClientId,
+      client_name: client.name,
+      type: "pdf",
+      period_label: periodoLabel,
+      start_date: detStart,
+      end_date: detEnd,
+      forecast_json: null,
+      report_format: "Detalhamento",
+    });
+    loadHistory();
+    setDetExporting(null);
+  }
+
+  async function handleDetalhamentoExcel() {
+    if (!detClientId || detExporting) return;
+    const client = clients.find((c) => c.id === detClientId);
+    if (!client) return;
+    setDetExporting("excel");
+    const exportTxs = detBankFilter === "todos" ? detTxs : detTxs.filter((t) => t.bank === detBankFilter);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(
+        detRevenues.map((r) => ({
+          Data: r.entry_date,
+          "NF / Referência": r.invoice_ref || "",
+          "Canal de Venda": r.sales_channel || "",
+          "Valor Bruto": Number(r.gross_amount),
+          "Impostos Retidos": Number(r.taxes_withheld),
+          "Valor Líquido": Number(r.gross_amount) - Number(r.taxes_withheld),
+        })),
+      ),
+      "Receitas Brutas",
+    );
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(
+        exportTxs.map((t) => ({
+          Data: t.date,
+          Banco: t.bank || "",
+          Descrição: t.description,
+          Categoria: t.category || "",
+          Valor: t.amount,
+          Tipo: t.amount >= 0 ? "Receita" : "Despesa",
+        })),
+      ),
+      "Movimentações",
+    );
+    XLSX.writeFile(wb, `Detalhamento_${client.name.replace(/\s+/g, "_")}_${detStart}_${detEnd}.xlsx`);
+    await supabase().from("report_exports").insert({
+      client_id: detClientId,
+      client_name: client.name,
+      type: "xlsx",
+      period_label: `${fmtLabel(detStart)} – ${fmtLabel(detEnd)}`,
+      start_date: detStart,
+      end_date: detEnd,
+      forecast_json: null,
+      report_format: "Detalhamento",
+    });
+    loadHistory();
+    setDetExporting(null);
+  }
+
   const filteredHistory = histFilter
     ? history.filter((r) => r.client_id === histFilter)
     : history;
@@ -529,7 +780,7 @@ function RelatoriosPage() {
 
       {/* Tab bar */}
       <div className="flex gap-1 px-8 lg:px-12 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
-        {([{ key: "exportar", label: "Exportar" }, { key: "historico", label: "Histórico" }] as { key: RelTab; label: string }[]).map((tab) => (
+        {([{ key: "exportar", label: "Exportar" }, { key: "historico", label: "Histórico" }, { key: "detalhamento", label: "Detalhamento" }] as { key: RelTab; label: string }[]).map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
@@ -662,7 +913,204 @@ function RelatoriosPage() {
         </div>
         )}
 
-        {/* ── Aba: Histórico ────────────────────────────────────────────────────── */}
+        {/* ── Aba: Detalhamento ─────────────────────────────────────────────────── */}
+        {activeTab === "detalhamento" && (() => {
+          const detFilteredTxs = detBankFilter === "todos" ? detTxs : detTxs.filter((t) => t.bank === detBankFilter);
+          const detTotalBruto = detRevenues.reduce((s, r) => s + Number(r.gross_amount), 0);
+          const detTotalImpostos = detRevenues.reduce((s, r) => s + Number(r.taxes_withheld), 0);
+          const detTotalLiquido = detTotalBruto - detTotalImpostos;
+          const detTotalEntradas = detFilteredTxs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+          const detTotalSaidas = detFilteredTxs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+          const detResultado = detTotalEntradas - detTotalSaidas;
+          return (
+            <div className="grid gap-6">
+              {/* Filtros */}
+              <div
+                className="aurora-card p-5 flex items-center gap-4 flex-wrap"
+                style={{ borderBottom: "1px solid var(--line)" }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="aurora-cap">Cliente</span>
+                  <select
+                    value={detClientId}
+                    onChange={(e) => setDetClientId(e.target.value)}
+                    className="bg-white px-3 py-2 text-[12px]"
+                    style={{ border: "1px solid var(--line)" }}
+                  >
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>De</span>
+                  <input
+                    type="date"
+                    value={detStart}
+                    max={detEnd}
+                    onChange={(e) => setDetStart(e.target.value)}
+                    className="text-[11px] px-2 py-1.5 outline-none"
+                    style={{ border: "1px solid var(--line)", background: "#fff", minWidth: 120 }}
+                  />
+                  <span className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 500 }}>Até</span>
+                  <input
+                    type="date"
+                    value={detEnd}
+                    min={detStart}
+                    max={todayISO()}
+                    onChange={(e) => setDetEnd(e.target.value)}
+                    className="text-[11px] px-2 py-1.5 outline-none"
+                    style={{ border: "1px solid var(--line)", background: "#fff", minWidth: 120 }}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="aurora-cap">Banco</span>
+                  <select
+                    value={detBankFilter}
+                    onChange={(e) => setDetBankFilter(e.target.value)}
+                    className="bg-white px-3 py-2 text-[12px]"
+                    style={{ border: "1px solid var(--line)" }}
+                  >
+                    <option value="todos">Todos os bancos</option>
+                    {detBanks.map((b) => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-2 ml-auto">
+                  <button
+                    onClick={handleDetalhamentoPDF}
+                    disabled={!detClientId || !!detExporting}
+                    className="text-[10px] uppercase px-4 py-2 disabled:opacity-40 transition-opacity"
+                    style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" }}
+                  >
+                    {detExporting === "pdf" ? "..." : "PDF ↓"}
+                  </button>
+                  <button
+                    onClick={handleDetalhamentoExcel}
+                    disabled={!detClientId || !!detExporting}
+                    className="text-[10px] uppercase px-4 py-2 disabled:opacity-40 transition-opacity"
+                    style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "1.5px" }}
+                  >
+                    {detExporting === "excel" ? "..." : "Excel ↓"}
+                  </button>
+                </div>
+              </div>
+
+              {detLoading && (
+                <div className="aurora-card flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
+                  <span className="text-[12px]">Carregando dados...</span>
+                </div>
+              )}
+
+              {/* Receitas Brutas */}
+              <div className="aurora-card p-0 overflow-hidden">
+                <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)" }}>
+                  <div className="aurora-cap mb-1">Regime de Competência</div>
+                  <div className="aurora-serif text-[20px]">Receitas Brutas</div>
+                </div>
+                {detRevenues.length === 0 && !detLoading ? (
+                  <div className="px-6 py-8 text-[12px] text-center" style={{ color: "var(--muted-foreground)" }}>
+                    Nenhum lançamento de receita bruta neste período.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr style={{ background: "var(--linen)" }}>
+                          {["Data", "NF / Referência", "Canal de Venda", "Valor Bruto", "Impostos Retidos", "Valor Líquido"].map((h) => (
+                            <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detRevenues.map((r, i) => {
+                          const liq = Number(r.gross_amount) - Number(r.taxes_withheld);
+                          return (
+                            <tr key={r.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                              <td className="px-5 py-2.5 text-[12px]">{new Date(r.entry_date + "T12:00:00").toLocaleDateString("pt-BR")}</td>
+                              <td className="px-5 py-2.5 text-[12px]">{r.invoice_ref || "—"}</td>
+                              <td className="px-5 py-2.5 text-[12px]">{r.sales_channel || "—"}</td>
+                              <td className="px-5 py-2.5 aurora-value text-right text-[13px]" style={{ color: "var(--green)" }}>{brl(Number(r.gross_amount))}</td>
+                              <td className="px-5 py-2.5 aurora-value text-right text-[13px]" style={{ color: "var(--expense)" }}>({brl(Number(r.taxes_withheld))})</td>
+                              <td className="px-5 py-2.5 aurora-value text-right text-[13px]" style={{ color: "var(--navy)" }}>{brl(liq)}</td>
+                            </tr>
+                          );
+                        })}
+                        <tr style={{ background: "var(--navy)", borderTop: "2px solid var(--navy)" }}>
+                          <td colSpan={3} className="px-5 py-3 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 700, color: "#fff" }}>Totais</td>
+                          <td className="px-5 py-3 aurora-value text-right" style={{ color: "#A8D5A2", fontWeight: 700 }}>{brl(detTotalBruto)}</td>
+                          <td className="px-5 py-3 aurora-value text-right" style={{ color: "#F4A57E", fontWeight: 700 }}>({brl(detTotalImpostos)})</td>
+                          <td className="px-5 py-3 aurora-value text-right" style={{ color: "#fff", fontWeight: 700 }}>{brl(detTotalLiquido)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Movimentações */}
+              <div className="aurora-card p-0 overflow-hidden">
+                <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)" }}>
+                  <div className="aurora-cap mb-1">Regime de Caixa</div>
+                  <div className="aurora-serif text-[20px]">
+                    Movimentações{detBankFilter !== "todos" ? ` · ${detBankFilter}` : ""}
+                  </div>
+                </div>
+                {detFilteredTxs.length === 0 && !detLoading ? (
+                  <div className="px-6 py-8 text-[12px] text-center" style={{ color: "var(--muted-foreground)" }}>
+                    Nenhuma transação aprovada neste período{detBankFilter !== "todos" ? ` para o banco ${detBankFilter}` : ""}.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr style={{ background: "var(--linen)" }}>
+                          {["Data", "Banco", "Descrição", "Categoria", "Valor"].map((h) => (
+                            <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detFilteredTxs.map((t, i) => (
+                          <tr key={t.date + t.description + i} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                            <td className="px-5 py-2.5 text-[12px]">{new Date(t.date + "T12:00:00").toLocaleDateString("pt-BR")}</td>
+                            <td className="px-5 py-2.5 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{t.bank || "—"}</td>
+                            <td className="px-5 py-2.5 text-[12px]">{t.description}</td>
+                            <td className="px-5 py-2.5 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{t.category || "—"}</td>
+                            <td className="px-5 py-2.5 aurora-value text-right text-[13px]" style={{ color: t.amount >= 0 ? "var(--green)" : "var(--expense)" }}>
+                              {t.amount < 0 ? `(${brl(Math.abs(t.amount))})` : brl(t.amount)}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr style={{ background: "var(--linen)", borderTop: "2px solid var(--line)" }}>
+                          <td colSpan={3} className="px-5 py-3 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600 }}>Total Entradas</td>
+                          <td />
+                          <td className="px-5 py-3 aurora-value text-right text-[14px]" style={{ color: "var(--green)", fontWeight: 700 }}>{brl(detTotalEntradas)}</td>
+                        </tr>
+                        <tr style={{ borderTop: "1px solid var(--line)" }}>
+                          <td colSpan={3} className="px-5 py-3 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600 }}>Total Saídas</td>
+                          <td />
+                          <td className="px-5 py-3 aurora-value text-right text-[14px]" style={{ color: "var(--expense)", fontWeight: 700 }}>({brl(detTotalSaidas)})</td>
+                        </tr>
+                        <tr style={{ background: "var(--navy)", borderTop: "2px solid var(--navy)" }}>
+                          <td colSpan={3} className="px-5 py-3 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 700, color: "#fff" }}>Resultado</td>
+                          <td />
+                          <td className="px-5 py-3 aurora-value text-right text-[14px]" style={{ color: detResultado >= 0 ? "#A8D5A2" : "#F4A57E", fontWeight: 700 }}>
+                            {brl(detResultado)}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── Aba: Histórico ─────────────────────────────────────────────────── */}
         {activeTab === "historico" && (
           <div className="aurora-card p-0 overflow-hidden">
             {/* Filtro por cliente */}
