@@ -22,6 +22,8 @@ interface TxRecord {
   amount: number;
   category: string | null;
   status: string;
+  installment_number: number | null;
+  installment_total: number | null;
 }
 
 const MANUAL_KEY = "__manual__";
@@ -52,9 +54,10 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
         .order("created_at", { ascending: false }),
       supabase()
         .from("transactions")
-        .select("id, date, description, amount, category, status")
+        .select("id, date, description, amount, category, status, installment_number, installment_total")
         .eq("client_id", clientId)
         .is("upload_id", null)
+        .eq("status", "approved")
         .order("date", { ascending: false }),
     ]).then(([{ data: uploadsData }, { data: manualData }]) => {
       setUploads((uploadsData ?? []) as UploadRecord[]);
@@ -78,8 +81,9 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
     if (txMap[uploadId] === undefined) {
       const { data } = await supabase()
         .from("transactions")
-        .select("id, date, description, amount, category, status")
+        .select("id, date, description, amount, category, status, installment_number, installment_total")
         .eq("upload_id", uploadId)
+        .eq("status", "approved")
         .order("date");
       setTxMap((prev) => ({ ...prev, [uploadId]: (data ?? []) as TxRecord[] }));
     }
@@ -156,6 +160,15 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
               <div className="flex items-center gap-6 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
                 <span>Período: <strong style={{ color: "var(--foreground)" }}>{upload.period}</strong></span>
                 <span>{upload.tx_total} transações</span>
+                {upload.tx_pending > 0 && (
+                  <span
+                    className="aurora-cap px-2 py-0.5 text-[10px]"
+                    style={{ background: "rgba(184,149,106,0.15)", color: "var(--tan)", border: "1px solid rgba(184,149,106,0.3)" }}
+                    title="Transações aguardando aprovação no Importar"
+                  >
+                    {upload.tx_pending} aguardando aprovação
+                  </span>
+                )}
                 <span>Importado em {formatDatePtBR(upload.created_at.slice(0, 10))}</span>
               </div>
               <div className="flex items-center gap-3">
@@ -185,11 +198,18 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
               </div>
             )}
 
+            {isExpanded && txs !== undefined && txs.length === 0 && upload.tx_pending > 0 && (
+              <div className="px-6 py-5 text-[12px] flex items-center gap-2" style={{ color: "var(--tan)" }}>
+                <span>⚠</span>
+                <span>Nenhuma transação aprovada. Acesse <strong>Importar</strong> para revisar e aprovar os lançamentos pendentes.</span>
+              </div>
+            )}
+
             {isExpanded && txs !== undefined && txs.length > 0 && (
               <table className="w-full">
                 <thead>
                   <tr style={{ background: "#FAFAF8" }}>
-                    {["Data", "Descrição", "Valor", "Categoria", "Status", "Ações"].map((h) => (
+                    {["Data", "Descrição", "Parcelamento", "Valor", "Categoria", "Ações"].map((h) => (
                       <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
                     ))}
                   </tr>
@@ -199,23 +219,24 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
                     <tr key={tx.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
                       <td className="px-5 py-3 text-[12px] whitespace-nowrap">{formatDatePtBR(tx.date)}</td>
                       <td className="px-5 py-3 text-[12px]">{tx.description}</td>
+                      <td className="px-5 py-3 text-[12px]">
+                        {tx.installment_number && tx.installment_total ? (
+                          <span
+                            className="aurora-cap px-2 py-0.5 rounded text-[10px]"
+                            style={{ background: "rgba(27,57,77,0.08)", color: "var(--navy)" }}
+                          >
+                            {tx.installment_number}/{tx.installment_total}
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--muted-foreground)" }}>—</span>
+                        )}
+                      </td>
                       <td className="px-5 py-3 aurora-value text-[14px] whitespace-nowrap"
                         style={{ color: tx.amount >= 0 ? "var(--green)" : "var(--expense)" }}>
                         {tx.amount >= 0 ? "+" : ""}{brl(tx.amount)}
                       </td>
                       <td className="px-5 py-3 text-[12px]">
                         {tx.category ?? <span style={{ color: "var(--muted-foreground)" }}>—</span>}
-                      </td>
-                      <td className="px-5 py-3">
-                        <span
-                          className="aurora-cap px-2 py-0.5 rounded text-[10px]"
-                          style={{
-                            background: tx.status === "approved" ? "rgba(74,103,65,0.12)" : "rgba(184,149,106,0.15)",
-                            color: tx.status === "approved" ? "var(--green)" : "var(--tan)",
-                          }}
-                        >
-                          {tx.status === "approved" ? "Aprovado" : tx.status === "classified" ? "Classificado" : "Pendente"}
-                        </span>
                       </td>
                       <td className="px-5 py-3 text-right whitespace-nowrap">
                         <button onClick={() => setEditTx(tx)} className="aurora-link text-[11px] mr-3">
