@@ -44,33 +44,21 @@ function ptBR(dateStr: string): string {
   return d.toLocaleDateString("pt-BR");
 }
 
-// Símbolo Aurora (sol nascendo) — versão pequena para header
-function drawAuroraSymbol(page: PDFPage, cx: number, cyAnchor: number, R: number) {
-  const ln = (x1: number, y1: number, x2: number, y2: number, op = 1, th = 1.4) =>
-    page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, color: GREEN, thickness: th, opacity: op });
-
-  ln(cx, cyAnchor, cx, cyAnchor + R);
-  ln(cx, cyAnchor, cx + R * 0.78, cyAnchor + R * 0.78, 0.7);
-  ln(cx, cyAnchor, cx - R * 0.78, cyAnchor + R * 0.78, 0.7);
-  ln(cx, cyAnchor, cx + R, cyAnchor + R * 0.45, 0.35, 1);
-  ln(cx, cyAnchor, cx - R, cyAnchor + R * 0.45, 0.35, 1);
-
-  const segs = 16;
-  let prev = { x: cx - R * 0.95, y: cyAnchor };
-  for (let i = 1; i <= segs; i++) {
-    const angle = Math.PI * (i / segs);
-    const nx = cx - R * 0.95 * Math.cos(angle);
-    const ny = cyAnchor + R * 0.55 * Math.sin(angle);
-    page.drawLine({ start: prev, end: { x: nx, y: ny }, color: GREEN, thickness: 1.4 });
-    prev = { x: nx, y: ny };
-  }
-  page.drawCircle({ x: cx, y: cyAnchor, size: 2, color: GREEN });
-}
-
 function drawHeader(page: PDFPage, fontBold: PDFFont, font: PDFFont) {
-  drawAuroraSymbol(page, ML + 14, A4.height - 50, 14);
-  page.drawText("Aurora", { x: ML + 36, y: A4.height - 40, font: fontBold, size: 13, color: GREEN });
-  page.drawText("Gestão Financeira", { x: ML + 36, y: A4.height - 53, font, size: 8, color: MUTED });
+  // Logo Aurora: 3 barras verticais ascendentes, alinhadas na base (fiel ao SVG dos relatórios)
+  const barW = 7;
+  const barGap = 4;
+  const yBot = A4.height - 59;
+  ([
+    { h: 20, op: 1.00 },
+    { h: 26, op: 0.65 },
+    { h: 31, op: 0.38 },
+  ] as Array<{ h: number; op: number }>).forEach((b, i) => {
+    page.drawRectangle({ x: ML + i * (barW + barGap), y: yBot, width: barW, height: b.h, color: GREEN, opacity: b.op });
+  });
+  const textX = ML + 3 * (barW + barGap) + 5;
+  page.drawText("Aurora", { x: textX, y: A4.height - 40, font: fontBold, size: 14, color: GREEN });
+  page.drawText("GESTÃO FINANCEIRA", { x: textX, y: A4.height - 52, font, size: 7, color: MUTED });
   page.drawText(AURORA_EMAIL, {
     x: A4.width - MR - font.widthOfTextAtSize(AURORA_EMAIL, 8),
     y: A4.height - 46, font, size: 8, color: MUTED,
