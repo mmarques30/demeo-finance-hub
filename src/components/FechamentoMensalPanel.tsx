@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { brl, formatDatePtBR, monthOptions, monthRangeDates } from "@/lib/utils";
 import { todayISO } from "@/lib/dateUtils";
@@ -13,6 +14,18 @@ interface RevenueEntry {
   sales_channel: string;
   gross_amount: number;
   taxes_withheld: number;
+}
+
+interface ReportExport {
+  id: string;
+  client_id: string | null;
+  client_name: string;
+  type: string;
+  period_label: string;
+  start_date: string;
+  end_date: string;
+  exported_at: string;
+  report_format: string | null;
 }
 
 interface MonthlyClosing {
@@ -84,6 +97,7 @@ export function FechamentoMensalPanel({
   const [form, setForm] = useState<EntryFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [reportHistory, setReportHistory] = useState<ReportExport[]>([]);
 
   const dbPeriod = mmyyyyToYYYYMM(selectedPeriod);
 
@@ -106,9 +120,17 @@ export function FechamentoMensalPanel({
         .eq("client_id", clientId)
         .eq("period", dbPeriod)
         .maybeSingle(),
-    ]).then(([{ data: entriesData }, { data: closingData }]) => {
+      supabase()
+        .from("report_exports")
+        .select("id, client_id, client_name, type, period_label, start_date, end_date, exported_at, report_format")
+        .eq("client_id", clientId)
+        .gte("start_date", start)
+        .lte("start_date", end)
+        .order("exported_at", { ascending: false }),
+    ]).then(([{ data: entriesData }, { data: closingData }, { data: reportsData }]) => {
       setEntries((entriesData ?? []) as RevenueEntry[]);
       setClosing(closingData as MonthlyClosing | null);
+      setReportHistory((reportsData ?? []) as ReportExport[]);
       setLoadingData(false);
     });
   }, [clientId, selectedPeriod, dbPeriod]);
@@ -468,6 +490,78 @@ export function FechamentoMensalPanel({
               )}
             </table>
           </div>
+        )}
+      </div>
+
+      {/* Histórico de documentos gerados */}
+      <div className="aurora-card p-0 overflow-hidden">
+        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
+          <div>
+            <div className="aurora-cap mb-1">Documentos</div>
+            <div className="aurora-serif text-[20px]">
+              Histórico <em className="italic" style={{ color: "var(--green)" }}>gerados neste período</em>
+            </div>
+          </div>
+          <Link
+            to={"/admin/relatorios" as never}
+            className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
+            style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "2.5px", fontWeight: 500 }}
+          >
+            + Gerar relatório
+          </Link>
+        </div>
+        {loadingData ? null : reportHistory.length === 0 ? (
+          <div className="px-6 py-8 text-[12px] text-center" style={{ color: "var(--muted-foreground)" }}>
+            Nenhum documento gerado para este período.{" "}
+            <Link to={"/admin/relatorios" as never} style={{ color: "var(--green)", textDecoration: "underline" }}>
+              Gerar agora →
+            </Link>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr style={{ background: "var(--linen)" }}>
+                {["Data de exportação", "Formato", "Período coberto", "Tipo", ""].map((h) => (
+                  <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {reportHistory.map((r) => (
+                <tr key={r.id} style={{ borderTop: "1px solid var(--line)", background: "#fff" }}>
+                  <td className="px-6 py-3 text-[12px]" style={{ whiteSpace: "nowrap" }}>
+                    {new Date(r.exported_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </td>
+                  <td className="px-6 py-3 text-[12px]">{r.report_format ?? "—"}</td>
+                  <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{r.period_label}</td>
+                  <td className="px-6 py-3">
+                    <span
+                      className="inline-flex items-center text-[10px] uppercase px-2 py-1"
+                      style={{
+                        letterSpacing: "1px",
+                        fontWeight: 600,
+                        background: r.type === "pdf" ? "rgba(27,57,77,0.10)" : "rgba(74,103,65,0.10)",
+                        color: r.type === "pdf" ? "var(--navy)" : "var(--green)",
+                      }}
+                    >
+                      {r.type.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3">
+                    <Link
+                      to={"/admin/relatorios" as never}
+                      className="text-[10px] uppercase px-2 py-1 transition-opacity hover:opacity-70"
+                      style={{ color: "var(--muted-foreground)", border: "1px solid var(--line)", letterSpacing: "1px", whiteSpace: "nowrap" }}
+                    >
+                      Exportar novamente →
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 
