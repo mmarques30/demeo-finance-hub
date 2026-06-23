@@ -145,35 +145,15 @@ function openPrintReport(
   const fixosPct = d.despesas > 0 ? ((d.fixos / d.despesas) * 100).toFixed(1) : "0";
   const varPct = d.despesas > 0 ? ((d.variaveis / d.despesas) * 100).toFixed(1) : "0";
 
-  // Parcelamentos
-  const instTxs = txs.filter((t) => t.installment_group_id);
-  const instSection = instTxs.length > 0
-    ? `<div class="sec">
-    <div class="sec-title">Parcelamentos</div>
-    <table>
-      <thead><tr><th>Data</th><th>Descrição</th><th style="text-align:right">Valor Parcela</th><th style="text-align:center">Parcela Nº</th><th style="text-align:center">Total</th></tr></thead>
-      <tbody>
-        ${instTxs.map((t) => `<tr>
-          <td>${t.date}</td>
-          <td>${t.description}</td>
-          <td style="text-align:right;color:#B8956A">(${brl(Math.abs(t.amount))})</td>
-          <td style="text-align:center">${t.installment_number ?? "—"}</td>
-          <td style="text-align:center">${t.installment_total ?? "—"}</td>
-        </tr>`).join("")}
-      </tbody>
-    </table>
-  </div>`
-    : "";
-
-  // Receitas Brutas (regime de competência)
+  // Detalhamento — Receitas Brutas (regime de competência)
   const revTotalBruto = revenues.reduce((s, r) => s + Number(r.gross_amount), 0);
   const revTotalImpostos = revenues.reduce((s, r) => s + Number(r.taxes_withheld), 0);
   const revTotalLiquido = revTotalBruto - revTotalImpostos;
-  const revSection = revenues.length > 0
-    ? `<div class="sec">
-    <div class="sec-title">Receitas Brutas — Regime de Competência</div>
+  const revRows = revenues.length > 0
+    ? `<div style="margin-bottom:24px">
+    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#888;font-family:sans-serif;margin-bottom:8px">Regime de Competência — Receitas Brutas</div>
     <table>
-      <thead><tr><th>Data</th><th>NF / Referência</th><th>Canal de Venda</th><th style="text-align:right">Valor Bruto</th><th style="text-align:right">Impostos Retidos</th><th style="text-align:right">Valor Líquido</th></tr></thead>
+      <thead><tr><th>Data</th><th>NF / Referência</th><th>Canal de Venda</th><th style="text-align:right">Valor Bruto</th><th style="text-align:right">Impostos</th><th style="text-align:right">Valor Líquido</th></tr></thead>
       <tbody>
         ${revenues.map((r) => {
           const liq = Number(r.gross_amount) - Number(r.taxes_withheld);
@@ -192,6 +172,62 @@ function openPrintReport(
           <td style="text-align:right;color:#F4A57E;font-weight:700;padding:10px">(${brl(revTotalImpostos)})</td>
           <td style="text-align:right;color:#fff;font-weight:700;padding:10px">${brl(revTotalLiquido)}</td>
         </tr>
+      </tbody>
+    </table>
+  </div>`
+    : "";
+
+  // Detalhamento — Movimentações (regime de caixa)
+  const totalEntradas = txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const totalSaidas = txs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const movRows = `<div>
+    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#888;font-family:sans-serif;margin-bottom:8px">Regime de Caixa — Movimentações</div>
+    <table>
+      <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th style="text-align:right">Valor</th></tr></thead>
+      <tbody>
+        ${txs.map((t) => `<tr>
+          <td>${t.date}</td>
+          <td>${t.description}</td>
+          <td style="color:#888">${t.category || "—"}</td>
+          <td style="text-align:right;color:${t.amount >= 0 ? "#8FA688" : "#B8956A"}">${t.amount < 0 ? `(${brl(Math.abs(t.amount))})` : brl(t.amount)}</td>
+        </tr>`).join("")}
+        <tr style="background:#F8F6F1;border-top:1px solid #E8E3D9">
+          <td colspan="3" style="font-weight:600;font-family:sans-serif;font-size:11px;padding:8px 10px">Total Entradas</td>
+          <td style="text-align:right;font-weight:700;color:#8FA688">${brl(totalEntradas)}</td>
+        </tr>
+        <tr style="background:#F8F6F1">
+          <td colspan="3" style="font-weight:600;font-family:sans-serif;font-size:11px;padding:8px 10px">Total Saídas</td>
+          <td style="text-align:right;font-weight:700;color:#B8956A">(${brl(totalSaidas)})</td>
+        </tr>
+        <tr style="background:#1B3950">
+          <td colspan="3" style="font-weight:700;color:#fff;padding:10px;font-family:sans-serif">Resultado do Período</td>
+          <td style="text-align:right;font-weight:700;color:${(totalEntradas - totalSaidas) >= 0 ? "#A8D5A2" : "#F4A57E"};padding:10px">${brl(totalEntradas - totalSaidas)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>`;
+
+  const detSection = `<div class="sec">
+    <div class="sec-title">Detalhamento</div>
+    ${revRows}
+    ${movRows}
+  </div>`;
+
+  // Parcelamentos
+  const instTxs = txs.filter((t) => t.installment_group_id);
+  const instSection = instTxs.length > 0
+    ? `<div class="sec">
+    <div class="sec-title">Parcelamentos</div>
+    <table>
+      <thead><tr><th>Data</th><th>Descrição</th><th style="text-align:right">Valor Parcela</th><th style="text-align:center">Parcela Nº</th><th style="text-align:center">Total</th></tr></thead>
+      <tbody>
+        ${instTxs.map((t) => `<tr>
+          <td>${t.date}</td>
+          <td>${t.description}</td>
+          <td style="text-align:right;color:#B8956A">(${brl(Math.abs(t.amount))})</td>
+          <td style="text-align:center">${t.installment_number ?? "—"}</td>
+          <td style="text-align:center">${t.installment_total ?? "—"}</td>
+        </tr>`).join("")}
       </tbody>
     </table>
   </div>`
@@ -267,9 +303,9 @@ function openPrintReport(
     </table>
   </div>
 
-  ${instSection}
+  ${detSection}
 
-  ${revSection}
+  ${instSection}
 
   <div class="sec">
     <div class="sec-title">Projeção — Próximos 90 dias</div>

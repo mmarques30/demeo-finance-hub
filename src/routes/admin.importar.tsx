@@ -22,6 +22,29 @@ interface Transaction {
   status: string;
   is_recurring: boolean | null;
   confidence: number | null;
+  installment_number?: number | null;
+  installment_total?: number | null;
+}
+
+interface InstallmentState {
+  enabled: boolean;
+  number: number;
+  total: number;
+}
+
+function buildDescPattern(desc: string): string {
+  return desc.replace(/\d+/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+async function calcGroupId(txId: string, description: string, installmentTotal: number, date: string): Promise<string> {
+  const yearMonth = date.slice(0, 7);
+  const input = `${txId}:${buildDescPattern(description)}:${installmentTotal}:${yearMonth}`;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  const b = new Uint8Array(buf);
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = Array.from(b.slice(0, 16)).map((x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
 interface ClientOption {
@@ -66,6 +89,7 @@ function ImportarPage() {
   const [canceling, setCanceling] = useState(false);
   const [cancelUploadOpen, setCancelUploadOpen] = useState(false);
   const [classifyTimedOut, setClassifyTimedOut] = useState(false);
+  const [installments, setInstallments] = useState<Record<string, InstallmentState>>({});
 
   const CATEGORIAS = useCategories(clientId);
 
@@ -201,22 +225,55 @@ function ImportarPage() {
     if (!ids.length) return;
     setApproving(true);
 
-    const { data: updated, error: err } = await supabase()
-      .from("transactions")
-      .update({ status: "approved" })
-      .in("id", ids)
-      .select("id");
+    try {
+      // Save installment fields for transactions that have parcelamento enabled
+      const withInst = ids.filter((id) => {
+        const inst = installments[id];
+        return inst?.enabled && inst.total >= 2 && inst.number >= 1 && inst.number <= inst.total;
+      });
+      if (withInst.length > 0) {
+        const tx = transactions;
+        await Promise.all(
+          withInst.map(async (id) => {
+            const t = tx.find((r) => r.id === id);
+            if (!t) return;
+            const inst = installments[id];
+            const groupId = await calcGroupId(id, t.description, inst.total, t.date);
+            await supabase()
+              .from("transactions")
+              .update({ installment_number: inst.number, installment_total: inst.total, installment_group_id: groupId })
+              .eq("id", id);
+          })
+        );
+      }
 
-    if (err) {
-      setError(`Erro ao aprovar: ${err.message}`);
-    } else if (!updated?.length) {
-      setError("Nenhum lançamento foi aprovado. Verifique sua sessão e tente novamente.");
-    } else {
-      const approvedIds = (updated as { id: string }[]).map((r) => r.id);
-      setTransactions((prev) =>
-        prev.map((t) => (approvedIds.includes(t.id) ? { ...t, status: "approved" } : t))
-      );
-      setSelected(new Set());
+      const { data: updated, error: err } = await supabase()
+        .from("transactions")
+        .update({ status: "approved" })
+        .in("id", ids)
+        .select("id");
+
+      if (err) {
+        setError(`Erro ao aprovar: ${err.message}`);
+      } else if (!updated?.length) {
+        setError("Nenhum lançamento foi aprovado. Verifique sua sessão e tente novamente.");
+      } else {
+        const approvedIds = new Set((updated as { id: string }[]).map((r) => r.id));
+        setTransactions((prev) =>
+          prev.map((t) => {
+            if (!approvedIds.has(t.id)) return t;
+            const inst = installments[t.id];
+            return {
+              ...t,
+              status: "approved",
+              ...(inst?.enabled ? { installment_number: inst.number, installment_total: inst.total } : {}),
+            };
+          })
+        );
+        setSelected(new Set());
+      }
+    } catch (e) {
+      setError(String(e));
     }
     setApproving(false);
   }
@@ -477,7 +534,7 @@ function ImportarPage() {
                   <th className="px-4 py-3">
                     <input type="checkbox" checked={selected.size === transactions.length && transactions.length > 0} onChange={toggleAll} />
                   </th>
-                  {["Data", "Descrição", "Valor", "Categoria sugerida", "Status", "Ação"].map((h) => (
+                  {["Data", "Descrição", "Valor", "Categoria sugerida", "Parcelamento", "Status", "Ação"].map((h) => (
                     <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>
                       {h}
                     </th>
@@ -528,6 +585,50 @@ function ImportarPage() {
                         style={{ color: isPending ? "var(--tan)" : "var(--foreground)" }}
                       >
                         {isPending ? "Pendente de classificação" : tx.category}
+                      </td>
+                      <td className="px-5 py-3">
+                        {(() => {
+                          const inst = installments[tx.id] ?? { enabled: false, number: 1, total: 2 };
+                          return (
+                            <div className="flex flex-col gap-1.5">
+                              <label className="inline-flex items-center gap-2 cursor-pointer text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={inst.enabled}
+                                  onChange={(e) => setInstallments((prev) => ({ ...prev, [tx.id]: { ...inst, enabled: e.target.checked } }))}
+                                  style={{ accentColor: "var(--navy)" }}
+                                />
+                                Parcelamento
+                              </label>
+                              {inst.enabled && (
+                                <div className="flex items-center gap-1 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                                  <span>Parcela</span>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={inst.total}
+                                    value={inst.number}
+                                    onChange={(e) => setInstallments((prev) => ({ ...prev, [tx.id]: { ...inst, number: Math.min(inst.total, Math.max(1, Number(e.target.value))) } }))}
+                                    className="w-10 text-center text-[11px] px-1 py-0.5"
+                                    style={{ border: "1px solid var(--line)" }}
+                                  />
+                                  <span>de</span>
+                                  <input
+                                    type="number"
+                                    min={2}
+                                    value={inst.total}
+                                    onChange={(e) => {
+                                      const newTotal = Math.max(2, Number(e.target.value));
+                                      setInstallments((prev) => ({ ...prev, [tx.id]: { ...inst, total: newTotal, number: Math.min(inst.number, newTotal) } }));
+                                    }}
+                                    className="w-10 text-center text-[11px] px-1 py-0.5"
+                                    style={{ border: "1px solid var(--line)" }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-5 py-3 text-[11px]">
                         <span
