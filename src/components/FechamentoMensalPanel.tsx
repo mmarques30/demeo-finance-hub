@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { brl, formatDatePtBR, monthOptions, monthRangeDates } from "@/lib/utils";
 import { todayISO } from "@/lib/dateUtils";
 import { supabase } from "@/lib/supabase";
+import { computeDFCGerencial, type DFCGerencialData, type DFCLine, type CatInfo } from "@/lib/dre";
 
 interface RevenueEntry {
   id: string;
@@ -98,6 +99,9 @@ export function FechamentoMensalPanel({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [reportHistory, setReportHistory] = useState<ReportExport[]>([]);
+  const [txs, setTxs] = useState<{ amount: number; category: string | null }[]>([]);
+  const [catMap, setCatMap] = useState<Map<string, CatInfo>>(new Map());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const dbPeriod = mmyyyyToYYYYMM(selectedPeriod);
 
@@ -127,10 +131,28 @@ export function FechamentoMensalPanel({
         .gte("start_date", start)
         .lte("start_date", end)
         .order("exported_at", { ascending: false }),
-    ]).then(([{ data: entriesData }, { data: closingData }, { data: reportsData }]) => {
+      supabase()
+        .from("transactions")
+        .select("amount, category")
+        .eq("client_id", clientId)
+        .eq("status", "approved")
+        .gte("date", start)
+        .lte("date", end),
+      supabase()
+        .from("categories")
+        .select("name, group_name, type")
+        .eq("client_id", clientId)
+        .eq("is_active", true),
+    ]).then(([{ data: entriesData }, { data: closingData }, { data: reportsData }, { data: txData }, { data: catsData }]) => {
       setEntries((entriesData ?? []) as RevenueEntry[]);
       setClosing(closingData as MonthlyClosing | null);
       setReportHistory((reportsData ?? []) as ReportExport[]);
+      setTxs((txData ?? []) as { amount: number; category: string | null }[]);
+      const map = new Map<string, CatInfo>();
+      for (const c of (catsData ?? []) as { name: string; group_name: string; type: string }[]) {
+        map.set(c.name, { group_name: c.group_name, type: c.type });
+      }
+      setCatMap(map);
       setLoadingData(false);
     });
   }, [clientId, selectedPeriod, dbPeriod]);
@@ -269,6 +291,19 @@ export function FechamentoMensalPanel({
     setSaving(false);
   }
 
+  const dfcData = useMemo<DFCGerencialData>(
+    () => computeDFCGerencial(txs, catMap),
+    [txs, catMap]
+  );
+
+  function toggleGroup(key: string) {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
+
   const totalBruto = useMemo(() => entries.reduce((s, e) => s + e.gross_amount, 0), [entries]);
   const totalImpostos = useMemo(() => entries.reduce((s, e) => s + e.taxes_withheld, 0), [entries]);
   const totalLiquido = totalBruto - totalImpostos;
@@ -387,6 +422,123 @@ export function FechamentoMensalPanel({
             </button>
           )}
         </div>
+      </div>
+
+      {/* DFC Gerencial */}
+      <div className="aurora-card p-0 overflow-hidden">
+        <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)" }}>
+          <div className="aurora-cap mb-1">Regime de Caixa</div>
+          <div className="aurora-serif text-[20px]">
+            DFC <em className="italic" style={{ color: "var(--green)" }}>Gerencial</em>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px]">
+            <thead>
+              <tr style={{ background: "var(--linen)" }}>
+                <th className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>Demonstrativo</th>
+                <th className="text-right px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>R$</th>
+                <th className="text-right px-6 py-3 aurora-cap" style={{ fontWeight: 500, width: 70 }}>AV%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <DFCRow label="RECEITA BRUTA (vendas)" value={dfcData.receitaBruta} av={1} tone="green" bold />
+
+              <DFCGroupRow
+                label="(−) Custos Variáveis"
+                value={dfcData.custosVariaveis}
+                av={dfcData.receitaBruta}
+                tone="expense"
+                groupKey="cv"
+                expanded={expandedGroups.has("cv")}
+                lines={dfcData.cvLines}
+                onToggle={toggleGroup}
+              />
+              <DFCRow label="(=) MARGEM DE CONTRIBUIÇÃO" value={dfcData.margemContribuicao} av={dfcData.receitaBruta} tone={dfcData.margemContribuicao >= 0 ? "navy" : "expense"} bold subtotal />
+
+              <DFCGroupRow
+                label="(−) Despesas Fixas"
+                value={dfcData.despesasFixas}
+                av={dfcData.receitaBruta}
+                tone="expense"
+                groupKey="df"
+                expanded={expandedGroups.has("df")}
+                lines={dfcData.dfLines}
+                onToggle={toggleGroup}
+              />
+              <DFCRow label="(=) LOAI — Lucro Op. antes dos Investimentos" value={dfcData.loai} av={dfcData.receitaBruta} tone={dfcData.loai >= 0 ? "navy" : "expense"} bold subtotal />
+
+              <DFCGroupRow
+                label="(−) Investimentos"
+                value={dfcData.investimentos}
+                av={dfcData.receitaBruta}
+                tone="expense"
+                groupKey="inv"
+                expanded={expandedGroups.has("inv")}
+                lines={dfcData.invLines}
+                onToggle={toggleGroup}
+              />
+              <DFCRow label="(=) LUCRO OPERACIONAL" value={dfcData.lucroOperacional} av={dfcData.receitaBruta} tone={dfcData.lucroOperacional >= 0 ? "navy" : "expense"} bold subtotal />
+
+              {/* memo */}
+              <tr style={{ borderTop: "1px solid var(--line)" }}>
+                <td className="px-6 py-2 text-[11px] italic" style={{ color: "var(--muted-foreground)", paddingLeft: 32 }}>
+                  memo: Despesas Operacionais Totais (CV + DF + Inv)
+                </td>
+                <td className="px-6 py-2 text-right aurora-value text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                  {brl(dfcData.custosVariaveis + dfcData.despesasFixas + dfcData.investimentos)}
+                </td>
+                <td />
+              </tr>
+
+              <DFCGroupRow
+                label="(+) Entradas Não Operacionais"
+                value={dfcData.entradasNOP}
+                av={dfcData.receitaBruta}
+                tone="green"
+                groupKey="nopIn"
+                expanded={expandedGroups.has("nopIn")}
+                lines={dfcData.nopInLines}
+                onToggle={toggleGroup}
+              />
+              <DFCGroupRow
+                label="(−) Saídas Não Operacionais"
+                value={dfcData.saidasNOP}
+                av={dfcData.receitaBruta}
+                tone="expense"
+                groupKey="nopOut"
+                expanded={expandedGroups.has("nopOut")}
+                lines={dfcData.nopOutLines}
+                onToggle={toggleGroup}
+              />
+              <DFCRow label="(=) RESULTADO NÃO OPERACIONAL" value={dfcData.resultadoNOP} av={dfcData.receitaBruta} tone={dfcData.resultadoNOP >= 0 ? "navy" : "expense"} bold subtotal />
+
+              {/* Lucro Líquido */}
+              <tr style={{ background: "var(--navy)", borderTop: "2px solid var(--navy)" }}>
+                <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 700, color: "#fff" }}>
+                  (=) LUCRO LÍQUIDO (Geração de Caixa)
+                </td>
+                <td className="px-6 py-3 text-right aurora-value text-[15px]" style={{ fontWeight: 700, color: dfcData.lucroLiquido >= 0 ? "#A8D5A2" : "#F4A57E" }}>
+                  {dfcData.lucroLiquido < 0 ? `(${brl(Math.abs(dfcData.lucroLiquido))})` : brl(dfcData.lucroLiquido)}
+                </td>
+                <td className="px-6 py-3 text-right text-[11px]" style={{ color: dfcData.lucroLiquido >= 0 ? "#A8D5A2" : "#F4A57E" }}>
+                  {dfcData.receitaBruta > 0 ? `${((dfcData.lucroLiquido / dfcData.receitaBruta) * 100).toFixed(1)}%` : "—"}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {loadingData && (
+          <div className="flex items-center gap-3 px-6 py-4">
+            <div className="w-3 h-3 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
+            <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Carregando transações...</span>
+          </div>
+        )}
+        {!loadingData && txs.length === 0 && (
+          <div className="px-6 py-6 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+            Nenhuma transação aprovada neste período.
+          </div>
+        )}
       </div>
 
       {/* Tabela Receitas Brutas */}
@@ -694,5 +846,79 @@ export function FechamentoMensalPanel({
         </div>
       )}
     </div>
+  );
+}
+
+// ── Subcomponentes DFC Gerencial ─────────────────────────────────────────────
+
+type DFCTone = "green" | "expense" | "navy";
+
+function avPct(value: number, receitaBruta: number): string {
+  if (receitaBruta <= 0) return "—";
+  return `${((value / receitaBruta) * 100).toFixed(1)}%`;
+}
+
+function DFCRow({
+  label, value, av, tone, bold, subtotal,
+}: {
+  label: string; value: number; av: number | 1;
+  tone: DFCTone; bold?: boolean; subtotal?: boolean;
+}) {
+  const color = tone === "green" ? "var(--green)" : tone === "expense" ? "var(--expense)" : "var(--navy)";
+  const isExpense = tone === "expense";
+  return (
+    <tr style={{ borderTop: "1px solid var(--line)", background: subtotal ? "#FAFAF8" : "#fff" }}>
+      <td className="px-6 py-2.5 text-[12px]" style={{ fontWeight: bold ? 700 : 400 }}>{label}</td>
+      <td className="px-6 py-2.5 text-right aurora-value" style={{ fontSize: bold ? 14 : 13, fontWeight: bold ? 700 : 400, color }}>
+        {isExpense && value > 0 ? `(${brl(value)})` : value < 0 ? `(${brl(Math.abs(value))})` : brl(value)}
+      </td>
+      <td className="px-6 py-2.5 text-right text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+        {typeof av === "number" && av !== 1 ? avPct(value, av) : av === 1 ? "100%" : "—"}
+      </td>
+    </tr>
+  );
+}
+
+function DFCGroupRow({
+  label, value, av, tone, groupKey, expanded, lines, onToggle,
+}: {
+  label: string; value: number; av: number; tone: DFCTone;
+  groupKey: string; expanded: boolean;
+  lines: DFCLine[]; onToggle: (key: string) => void;
+}) {
+  const color = tone === "green" ? "var(--green)" : tone === "expense" ? "var(--expense)" : "var(--navy)";
+  const isExpense = tone === "expense";
+  const hasLines = lines.length > 0;
+  return (
+    <>
+      <tr
+        style={{ borderTop: "1px solid var(--line)", background: "var(--linen)", cursor: hasLines ? "pointer" : "default" }}
+        onClick={() => hasLines && onToggle(groupKey)}
+      >
+        <td className="px-6 py-2.5 text-[11px] uppercase flex items-center gap-2" style={{ letterSpacing: "1.5px", fontWeight: 700, color }}>
+          {label}
+          {hasLines && (
+            <span style={{ fontSize: 10, opacity: 0.7, transform: expanded ? "rotate(180deg)" : "none", display: "inline-block", transition: "transform 0.15s" }}>▼</span>
+          )}
+        </td>
+        <td className="px-6 py-2.5 text-right aurora-value text-[13px]" style={{ fontWeight: 700, color }}>
+          {isExpense && value > 0 ? `(${brl(value)})` : brl(value)}
+        </td>
+        <td className="px-6 py-2.5 text-right text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+          {avPct(value, av)}
+        </td>
+      </tr>
+      {expanded && lines.map((l) => (
+        <tr key={l.cat} style={{ borderTop: "1px solid var(--line)", background: "#fff" }}>
+          <td className="px-6 py-2 text-[12px]" style={{ paddingLeft: 40, color: "var(--foreground)" }}>{l.cat}</td>
+          <td className="px-6 py-2 text-right aurora-value text-[12px]" style={{ color }}>
+            {isExpense ? `(${brl(l.total)})` : brl(l.total)}
+          </td>
+          <td className="px-6 py-2 text-right text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+            {avPct(l.total, av)}
+          </td>
+        </tr>
+      ))}
+    </>
   );
 }

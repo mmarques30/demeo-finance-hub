@@ -20,6 +20,83 @@ export interface DREData {
 }
 
 export const DRE_GROUP_ORDER = ["Receita", "Despesa Fixa", "Despesa Variável", "Investimento", "Outros"];
+
+// ── DFC Gerencial ────────────────────────────────────────────────────────────
+
+export interface DFCLine { cat: string; total: number; }
+
+export interface DFCGerencialData {
+  receitaBruta: number;
+  custosVariaveis: number;
+  margemContribuicao: number;
+  despesasFixas: number;
+  loai: number;
+  investimentos: number;
+  lucroOperacional: number;
+  entradasNOP: number;
+  saidasNOP: number;
+  resultadoNOP: number;
+  lucroLiquido: number;
+  cvLines: DFCLine[];
+  dfLines: DFCLine[];
+  invLines: DFCLine[];
+  nopInLines: DFCLine[];
+  nopOutLines: DFCLine[];
+}
+
+type DFCGroup = "receita" | "cv" | "df" | "inv" | "nopIn" | "nopOut";
+
+function dfcGroupOf(groupName: string, amount: number): DFCGroup {
+  if (groupName === "Receita") return "receita";
+  if (groupName === "Despesa Variável" || groupName === "Custo Variável") return "cv";
+  if (groupName === "Despesa Fixa") return "df";
+  if (groupName === "Investimento") return "inv";
+  return amount >= 0 ? "nopIn" : "nopOut";
+}
+
+export function computeDFCGerencial(
+  txs: { amount: number; category: string | null }[],
+  catMap: Map<string, CatInfo>
+): DFCGerencialData {
+  const acc: Record<DFCGroup, Map<string, number>> = {
+    receita: new Map(), cv: new Map(), df: new Map(),
+    inv: new Map(), nopIn: new Map(), nopOut: new Map(),
+  };
+
+  for (const tx of txs) {
+    const info = catMap.get(tx.category ?? "");
+    const group = dfcGroupOf(info?.group_name ?? "", tx.amount);
+    const cat = tx.category ?? "Sem categoria";
+    acc[group].set(cat, (acc[group].get(cat) ?? 0) + Math.abs(tx.amount));
+  }
+
+  const sum = (m: Map<string, number>) => Array.from(m.values()).reduce((s, v) => s + v, 0);
+  const toLines = (m: Map<string, number>): DFCLine[] =>
+    Array.from(m.entries()).map(([cat, total]) => ({ cat, total })).sort((a, b) => b.total - a.total);
+
+  const receitaBruta      = sum(acc.receita);
+  const custosVariaveis   = sum(acc.cv);
+  const despesasFixas     = sum(acc.df);
+  const investimentos     = sum(acc.inv);
+  const entradasNOP       = sum(acc.nopIn);
+  const saidasNOP         = sum(acc.nopOut);
+  const margemContribuicao = receitaBruta - custosVariaveis;
+  const loai               = margemContribuicao - despesasFixas;
+  const lucroOperacional   = loai - investimentos;
+  const resultadoNOP       = entradasNOP - saidasNOP;
+  const lucroLiquido       = lucroOperacional + resultadoNOP;
+
+  return {
+    receitaBruta, custosVariaveis, margemContribuicao, despesasFixas,
+    loai, investimentos, lucroOperacional, entradasNOP, saidasNOP,
+    resultadoNOP, lucroLiquido,
+    cvLines: toLines(acc.cv),
+    dfLines: toLines(acc.df),
+    invLines: toLines(acc.inv),
+    nopInLines: toLines(acc.nopIn),
+    nopOutLines: toLines(acc.nopOut),
+  };
+}
 /** Grupo após o qual o EBITDA é calculado na DRE */
 export const DRE_EBITDA_PIVOT = "Despesa Variável";
 
