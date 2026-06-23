@@ -12,7 +12,7 @@ import { ExtratosPanel } from "@/components/ExtratosPanel";
 import { computeDRE, DRE_EBITDA_PIVOT, type CatInfo } from "@/lib/dre";
 import { computeHealthLevel, healthMargemPct } from "@/lib/healthScore";
 import { HealthAlertCard } from "@/components/HealthAlertCard";
-import { FechamentoMensalPanel } from "@/components/FechamentoMensalPanel";
+import { DetalhamentoPanel } from "@/components/DetalhamentoPanel";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/admin/dfc")({
@@ -44,7 +44,7 @@ function deltaPct(curr: number, prev: number): string | null {
   return (pct >= 0 ? "▲ +" : "▼ ") + pct.toFixed(1) + "%";
 }
 
-type DFCTab = "dfc" | "dre" | "recorrencias" | "contas" | "extratos" | "fechamento";
+type DFCTab = "dfc" | "dre" | "recorrencias" | "contas" | "extratos" | "detalhamento";
 
 const DFC_TABS: { key: DFCTab; label: string }[] = [
   { key: "dfc", label: "DFC Gerencial" },
@@ -52,10 +52,10 @@ const DFC_TABS: { key: DFCTab; label: string }[] = [
   { key: "recorrencias", label: "Recorrências" },
   { key: "contas", label: "Contas" },
   { key: "extratos", label: "Histórico de Extratos" },
-  { key: "fechamento", label: "Fechamento Mensal" },
+  { key: "detalhamento", label: "Detalhamento" },
 ];
 
-const VALID_TABS: DFCTab[] = ["dfc", "dre", "recorrencias", "contas", "extratos", "fechamento"];
+const VALID_TABS: DFCTab[] = ["dfc", "dre", "recorrencias", "contas", "extratos", "detalhamento"];
 
 function DFCPage() {
   const { clientId: preselectedId, tab: preselectedTab } = Route.useSearch();
@@ -268,11 +268,8 @@ function DFCPage() {
       {activeTab === "recorrencias" && <RecorrenciasPanel clientId={clientId} />}
       {activeTab === "contas" && <ContasPanel clientId={clientId} openTrigger={contasTrigger} />}
       {activeTab === "extratos" && <ExtratosPanel clientId={clientId} />}
-      {activeTab === "fechamento" && (
-        <FechamentoMensalPanel
-          clientId={clientId}
-          monthlyClosingDay={activeClient?.monthly_closing_day ?? null}
-        />
+      {activeTab === "detalhamento" && (
+        <DetalhamentoPanel clientId={clientId} startDate={startDate} endDate={endDate} />
       )}
 
       {activeTab === "dre" && (
