@@ -1310,6 +1310,7 @@ export type Database = {
       }
       build_pattern: { Args: { raw: string }; Returns: string }
       current_client_id: { Args: never; Returns: string }
+      expire_proposals: { Args: never; Returns: Json }
       expire_stale_rules: { Args: never; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
       next_contract_number: { Args: never; Returns: string }
