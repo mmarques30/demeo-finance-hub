@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { LogoMark } from "@/components/Logo";
-import { supabase } from "@/lib/supabase";
-import { useSession } from "@/lib/auth";
+import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
+import { useSession, usePortalRole } from "@/lib/auth";
+import { authHeaders } from "@/lib/auth";
 import { brl, monthOptions, monthRangeDates } from "@/lib/utils";
+import { computeDRE, DRE_EBITDA_PIVOT, type CatInfo, type DREData } from "@/lib/dre";
 
 export const Route = createFileRoute("/portal")({
   component: PortalPage,
@@ -12,9 +15,18 @@ export const Route = createFileRoute("/portal")({
 
 const MES_CURTO = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
+interface PortalFeatures { dfc: boolean; projecao: boolean; download: boolean; }
+const DEFAULT_FEATURES: PortalFeatures = { dfc: true, projecao: false, download: false };
+
 function PortalPage() {
   const { data: session } = useSession();
+  const { data: portalRole = "owner" } = usePortalRole();
+  const isOwner = portalRole === "owner";
+
   const clientId = session?.user?.user_metadata?.client_id as string | undefined;
+
+  const [tab, setTab] = useState<"dfc" | "dre">("dfc");
+  const [downloading, setDownloading] = useState(false);
 
   const { data: client } = useQuery({
     queryKey: ["portal", "client", clientId],
@@ -22,12 +34,14 @@ function PortalPage() {
     queryFn: async () => {
       const { data } = await supabase()
         .from("clients")
-        .select("name, owner_name")
+        .select("name, owner_name, portal_features")
         .eq("id", clientId!)
         .single();
       return data;
     },
   });
+
+  const features: PortalFeatures = (client?.portal_features as PortalFeatures | null) ?? DEFAULT_FEATURES;
 
   const mesAtual = monthOptions(1)[0];
   const { start: mesStart, end: mesEnd } = monthRangeDates(mesAtual);
@@ -38,12 +52,12 @@ function PortalPage() {
     queryFn: async () => {
       const { data } = await supabase()
         .from("transactions")
-        .select("amount, category")
+        .select("amount, category, type")
         .eq("client_id", clientId!)
         .eq("status", "approved")
         .gte("date", mesStart)
         .lte("date", mesEnd);
-      return (data ?? []) as { amount: number; category: string | null }[];
+      return (data ?? []) as { amount: number; category: string | null; type: string | null }[];
     },
   });
 
@@ -69,7 +83,7 @@ function PortalPage() {
 
   const { data: txAll = [] } = useQuery({
     queryKey: ["portal", "saldo", clientId],
-    enabled: !!clientId,
+    enabled: !!clientId && isOwner,
     queryFn: async () => {
       const { data } = await supabase()
         .from("transactions")
@@ -79,6 +93,40 @@ function PortalPage() {
       return (data ?? []) as { amount: number }[];
     },
   });
+
+  // DRE — transações do mês atual com categoria e type
+  const { data: txDRE = [] } = useQuery({
+    queryKey: ["portal", "dre", clientId, mesAtual],
+    enabled: !!clientId && features.dfc,
+    queryFn: async () => {
+      const { data } = await supabase()
+        .from("transactions")
+        .select("amount, category, type, date")
+        .eq("client_id", clientId!)
+        .eq("status", "approved")
+        .gte("date", mesStart)
+        .lte("date", mesEnd);
+      return (data ?? []) as { amount: number; category: string | null; type: string | null; date: string }[];
+    },
+  });
+
+  // catMap — necessário para computeDRE classificar por grupo
+  const { data: catMapData } = useQuery({
+    queryKey: ["portal", "catMap", clientId],
+    enabled: !!clientId && features.dfc,
+    queryFn: async () => {
+      const { data } = await supabase()
+        .from("categories")
+        .select("name, group_name, type")
+        .eq("client_id", clientId!)
+        .eq("is_active", true);
+      const map = new Map<string, CatInfo>();
+      for (const cat of data ?? []) map.set(cat.name, { group_name: cat.group_name, type: cat.type });
+      return map;
+    },
+    staleTime: 300_000,
+  });
+  const catMap = catMapData ?? new Map<string, CatInfo>();
 
   const receitas = txMes.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const despesas = txMes.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
@@ -91,9 +139,7 @@ function PortalPage() {
       const cat = t.category ?? "Sem categoria";
       desp.set(cat, (desp.get(cat) ?? 0) + Math.abs(t.amount));
     });
-  const despList = Array.from(desp.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
+  const despList = Array.from(desp.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
   const chartValues = meses6.map((m) => {
     const { start, end } = monthRangeDates(m);
@@ -102,9 +148,47 @@ function PortalPage() {
   const chartLabels = meses6.map((m) => MES_CURTO[Number(m.split("/")[0]) - 1]);
   const chartMax = Math.max(...chartValues, 1);
 
+  const dre = computeDRE(txDRE, catMap);
+
   const mesLabel = new Date().toLocaleDateString("pt-BR", { month: "long" });
   const mesLabelCap = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
   const updatedAt = new Date().toLocaleDateString("pt-BR");
+
+  async function handleDownloadPDF() {
+    if (!clientId || downloading) return;
+    setDownloading(true);
+    try {
+      const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+      const res = await fetch(`${FUNCTIONS_URL}/client-report-generate`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ client_id: clientId, period: mesAtual }),
+      });
+      if (!res.ok) throw new Error("Falha ao gerar PDF");
+      const { pdf_url } = await res.json();
+      if (pdf_url) window.open(pdf_url, "_blank");
+    } catch {
+      alert("Não foi possível gerar o relatório. Tente novamente.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  function handleDownloadExcel() {
+    if (!clientId) return;
+    const rows = [
+      ["Data", "Categoria", "Valor (R$)"],
+      ...txMes.map((t) => [mesAtual, t.category ?? "Sem categoria", t.amount.toFixed(2)]),
+    ];
+    const csv = rows.map((r) => r.join(";")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `aurora-${client?.name ?? "relatorio"}-${mesAtual.replace("/", "-")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   if (isLoading && !client) {
     return (
@@ -128,6 +212,11 @@ function PortalPage() {
           <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
             Olá, <span style={{ color: "var(--foreground)", fontWeight: 500 }}>{client?.owner_name ?? "—"}</span>
           </span>
+          {!isOwner && (
+            <span className="text-[9px] uppercase px-2 py-0.5" style={{ background: "var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px" }}>
+              Acesso Financeiro
+            </span>
+          )}
           <Link to="/login" className="aurora-link">Sair</Link>
         </div>
       </header>
@@ -143,71 +232,141 @@ function PortalPage() {
           </p>
         </div>
 
-        <div className="aurora-card p-10">
-          <div className="aurora-cap mb-3">Saldo atual consolidado</div>
-          <div className="aurora-value" style={{ fontSize: "clamp(48px, 7vw, 88px)", color: "var(--navy)" }}>
-            {brl(saldo)}
-          </div>
-          <div className="text-[12px] mt-3" style={{ color: "var(--muted-foreground)" }}>
-            Atualizado em {updatedAt}
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-5">
-          <div className="aurora-card">
-            <div className="aurora-cap mb-3">Receitas · {mesLabelCap}</div>
-            <div className="aurora-value" style={{ fontSize: 44, color: "var(--green)" }}>{brl(receitas)}</div>
-          </div>
-          <div className="aurora-card">
-            <div className="aurora-cap mb-3">Despesas · {mesLabelCap}</div>
-            <div className="aurora-value" style={{ fontSize: 44, color: "var(--tan)" }}>{brl(despesas)}</div>
-          </div>
-        </div>
-
-        <div className="aurora-card">
-          <div className="aurora-cap mb-1">Evolução das receitas</div>
-          <div className="aurora-serif text-[22px] mb-6">Últimos <em className="italic" style={{ color: "var(--green)" }}>6 meses</em></div>
-          <div className="grid grid-cols-6 gap-4 items-end h-[180px]">
-            {chartLabels.map((m, i) => (
-              <div key={m} className="h-full flex flex-col justify-end items-center gap-2">
-                <div
-                  className="w-full"
-                  style={{
-                    height: `${(chartValues[i] / chartMax) * 100}%`,
-                    minHeight: chartValues[i] > 0 ? 4 : 0,
-                    background: i === chartLabels.length - 1 ? "var(--green)" : "var(--sage)",
-                    opacity: i === chartLabels.length - 1 ? 1 : 0.7,
-                    borderRadius: "4px 4px 0 0",
-                  }}
-                />
-                <div className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>{m}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {despList.length > 0 && (
-          <div className="aurora-card">
-            <div className="aurora-cap mb-1">Onde foi seu dinheiro</div>
-            <div className="aurora-serif text-[22px] mb-5">Despesas por <em className="italic" style={{ color: "var(--green)" }}>categoria</em></div>
-            <div className="flex flex-col gap-3">
-              {despList.map(([cat, val]) => (
-                <div key={cat} className="flex items-center justify-between gap-4 pb-3" style={{ borderBottom: "1px solid var(--line)" }}>
-                  <div className="text-[13px]">{cat}</div>
-                  <div className="aurora-value text-[18px]" style={{ color: "var(--navy)" }}>{brl(val)}</div>
-                </div>
-              ))}
+        {/* Saldo — visível apenas para owner */}
+        {isOwner && (
+          <div className="aurora-card p-10">
+            <div className="aurora-cap mb-3">Saldo atual consolidado</div>
+            <div className="aurora-value" style={{ fontSize: "clamp(48px, 7vw, 88px)", color: "var(--navy)" }}>
+              {brl(saldo)}
+            </div>
+            <div className="text-[12px] mt-3" style={{ color: "var(--muted-foreground)" }}>
+              Atualizado em {updatedAt}
             </div>
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <button className="text-[10px] uppercase px-6 py-3.5" style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}>
-            Baixar relatório completo (PDF) ↓
-          </button>
-          <button className="text-[10px] uppercase px-6 py-3.5" style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2.5px" }}>
+        {/* DFC/DRE — gateado por portal_features.dfc */}
+        {features.dfc ? (
+          <>
+            <div className="grid md:grid-cols-2 gap-5">
+              <div className="aurora-card">
+                <div className="aurora-cap mb-3">Receitas · {mesLabelCap}</div>
+                <div className="aurora-value" style={{ fontSize: 44, color: "var(--green)" }}>{brl(receitas)}</div>
+              </div>
+              <div className="aurora-card">
+                <div className="aurora-cap mb-3">Despesas · {mesLabelCap}</div>
+                <div className="aurora-value" style={{ fontSize: 44, color: "var(--tan)" }}>{brl(despesas)}</div>
+              </div>
+            </div>
+
+            {/* Abas DFC / DRE */}
+            <div className="aurora-card p-0 overflow-hidden">
+              <div className="flex" style={{ borderBottom: "1px solid var(--line)" }}>
+                {(["dfc", "dre"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className="px-8 py-4 text-[10px] uppercase transition-colors"
+                    style={{
+                      letterSpacing: "2px",
+                      fontWeight: 600,
+                      color: tab === t ? "var(--green)" : "var(--muted-foreground)",
+                      borderBottom: tab === t ? "2px solid var(--green)" : "2px solid transparent",
+                      background: "transparent",
+                    }}
+                  >
+                    {t === "dfc" ? "Fluxo de Caixa" : "Resultado (DRE)"}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-8">
+                {tab === "dfc" && (
+                  <>
+                    <div className="aurora-cap mb-1">Evolução das receitas</div>
+                    <div className="aurora-serif text-[22px] mb-6">Últimos <em className="italic" style={{ color: "var(--green)" }}>6 meses</em></div>
+                    <div className="grid grid-cols-6 gap-4 items-end h-[180px]">
+                      {chartLabels.map((m, i) => (
+                        <div key={m} className="h-full flex flex-col justify-end items-center gap-2">
+                          <div
+                            className="w-full"
+                            style={{
+                              height: `${(chartValues[i] / chartMax) * 100}%`,
+                              minHeight: chartValues[i] > 0 ? 4 : 0,
+                              background: i === chartLabels.length - 1 ? "var(--green)" : "var(--sage)",
+                              opacity: i === chartLabels.length - 1 ? 1 : 0.7,
+                              borderRadius: "4px 4px 0 0",
+                            }}
+                          />
+                          <div className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>{m}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {despList.length > 0 && (
+                      <div className="mt-8">
+                        <div className="aurora-cap mb-1">Onde foi seu dinheiro</div>
+                        <div className="aurora-serif text-[22px] mb-5">Despesas por <em className="italic" style={{ color: "var(--green)" }}>categoria</em></div>
+                        <div className="flex flex-col gap-3">
+                          {despList.map(([cat, val]) => (
+                            <div key={cat} className="flex items-center justify-between gap-4 pb-3" style={{ borderBottom: "1px solid var(--line)" }}>
+                              <div className="text-[13px]">{cat}</div>
+                              <div className="aurora-value text-[18px]" style={{ color: "var(--navy)" }}>{brl(val)}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {tab === "dre" && (
+                  <DREView dre={dre} mesLabel={mesLabelCap} />
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="aurora-card p-10 text-center" style={{ opacity: 0.5 }}>
+            <div className="aurora-cap mb-2">DFC / DRE</div>
+            <div className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+              Este módulo não está habilitado para sua empresa.<br />
+              Entre em contato com a Aurora para saber mais.
+            </div>
+          </div>
+        )}
+
+        {/* Downloads — gateados por portal_features.download E isOwner */}
+        {features.download && isOwner && (
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <button
+              onClick={handleDownloadPDF}
+              disabled={downloading}
+              className="text-[10px] uppercase px-6 py-3.5 disabled:opacity-50 transition-opacity"
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+            >
+              {downloading ? "Gerando PDF…" : "Baixar relatório completo (PDF) ↓"}
+            </button>
+            <button
+              onClick={handleDownloadExcel}
+              className="text-[10px] uppercase px-6 py-3.5 transition-opacity hover:opacity-80"
+              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2.5px" }}
+            >
+              Exportar para Excel (CSV) ↓
+            </button>
+          </div>
+        )}
+
+        <div className="flex justify-start">
+          <a
+            href="https://wa.me/5519981122277"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] uppercase px-6 py-3.5 transition-opacity hover:opacity-80"
+            style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2.5px" }}
+          >
             Falar com a Claudia →
-          </button>
+          </a>
         </div>
       </main>
 
@@ -216,5 +375,80 @@ function PortalPage() {
         <div className="text-[9px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>© Aurora Gestão Financeira 2026</div>
       </footer>
     </div>
+  );
+}
+
+// ─── DRE View ─────────────────────────────────────────────────────────────────
+
+function DREView({ dre, mesLabel }: { dre: DREData; mesLabel: string }) {
+  if (dre.groups.length === 0) {
+    return (
+      <div className="text-center py-10 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+        Nenhum lançamento classificado no período.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="aurora-cap mb-1">Demonstrativo de Resultado</div>
+      <div className="aurora-serif text-[22px] mb-6">
+        <em className="italic" style={{ color: "var(--green)" }}>{mesLabel}</em>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr style={{ background: "#F8F6F1" }}>
+              <th className="text-left px-4 py-2.5 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>Conta</th>
+              <th className="text-right px-4 py-2.5 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dre.groups.flatMap((g) => {
+              const isReceita = g.name === "Receita";
+              const color = isReceita ? "var(--green)" : "var(--tan)";
+              const rows = [
+                <tr key={g.name + "_hdr"} style={{ background: "#F8F6F1" }}>
+                  <td colSpan={2} className="px-4 py-2 aurora-cap" style={{ fontWeight: 600, color: "var(--muted-foreground)" }}>
+                    {!isReceita && "(−) "}{g.name}
+                  </td>
+                </tr>,
+                ...g.lines.map((l) => (
+                  <tr key={g.name + "_" + l.cat} style={{ borderTop: "1px solid var(--line)" }}>
+                    <td className="py-2.5 text-[12px]" style={{ paddingLeft: 28, color: "var(--muted-foreground)" }}>{l.cat}</td>
+                    <td className="px-4 py-2.5 text-right text-[13px]" style={{ color }}>
+                      {isReceita ? brl(l.total) : `(${brl(l.total)})`}
+                    </td>
+                  </tr>
+                )),
+                <tr key={g.name + "_sub"} style={{ borderTop: "1px solid var(--line)" }}>
+                  <td className="px-4 py-2.5 text-[12px]" style={{ fontWeight: 600 }}>Subtotal {g.name}</td>
+                  <td className="px-4 py-2.5 text-right" style={{ fontSize: 14, fontWeight: 700, color }}>
+                    {isReceita ? brl(g.subtotal) : `(${brl(g.subtotal)})`}
+                  </td>
+                </tr>,
+              ];
+              if (g.name === DRE_EBITDA_PIVOT) {
+                rows.push(
+                  <tr key="ebitda" style={{ background: "rgba(143,166,136,0.12)", borderTop: "2px solid var(--green)" }}>
+                    <td className="px-4 py-3 text-[13px]" style={{ fontWeight: 700 }}>= Resultado Operacional (EBITDA)</td>
+                    <td className="px-4 py-3 text-right" style={{ fontSize: 15, fontWeight: 700, color: dre.ebitda >= 0 ? "var(--green)" : "var(--tan)" }}>
+                      {brl(dre.ebitda)}
+                    </td>
+                  </tr>
+                );
+              }
+              return rows;
+            })}
+            <tr style={{ background: "var(--navy)" }}>
+              <td className="px-4 py-4 text-[13px]" style={{ fontWeight: 700, color: "#fff" }}>= Resultado Líquido do Período</td>
+              <td className="px-4 py-4 text-right" style={{ fontSize: 16, fontWeight: 700, color: dre.resultadoLiquido >= 0 ? "#A8D5A2" : "#F4A57E" }}>
+                {brl(dre.resultadoLiquido)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
