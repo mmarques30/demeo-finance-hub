@@ -24,6 +24,8 @@ import { Route as AdminDfcRouteImport } from './routes/admin.dfc'
 import { Route as AdminContratosRouteImport } from './routes/admin.contratos'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
+import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
+import { Route as ConfigurarAcessoRouteImport } from './routes/configurar-acesso'
 import { Route as AdminPropostasIndexRouteImport } from './routes/admin.propostas.index'
 import { Route as AdminContratosIndexRouteImport } from './routes/admin.contratos.index'
 import { Route as PPropostaTokenRouteImport } from './routes/p.proposta.$token'
@@ -107,6 +109,16 @@ const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
   path: '/admin/categorias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/admin/usuarios',
+  path: '/admin/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfigurarAcessoRoute = ConfigurarAcessoRouteImport.update({
+  id: '/configurar-acesso',
+  path: '/configurar-acesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminPropostasIndexRoute = AdminPropostasIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -149,6 +161,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/configurar-acesso': typeof ConfigurarAcessoRoute
   '/admin/clientes': typeof AdminClientesRouteWithChildren
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
@@ -173,6 +187,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/configurar-acesso': typeof ConfigurarAcessoRoute
   '/admin/clientes': typeof AdminClientesRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
   '/admin/importar': typeof AdminImportarRoute
@@ -196,6 +212,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/configurar-acesso': typeof ConfigurarAcessoRoute
   '/admin/clientes': typeof AdminClientesRouteWithChildren
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
@@ -221,7 +239,9 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/portal'
+    | '/configurar-acesso'
     | '/admin/categorias'
+    | '/admin/usuarios'
     | '/admin/clientes'
     | '/admin/contratos'
     | '/admin/dfc'
@@ -245,7 +265,9 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/portal'
+    | '/configurar-acesso'
     | '/admin/categorias'
+    | '/admin/usuarios'
     | '/admin/clientes'
     | '/admin/dfc'
     | '/admin/importar'
@@ -267,7 +289,9 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/portal'
+    | '/configurar-acesso'
     | '/admin/categorias'
+    | '/admin/usuarios'
     | '/admin/clientes'
     | '/admin/contratos'
     | '/admin/dfc'
@@ -292,7 +316,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRoute
+  ConfigurarAcessoRoute: typeof ConfigurarAcessoRoute
   AdminCategoriasRoute: typeof AdminCategoriasRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminClientesRoute: typeof AdminClientesRouteWithChildren
   AdminContratosRoute: typeof AdminContratosRouteWithChildren
   AdminDfcRoute: typeof AdminDfcRoute
@@ -415,6 +441,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCategoriasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configurar-acesso': {
+      id: '/configurar-acesso'
+      path: '/configurar-acesso'
+      fullPath: '/configurar-acesso'
+      preLoaderRoute: typeof ConfigurarAcessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/propostas/': {
       id: '/admin/propostas/'
       path: '/'
@@ -511,7 +551,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRoute,
+  ConfigurarAcessoRoute: ConfigurarAcessoRoute,
   AdminCategoriasRoute: AdminCategoriasRoute,
+  AdminUsuariosRoute: AdminUsuariosRoute,
   AdminClientesRoute: AdminClientesRouteWithChildren,
   AdminContratosRoute: AdminContratosRouteWithChildren,
   AdminDfcRoute: AdminDfcRoute,
