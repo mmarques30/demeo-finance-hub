@@ -69,6 +69,7 @@ interface ClosingAlertItem {
   clientName: string;
   daysUntil: number;
   closingDay: number;
+  completed: boolean;
 }
 
 function getClosingInfo(closingDay: number): { daysUntil: number; period: string } {
@@ -95,6 +96,7 @@ function AdminDashboard() {
   const [activePreset, setActivePreset] = useState<string>("Este mês");
   const [trendData, setTrendData] = useState<TrendPoint[]>([]);
   const [closingAlerts, setClosingAlerts] = useState<ClosingAlertItem[]>([]);
+  const [closingDropdownOpen, setClosingDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchTrend = async () => {
@@ -133,8 +135,7 @@ function AdminDashboard() {
       if (!clientsData?.length) return;
 
       const candidates = (clientsData as { id: string; name: string; monthly_closing_day: number }[])
-        .map((c) => ({ ...c, ...getClosingInfo(c.monthly_closing_day) }))
-        .filter((c) => c.daysUntil >= 0 && c.daysUntil <= 5);
+        .map((c) => ({ ...c, ...getClosingInfo(c.monthly_closing_day) }));
 
       if (!candidates.length) { setClosingAlerts([]); return; }
 
@@ -148,8 +149,14 @@ function AdminDashboard() {
 
       setClosingAlerts(
         candidates
-          .filter((c) => !completedSet.has(`${c.id}_${c.period}`))
-          .map((c) => ({ clientId: c.id, clientName: c.name, daysUntil: c.daysUntil, closingDay: c.monthly_closing_day }))
+          .map((c) => ({
+            clientId: c.id,
+            clientName: c.name,
+            daysUntil: c.daysUntil,
+            closingDay: c.monthly_closing_day,
+            completed: completedSet.has(`${c.id}_${c.period}`),
+          }))
+          .sort((a, b) => a.daysUntil - b.daysUntil)
       );
     }
     fetchClosingAlerts();
@@ -283,42 +290,100 @@ function AdminDashboard() {
 
       <div className="px-6 lg:px-10 py-10 flex flex-col gap-10">
 
-        {/* Banner de alerta de fechamento */}
+        {/* Notificações de Fechamento — dropdown */}
         {closingAlerts.length > 0 && (
-          <div
-            className="flex items-start gap-4"
-            style={{
-              background: "rgba(184,149,106,0.10)",
-              border: "1px solid rgba(184,149,106,0.35)",
-              borderLeft: "4px solid var(--tan)",
-              padding: "14px 20px",
-              borderRadius: "var(--radius-md)",
-            }}
-          >
-            <span style={{ fontSize: 20, lineHeight: 1 }}>📅</span>
-            <div className="flex flex-col gap-1">
-              <div
-                className="text-[11px] uppercase"
-                style={{ letterSpacing: "2px", fontWeight: 700, color: "var(--tan)" }}
+          <div style={{ position: "relative", alignSelf: "flex-start" }}>
+            <button
+              onClick={() => setClosingDropdownOpen((v) => !v)}
+              className="flex items-center gap-2 text-[11px] uppercase"
+              style={{
+                letterSpacing: "2px",
+                fontWeight: 600,
+                background: "#fff",
+                border: "1px solid var(--line)",
+                color: "var(--foreground)",
+                padding: "10px 16px",
+                cursor: "pointer",
+                borderRadius: "var(--radius-md)",
+                boxShadow: "var(--shadow-soft)",
+              }}
+            >
+              Fechamentos{" "}
+              <span
+                style={{
+                  background: "var(--navy)",
+                  color: "#fff",
+                  borderRadius: 999,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "1px 7px",
+                  letterSpacing: "0.5px",
+                }}
               >
-                Fechamento se aproxima
-              </div>
-              <div className="text-[13px] flex flex-wrap gap-x-5 gap-y-1" style={{ color: "var(--foreground)" }}>
+                {closingAlerts.length}
+              </span>
+              <span style={{ fontSize: 10, color: "var(--muted-foreground)", marginLeft: 2 }}>
+                {closingDropdownOpen ? "▲" : "▼"}
+              </span>
+            </button>
+
+            {closingDropdownOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 6px)",
+                  left: 0,
+                  zIndex: 50,
+                  background: "#fff",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--radius-md)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
+                  minWidth: 340,
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  className="px-4 py-2.5 text-[10px] uppercase"
+                  style={{ letterSpacing: "2px", fontWeight: 700, color: "var(--muted-foreground)", borderBottom: "1px solid var(--line)", background: "var(--linen)" }}
+                >
+                  Todos os clientes · por data de fechamento
+                </div>
                 {closingAlerts.map((a) => (
-                  <span key={a.clientId}>
-                    <strong>{a.clientName}</strong>
-                    {" — "}
-                    {a.daysUntil === 0
-                      ? "hoje"
-                      : a.daysUntil === 1
-                      ? "amanhã"
-                      : `em ${a.daysUntil} dia${a.daysUntil !== 1 ? "s" : ""}`}
-                    {" "}
-                    <span style={{ color: "var(--muted-foreground)", fontSize: 11 }}>(dia {a.closingDay})</span>
-                  </span>
+                  <div
+                    key={a.clientId}
+                    className="flex items-center justify-between px-4 py-3"
+                    style={{ borderBottom: "1px solid var(--line)", gap: 12 }}
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[13px]" style={{ fontWeight: 500, color: "var(--foreground)" }}>
+                        {a.clientName}
+                      </span>
+                      <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                        Dia {a.closingDay}{" "}·{" "}
+                        {a.daysUntil === 0
+                          ? "hoje"
+                          : a.daysUntil === 1
+                          ? "amanhã"
+                          : `em ${a.daysUntil} dias`}
+                      </span>
+                    </div>
+                    <span
+                      className="text-[10px] uppercase shrink-0"
+                      style={{
+                        letterSpacing: "1.5px",
+                        fontWeight: 600,
+                        padding: "3px 10px",
+                        borderRadius: 999,
+                        background: a.completed ? "rgba(74,103,65,0.10)" : "rgba(184,149,106,0.12)",
+                        color: a.completed ? "var(--green)" : "var(--tan)",
+                      }}
+                    >
+                      {a.completed ? "Concluído" : "Pendente"}
+                    </span>
+                  </div>
                 ))}
               </div>
-            </div>
+            )}
           </div>
         )}
 
