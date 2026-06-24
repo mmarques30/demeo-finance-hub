@@ -155,10 +155,10 @@ Deno.serve(async (req) => {
       clearTimeout(classifyTimeout);
     }
 
-    // N8N em background — não bloqueia a resposta
+    // N8N — aguarda o ack antes de continuar (garante que o webhook é disparado)
     const n8nUrl = Deno.env.get("N8N_WEBHOOK_URL");
     if (n8nUrl) {
-      fetch(n8nUrl, {
+      await fetch(n8nUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
