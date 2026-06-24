@@ -49,10 +49,10 @@ type DFCTab = "dfc" | "dre" | "recorrencias" | "contas" | "extratos" | "detalham
 const DFC_TABS: { key: DFCTab; label: string }[] = [
   { key: "dfc", label: "DFC Gerencial" },
   { key: "dre", label: "DRE" },
-  { key: "recorrencias", label: "Recorrências" },
+  { key: "detalhamento", label: "Detalhamento" },
   { key: "contas", label: "Contas" },
   { key: "extratos", label: "Histórico de Extratos" },
-  { key: "detalhamento", label: "Detalhamento" },
+  { key: "recorrencias", label: "Recorrências" },
 ];
 
 const VALID_TABS: DFCTab[] = ["dfc", "dre", "recorrencias", "contas", "extratos", "detalhamento"];
@@ -267,7 +267,7 @@ function DFCPage() {
 
       {activeTab === "recorrencias" && <RecorrenciasPanel clientId={clientId} />}
       {activeTab === "contas" && <ContasPanel clientId={clientId} openTrigger={contasTrigger} />}
-      {activeTab === "extratos" && <ExtratosPanel clientId={clientId} />}
+      {activeTab === "extratos" && <ExtratosPanel clientId={clientId} startDate={startDate} endDate={endDate} />}
       {activeTab === "detalhamento" && (
         <DetalhamentoPanel clientId={clientId} startDate={startDate} endDate={endDate} />
       )}

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { brl, formatDatePtBR } from "@/lib/utils";
 import { todayISO, firstOfMonthISO, lastOfMonthISO } from "@/lib/dateUtils";
 import { supabase } from "@/lib/supabase";
@@ -482,8 +483,12 @@ function RelatoriosPage() {
   const [exporting, setExporting] = useState<Record<string, "pdf" | "excel" | null>>({});
   const [history, setHistory] = useState<ExportRecord[]>([]);
   const [histLoading, setHistLoading] = useState(false);
-  const [histFilter, setHistFilter] = useState<string>("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Filtros compartilhados entre sub-abas
+  const [filterClientId, setFilterClientId] = useState<string>("");
+  const [filterStart, setFilterStart] = useState(firstOfMonthISO(-1));
+  const [filterEnd, setFilterEnd] = useState(lastOfMonthISO(-1));
 
   useEffect(() => {
     supabase()
@@ -500,6 +505,15 @@ function RelatoriosPage() {
         setLoading(false);
       });
   }, []);
+
+  // Sincroniza o período do filtro global para o cliente selecionado
+  useEffect(() => {
+    if (!filterClientId) return;
+    setPeriods((prev) => ({ ...prev, [filterClientId]: { start: filterStart, end: filterEnd } }));
+  }, [filterClientId, filterStart, filterEnd]);
+
+  const filteredClients = filterClientId ? clients.filter((c) => c.id === filterClientId) : clients;
+  const filteredHistory = filterClientId ? history.filter((r) => r.client_id === filterClientId) : history;
 
   function loadHistory() {
     setHistLoading(true);
@@ -663,10 +677,6 @@ function RelatoriosPage() {
     setReexporting(null);
   }
 
-  const filteredHistory = histFilter
-    ? history.filter((r) => r.client_id === histFilter)
-    : history;
-
   return (
     <AdminLayout>
       <PageHeader
@@ -674,6 +684,28 @@ function RelatoriosPage() {
         title="Relatórios"
         emphasis="financeiros"
         description="Exporte DFC + DFC Gerencial por cliente e consulte o histórico de documentos gerados."
+        right={
+          <div className="flex items-center gap-3 flex-wrap">
+            <select
+              value={filterClientId}
+              onChange={(e) => setFilterClientId(e.target.value)}
+              className="text-[12px] bg-white px-3 py-2 outline-none"
+              style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-md)", color: "var(--foreground)", minWidth: 180 }}
+            >
+              <option value="">Todos os clientes</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <DateRangeFilter
+              startDate={filterStart}
+              endDate={filterEnd}
+              maxDate={todayISO()}
+              onStartChange={(d) => setFilterStart(d)}
+              onEndChange={(d) => setFilterEnd(d)}
+            />
+          </div>
+        }
       />
 
       {/* Tab bar */}
@@ -728,7 +760,7 @@ function RelatoriosPage() {
                     </td>
                   </tr>
                 )}
-                {!loading && clients.map((c, i) => {
+                {!loading && filteredClients.map((c, i) => {
                   const p = periods[c.id] ?? { start: firstOfMonthISO(-1), end: lastOfMonthISO(-1) };
                   const hasData = !!c.last_upload_at;
                   const isExp = exporting[c.id];
@@ -804,18 +836,6 @@ function RelatoriosPage() {
         {/* ── Aba: Histórico ────────────────────────────────────────────────────── */}
         {activeTab === "historico" && (
           <div className="aurora-card p-0 overflow-hidden">
-            <div className="px-6 py-4 flex items-center gap-3" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
-              <span className="aurora-cap">Filtrar por cliente</span>
-              <select
-                value={histFilter}
-                onChange={(e) => setHistFilter(e.target.value)}
-                className="bg-white px-3 py-1.5 text-[12px]"
-                style={{ border: "1px solid var(--line)", minWidth: 200 }}
-              >
-                <option value="">Todos os clientes</option>
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
             <table className="w-full">
               <thead>
                 <tr style={{ background: "var(--linen)" }}>
