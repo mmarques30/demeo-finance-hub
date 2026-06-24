@@ -3,12 +3,19 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
-import { authHeaders } from "@/lib/auth";
+import { authHeaders, useIsOwner } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: UsuariosPage,
   head: () => ({ meta: [{ title: "Usuários do Portal · Aurora" }] }),
 });
+
+interface AdminUser {
+  user_id: string;
+  role: "admin" | "owner";
+  email: string | null;
+  display_name: string | null;
+}
 
 interface PortalUser {
   user_id: string;
@@ -35,11 +42,31 @@ const FEATURE_LABELS: { key: keyof PortalFeatures; label: string }[] = [
 function UsuariosPage() {
   const qc = useQueryClient();
 
+  const { data: isOwner = false } = useIsOwner();
   const [filterClient, setFilterClient] = useState("");
   const [filterRole, setFilterRole] = useState<FilterRole>("todos");
   const [showInvite, setShowInvite] = useState(false);
+  const [showInviteAdmin, setShowInviteAdmin] = useState(false);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [savingFeature, setSavingFeature] = useState<string | null>(null);
+
+  const { data: adminUsers = [], isLoading: loadingAdmins } = useQuery({
+    queryKey: ["admin", "adminUsers"],
+    enabled: isOwner,
+    queryFn: async () => {
+      const { data: roles } = await supabase()
+        .from("user_roles")
+        .select("user_id, role, display_name, email")
+        .in("role", ["admin", "owner"]);
+      if (!roles?.length) return [] as AdminUser[];
+      return (roles as { user_id: string; role: string; display_name?: string | null; email?: string | null }[]).map((r) => ({
+        user_id: r.user_id,
+        role: r.role as "admin" | "owner",
+        email: r.email ?? null,
+        display_name: r.display_name ?? null,
+      }));
+    },
+  });
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin", "portalUsers"],
@@ -122,6 +149,67 @@ function UsuariosPage() {
       />
 
       <div className="px-6 lg:px-10 pb-10 flex flex-col gap-6">
+
+        {/* ── Administradores do sistema (owner-only) ── */}
+        {isOwner && (
+          <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
+            <header className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "#FAFAF8" }}>
+              <div>
+                <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--navy)", fontWeight: 600 }}>Sistema</div>
+                <div className="text-[15px]" style={{ fontWeight: 500, marginTop: 2 }}>Administradores</div>
+              </div>
+              <button
+                onClick={() => setShowInviteAdmin(true)}
+                className="text-[9px] uppercase px-4 py-2"
+                style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+              >
+                + Convidar admin
+              </button>
+            </header>
+            {loadingAdmins ? (
+              <div className="px-6 py-6 text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando…</div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr style={{ background: "#FAFAF8" }}>
+                    {["Nome", "E-mail", "Papel"].map((h) => (
+                      <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500, fontSize: 9, borderBottom: "1px solid var(--line)", letterSpacing: "2px" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminUsers.map((u) => (
+                    <tr key={u.user_id} style={{ borderTop: "1px solid var(--line)" }}>
+                      <td className="px-5 py-3 text-[13px]" style={{ fontWeight: 500 }}>{u.display_name ?? "—"}</td>
+                      <td className="px-5 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{u.email ?? "—"}</td>
+                      <td className="px-5 py-3">
+                        <span
+                          className="text-[9px] uppercase px-2.5 py-1"
+                          style={{
+                            letterSpacing: "1px",
+                            fontWeight: 600,
+                            background: u.role === "owner" ? "rgba(27,57,77,0.10)" : "rgba(74,103,65,0.10)",
+                            color: u.role === "owner" ? "var(--navy)" : "var(--green)",
+                          }}
+                        >
+                          {u.role === "owner" ? "Owner" : "Admin"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {adminUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-5 py-6 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                        Nenhum administrador encontrado. Execute a migration SQL primeiro.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </section>
+        )}
+
         {/* KPIs */}
         <div className="grid grid-cols-3 gap-4">
           {[
@@ -323,7 +411,103 @@ function UsuariosPage() {
           }}
         />
       )}
+
+      {showInviteAdmin && (
+        <InviteAdminModal
+          onClose={() => setShowInviteAdmin(false)}
+          onSuccess={() => {
+            setShowInviteAdmin(false);
+            qc.invalidateQueries({ queryKey: ["admin", "adminUsers"] });
+          }}
+        />
+      )}
     </AdminLayout>
+  );
+}
+
+// ─── Modal de convite admin ───────────────────────────────────────────────────
+
+function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || !name || !password) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+      const res = await fetch(`${FUNCTIONS_URL}/create-admin-user`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ email, display_name: name, password }),
+      });
+      let json: Record<string, unknown> = {};
+      try { json = await res.json(); } catch { /* vazio */ }
+      if (!res.ok) { setError((json.error as string) ?? `Erro ${res.status}`); return; }
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro de conexão.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgba(28,45,69,0.45)", backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-[440px] bg-white p-8"
+        style={{ border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="aurora-cap mb-1" style={{ color: "var(--navy)" }}>Sistema · Administradores</div>
+        <h2 className="aurora-serif text-[22px] mb-6">
+          Convidar <em className="italic" style={{ color: "var(--navy)" }}>admin</em>
+        </h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label className="block">
+            <div className="aurora-cap mb-1.5">Nome completo</div>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Mariana Marques"
+              className="w-full px-4 py-2.5 text-[13px]" style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }} />
+          </label>
+          <label className="block">
+            <div className="aurora-cap mb-1.5">E-mail</div>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="mariana@aurora.com.br"
+              className="w-full px-4 py-2.5 text-[13px]" style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }} />
+          </label>
+          <label className="block">
+            <div className="aurora-cap mb-1.5">Senha temporária</div>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} placeholder="Mínimo 8 caracteres"
+              className="w-full px-4 py-2.5 text-[13px]" style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }} />
+          </label>
+          {error && (
+            <div className="text-[12px] px-3 py-2.5" style={{ background: "rgba(184,149,106,0.10)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
+              {error}
+            </div>
+          )}
+          <div className="flex gap-3 pt-2">
+            <button type="submit" disabled={loading || !email || !name || password.length < 8}
+              className="flex-1 text-[10px] uppercase py-3 disabled:opacity-50"
+              style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              {loading ? "Criando…" : "Criar admin →"}
+            </button>
+            <button type="button" onClick={onClose}
+              className="px-5 py-3 text-[10px] uppercase"
+              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px" }}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 

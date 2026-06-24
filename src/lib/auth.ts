@@ -53,6 +53,24 @@ export function usePortalRole() {
   });
 }
 
+export function useIsOwner() {
+  const { data: session } = useSession();
+  return useQuery({
+    queryKey: ["auth", "isOwner", session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data } = await supabase()
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session!.user.id)
+        .eq("role", "owner")
+        .maybeSingle();
+      return !!data;
+    },
+    staleTime: 60_000,
+  });
+}
+
 export async function authHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase().auth.getSession();
   const token = data.session?.access_token;
