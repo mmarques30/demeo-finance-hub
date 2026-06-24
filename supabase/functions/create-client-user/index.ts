@@ -80,7 +80,7 @@ Deno.serve(async (req: Request) => {
     portal_role,
     email,
     display_name,
-  }, { onConflict: "user_id,client_id" });
+  }, { onConflict: "user_id" });
 
   if (mapErr) return jsonResponse({ error: `Erro ao vincular usuário: ${mapErr.message}` }, 500, origin);
 
