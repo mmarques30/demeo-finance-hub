@@ -14,7 +14,9 @@ import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
 
 const BodySchema = z.object({
-  client_id: z.string().uuid(),
+  // client_id: aceito mas ignorado para usuários do portal — usamos user_client_mapping como fonte de verdade.
+  // Admin pode passar client_id explícito para gerar relatório de qualquer cliente.
+  client_id: z.string().uuid().optional(),
   period:    z.string().regex(/^\d{2}\/\d{4}$/, "period deve ser MM/YYYY"),
 });
 
@@ -144,19 +146,26 @@ Deno.serve(async (req: Request) => {
   try { body = BodySchema.parse(await req.json()); }
   catch (e) { return jsonResponse({ error: String(e) }, 400, origin); }
 
-  const { client_id, period } = body;
+  const { client_id: bodyClientId, period } = body;
   const sb = serviceClient();
 
-  // Autorização: admin OU usuário vinculado ao client_id
+  // Autorização e resolução do client_id:
+  // - Admin: usa client_id do body (obrigatório)
+  // - Portal: ignora body, busca client_id real do user_client_mapping (evita metadata stale)
   const admin = await isAdmin(user.id);
-  if (!admin) {
+  let client_id: string;
+
+  if (admin) {
+    if (!bodyClientId) return jsonResponse({ error: "client_id obrigatório para admin" }, 400, origin);
+    client_id = bodyClientId;
+  } else {
     const { data: mapping } = await sb
       .from("user_client_mapping")
-      .select("id")
+      .select("client_id")
       .eq("user_id", user.id)
-      .eq("client_id", client_id)
       .maybeSingle();
-    if (!mapping) return jsonResponse({ error: "Acesso negado" }, 403, origin);
+    if (!mapping?.client_id) return jsonResponse({ error: "Acesso negado: usuário não vinculado a nenhum cliente" }, 403, origin);
+    client_id = mapping.client_id;
   }
 
   // Dados do cliente
