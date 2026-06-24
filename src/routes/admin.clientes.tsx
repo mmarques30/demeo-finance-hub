@@ -100,7 +100,6 @@ function ClientesPage() {
       <div className="px-8 lg:px-12 pb-12 pt-8">
         {/* Filtros */}
         <div className="flex gap-2 mb-6 flex-wrap items-center">
-          <span className="aurora-cap mr-1">Filtrar por status</span>
           {FILTROS.map((f) => (
             <button
               key={f}
