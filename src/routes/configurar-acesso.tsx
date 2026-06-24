@@ -20,29 +20,26 @@ function ConfigurarAcessoPage() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    // Supabase injeta os tokens no hash após redirect do invite/recovery
+    // Detectar tipo do link (invite / recovery) pelo hash
     const hash = window.location.hash;
     const params = new URLSearchParams(hash.replace(/^#/, ""));
     const tokenType = params.get("type");
-
     if (tokenType === "invite" || tokenType === "recovery") {
       setType(tokenType);
-      // O cliente Supabase JS processa o hash automaticamente ao detectar a sessão
-      // Aguardar a sessão ser estabelecida
-      supabase().auth.getSession().then(({ data }) => {
-        if (data.session) {
-          setReady(true);
-        } else {
-          // Tentar processar o hash manualmente
-          setReady(true);
-        }
-      });
-    } else {
-      // Verificar se já há sessão ativa (usuário clicou no link mas já estava logado)
-      supabase().auth.getSession().then(({ data }) => {
-        if (data.session) setReady(true);
-      });
     }
+
+    // onAuthStateChange dispara SIGNED_IN depois que o Supabase JS troca o token do hash.
+    // Não usar setReady(true) sem sessão — causaria 422 no updateUser.
+    const { data: { subscription } } = supabase().auth.onAuthStateChange((_event, session) => {
+      if (session) setReady(true);
+    });
+
+    // Checar sessão já existente (ex: usuário voltou à página)
+    supabase().auth.getSession().then(({ data }) => {
+      if (data.session) setReady(true);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
