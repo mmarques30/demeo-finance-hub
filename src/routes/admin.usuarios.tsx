@@ -26,15 +26,21 @@ interface ClientFeatureRow { id: string; name: string; portal_features: PortalFe
 
 type FilterRole = "todos" | "owner" | "financeiro";
 
+const FEATURE_LABELS: { key: keyof PortalFeatures; label: string }[] = [
+  { key: "dfc",      label: "DFC / DRE" },
+  { key: "projecao", label: "Projeção" },
+  { key: "download", label: "Download PDF" },
+];
+
 function UsuariosPage() {
   const qc = useQueryClient();
 
   const [filterClient, setFilterClient] = useState("");
   const [filterRole, setFilterRole] = useState<FilterRole>("todos");
   const [showInvite, setShowInvite] = useState(false);
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [savingFeature, setSavingFeature] = useState<string | null>(null);
 
-  // Lista todos os usuários do portal
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin", "portalUsers"],
     queryFn: async () => {
@@ -49,7 +55,6 @@ function UsuariosPage() {
     },
   });
 
-  // Lista de clientes para o formulário de convite e para os toggles de features
   const { data: clients = [], refetch: refetchClients } = useQuery({
     queryKey: ["admin", "clientsList"],
     queryFn: async () => {
@@ -70,7 +75,6 @@ function UsuariosPage() {
     setSavingFeature(null);
   }
 
-  // Atualizar role
   const updateRole = useMutation({
     mutationFn: async ({ userId, clientId, role }: { userId: string; clientId: string; role: "owner" | "financeiro" }) => {
       await supabase()
@@ -82,7 +86,6 @@ function UsuariosPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "portalUsers"] }),
   });
 
-  // Revogar acesso
   const revokeAccess = useMutation({
     mutationFn: async ({ userId, clientId }: { userId: string; clientId: string }) => {
       await supabase()
@@ -188,113 +191,124 @@ function UsuariosPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((u) => (
-                  <tr key={`${u.user_id}-${u.client_id}`} style={{ borderTop: "1px solid var(--line)" }}>
-                    <td className="px-5 py-3 text-[13px]" style={{ fontWeight: 500 }}>
-                      {u.display_name ?? "—"}
-                    </td>
-                    <td className="px-5 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                      {u.email ?? "—"}
-                    </td>
-                    <td className="px-5 py-3 text-[12px]">
-                      {u.clients?.name ?? "—"}
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex gap-1.5">
-                        {(["owner", "financeiro"] as const).map((r) => (
-                          <button
-                            key={r}
-                            onClick={() => {
-                              if (u.portal_role !== r)
-                                updateRole.mutate({ userId: u.user_id, clientId: u.client_id, role: r });
-                            }}
-                            className="text-[9px] uppercase px-2.5 py-1 transition-all"
-                            style={{
-                              letterSpacing: "1px",
-                              border: "1px solid",
-                              borderColor: u.portal_role === r ? "var(--green)" : "var(--line)",
-                              color: u.portal_role === r ? "var(--green)" : "var(--muted-foreground)",
-                              background: u.portal_role === r ? "rgba(74,103,65,0.06)" : "transparent",
-                              fontWeight: u.portal_role === r ? 600 : 400,
-                              cursor: u.portal_role === r ? "default" : "pointer",
-                            }}
-                          >
-                            {r === "owner" ? "Proprietário" : "Financeiro"}
-                          </button>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <button
-                        onClick={() => {
-                          if (confirm(`Revogar acesso de ${u.display_name ?? u.email} ao portal?`)) {
-                            revokeAccess.mutate({ userId: u.user_id, clientId: u.client_id });
-                          }
-                        }}
-                        className="text-[9px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70"
-                        style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px" }}
-                      >
-                        Revogar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((u) => {
+                  const isExpanded = expandedUserId === u.user_id;
+                  const clientData = clients.find((c) => c.id === u.client_id);
+                  const f: PortalFeatures = (clientData?.portal_features as PortalFeatures | null) ?? DEFAULT_FEATURES;
+
+                  return (
+                    <>
+                      <tr key={`${u.user_id}-${u.client_id}`} style={{ borderTop: "1px solid var(--line)" }}>
+                        <td className="px-5 py-3 text-[13px]" style={{ fontWeight: 500 }}>
+                          {u.display_name ?? "—"}
+                        </td>
+                        <td className="px-5 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                          {u.email ?? "—"}
+                        </td>
+                        <td className="px-5 py-3 text-[12px]">
+                          {u.clients?.name ?? "—"}
+                        </td>
+                        <td className="px-5 py-3">
+                          <div className="flex gap-1.5">
+                            {(["owner", "financeiro"] as const).map((r) => (
+                              <button
+                                key={r}
+                                onClick={() => {
+                                  if (u.portal_role !== r)
+                                    updateRole.mutate({ userId: u.user_id, clientId: u.client_id, role: r });
+                                }}
+                                className="text-[9px] uppercase px-2.5 py-1 transition-all"
+                                style={{
+                                  letterSpacing: "1px",
+                                  border: "1px solid",
+                                  borderColor: u.portal_role === r ? "var(--green)" : "var(--line)",
+                                  color: u.portal_role === r ? "var(--green)" : "var(--muted-foreground)",
+                                  background: u.portal_role === r ? "rgba(74,103,65,0.06)" : "transparent",
+                                  fontWeight: u.portal_role === r ? 600 : 400,
+                                  cursor: u.portal_role === r ? "default" : "pointer",
+                                }}
+                              >
+                                {r === "owner" ? "Proprietário" : "Financeiro"}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => setExpandedUserId(isExpanded ? null : u.user_id)}
+                              className="text-[9px] uppercase px-3 py-1.5 transition-all"
+                              style={{
+                                letterSpacing: "1.5px",
+                                border: "1px solid",
+                                borderColor: isExpanded ? "var(--green)" : "var(--line)",
+                                color: isExpanded ? "var(--green)" : "var(--muted-foreground)",
+                                background: isExpanded ? "rgba(74,103,65,0.06)" : "transparent",
+                              }}
+                            >
+                              Recursos
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Revogar acesso de ${u.display_name ?? u.email} ao portal?`)) {
+                                  revokeAccess.mutate({ userId: u.user_id, clientId: u.client_id });
+                                }
+                              }}
+                              className="text-[9px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70"
+                              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px" }}
+                            >
+                              Revogar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Sub-linha de features — abre ao clicar em "Recursos" */}
+                      {isExpanded && (
+                        <tr key={`${u.user_id}-features`}>
+                          <td colSpan={5} style={{ background: "rgba(74,103,65,0.03)", borderTop: "1px solid var(--line)", padding: "16px 20px" }}>
+                            <div className="aurora-cap mb-3" style={{ color: "var(--green)" }}>
+                              Funcionalidades · {u.clients?.name ?? "cliente"}
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                              {FEATURE_LABELS.map(({ key, label }) => {
+                                const busy = savingFeature === `${u.client_id}-${key}`;
+                                return (
+                                  <button
+                                    key={key}
+                                    onClick={() => handleToggleFeature(u.client_id, key, f)}
+                                    disabled={!!savingFeature}
+                                    className="flex items-center gap-2.5 px-4 py-2.5 transition-all disabled:opacity-40"
+                                    style={{
+                                      border: `1px solid ${f[key] ? "var(--green)" : "var(--line)"}`,
+                                      background: f[key] ? "rgba(74,103,65,0.06)" : "#fff",
+                                    }}
+                                  >
+                                    <div
+                                      className="w-8 h-[18px] rounded-full flex items-center flex-shrink-0 transition-colors"
+                                      style={{ background: f[key] ? "var(--green)" : "var(--line)", padding: "2px" }}
+                                    >
+                                      <div
+                                        className="w-[14px] h-[14px] rounded-full bg-white transition-transform"
+                                        style={{ transform: f[key] ? "translateX(14px)" : "translateX(0)" }}
+                                      />
+                                    </div>
+                                    <span className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, color: f[key] ? "var(--green)" : "var(--muted-foreground)" }}>
+                                      {busy ? "…" : label}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
               </tbody>
             </table>
           )}
-        </div>
-        {/* Funcionalidades por cliente */}
-        <div className="aurora-card p-0 overflow-hidden">
-          <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
-            <div className="aurora-cap mb-0.5">Acesso ao Portal</div>
-            <div className="aurora-serif text-[20px]">
-              Funcionalidades por <em className="italic" style={{ color: "var(--green)" }}>cliente</em>
-            </div>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr style={{ background: "#FAFAF8" }}>
-                {["Cliente", "DFC / DRE", "Projeção", "Download PDF"].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500, fontSize: 9, borderBottom: "1px solid var(--line)", letterSpacing: "2px" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {clients.map((c) => {
-                const f: PortalFeatures = (c.portal_features as PortalFeatures | null) ?? DEFAULT_FEATURES;
-                return (
-                  <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
-                    <td className="px-5 py-3 text-[13px]" style={{ fontWeight: 500 }}>{c.name}</td>
-                    {(["dfc", "projecao", "download"] as (keyof PortalFeatures)[]).map((key) => {
-                      const busy = savingFeature === `${c.id}-${key}`;
-                      return (
-                        <td key={key} className="px-5 py-3">
-                          <button
-                            onClick={() => handleToggleFeature(c.id, key, f)}
-                            disabled={!!savingFeature}
-                            className="flex items-center gap-2 transition-opacity disabled:opacity-40"
-                          >
-                            <div
-                              className="w-9 h-5 rounded-full flex items-center flex-shrink-0 transition-colors"
-                              style={{ background: f[key] ? "var(--green)" : "var(--line)", padding: "2px" }}
-                            >
-                              <div
-                                className="w-4 h-4 rounded-full bg-white transition-transform"
-                                style={{ transform: f[key] ? "translateX(16px)" : "translateX(0)" }}
-                              />
-                            </div>
-                            <span className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: f[key] ? "var(--green)" : "var(--muted-foreground)" }}>
-                              {busy ? "…" : f[key] ? "On" : "Off"}
-                            </span>
-                          </button>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         </div>
       </div>
 
