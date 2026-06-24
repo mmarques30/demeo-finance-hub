@@ -433,14 +433,20 @@ function SidebarContent({
           <button
             onClick={onToggleCollapsed}
             aria-label="Recolher menu"
-            className="opacity-50 hover:opacity-100 transition-opacity"
+            className="opacity-60 hover:opacity-100 transition-opacity"
             style={{
-              width: 24,
-              height: 24,
-              borderRadius: 6,
-              background: "rgba(255,255,255,0.04)",
-              color: "rgba(255,255,255,0.7)",
+              width: 26,
+              height: 26,
+              borderRadius: 7,
+              background: "rgba(255,255,255,0.10)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              color: "rgba(255,255,255,0.85)",
               fontSize: 11,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              flexShrink: 0,
             }}
           >
             ◀
@@ -454,9 +460,15 @@ function SidebarContent({
               width: 28,
               height: 28,
               borderRadius: 999,
-              background: "rgba(255,255,255,0.08)",
+              background: "rgba(255,255,255,0.12)",
+              border: "1px solid rgba(255,255,255,0.12)",
               color: "#fff",
-              fontSize: 12,
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              flexShrink: 0,
             }}
           >
             ×
@@ -469,13 +481,19 @@ function SidebarContent({
         <button
           onClick={onToggleCollapsed}
           aria-label="Expandir menu"
-          className="mx-3 my-3 opacity-60 hover:opacity-100 transition-opacity"
+          className="mx-3 my-3 opacity-70 hover:opacity-100 transition-opacity"
           style={{
             height: 28,
             borderRadius: 8,
-            background: "rgba(255,255,255,0.04)",
-            color: "rgba(255,255,255,0.7)",
+            background: "rgba(255,255,255,0.10)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: "rgba(255,255,255,0.90)",
             fontSize: 11,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            width: "calc(100% - 24px)",
           }}
         >
           ▶
