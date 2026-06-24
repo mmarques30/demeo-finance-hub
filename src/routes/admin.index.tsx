@@ -29,7 +29,7 @@ interface ClientRow {
   segment: string | null;
 }
 
-interface UploadRow {
+export interface UploadRow {
   client_id: string;
   period: string;
   tx_classified: number;
@@ -772,7 +772,7 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
   );
 }
 
-function ClosingBadge({ closing, isClosed, onClose }: {
+export function ClosingBadge({ closing, isClosed, onClose }: {
   closing: UploadRow | null;
   isClosed: boolean;
   onClose: () => void;
