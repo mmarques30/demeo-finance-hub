@@ -97,7 +97,7 @@ function AdminDashboard() {
   const [trendData, setTrendData] = useState<TrendPoint[]>([]);
   const [closingAlerts, setClosingAlerts] = useState<ClosingAlertItem[]>([]);
   const [closingDropdownOpen, setClosingDropdownOpen] = useState(false);
-  const [showAllClientes, setShowAllClientes] = useState(false);
+  const [carteiraExpanded, setCarteiraExpanded] = useState(true);
 
   useEffect(() => {
     const fetchTrend = async () => {
@@ -253,8 +253,6 @@ function AdminDashboard() {
     setEndDate(preset.end());
   }
 
-  const clientesVisiveis = showAllClientes ? clientes : clientes.slice(0, 10);
-
   const ativos = clientes.length;
   const comPendencia = clientes.filter((c) => c.pendentes > 0).length;
   const totalReceita = clientes.reduce((s, c) => s + c.receita, 0);
@@ -291,7 +289,10 @@ function AdminDashboard() {
         }
       />
 
-      <div className="px-6 lg:px-10 py-10 flex flex-col gap-10">
+      <div className="px-6 lg:px-10 py-6 flex flex-col gap-8">
+
+        {/* Topo compacto: Fechamentos + filtro de período + KPIs */}
+        <div className="flex flex-col gap-4">
 
         {/* Notificações de Fechamento — dropdown */}
         {closingAlerts.length > 0 && (
@@ -451,6 +452,8 @@ function AdminDashboard() {
           />
         </div>
 
+        </div>{/* fim topo compacto */}
+
         {/* Gráfico de tendência — últimos 6 meses */}
         {trendData.length > 0 && (
           <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
@@ -506,11 +509,12 @@ function AdminDashboard() {
             ) : clientes.length === 0 ? (
               <div className="text-[12px] text-center py-8" style={{ color: "var(--muted-foreground)" }}>Nenhum cliente cadastrado.</div>
             ) : (
-              <div className="flex gap-8 items-end" style={{ height: 260 }}>
+              <div style={{ overflowX: "auto", paddingBottom: 6 }}>
+              <div className="flex gap-6 items-end" style={{ height: 260, minWidth: "max-content" }}>
                 {clientes.map((c) => {
                   const height = (c.receita / maxReceita) * 100;
                   return (
-                    <div key={c.id} className="flex flex-col items-stretch gap-4 h-full justify-end" style={{ flex: 1 }}>
+                    <div key={c.id} className="flex flex-col items-stretch gap-4 h-full justify-end" style={{ width: 88, flexShrink: 0 }}>
                       <div className="aurora-value text-center" style={{ fontSize: 22, color: c.receita > 0 ? "var(--green)" : "var(--muted-foreground)" }}>
                         {brl(c.receita).replace(",00", "")}
                       </div>
@@ -527,13 +531,17 @@ function AdminDashboard() {
                   );
                 })}
               </div>
+              </div>
             )}
           </div>
         </section>
 
         {/* Tabela de clientes */}
         <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
-          <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)" }}>
+          <header
+            className="flex items-center justify-between flex-wrap gap-4 px-7 lg:px-9 py-6"
+            style={{ borderBottom: carteiraExpanded ? "1px solid var(--line)" : "none" }}
+          >
             <div>
               <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "var(--sage)", fontWeight: 600 }}>
                 Carteira · Detalhe
@@ -543,88 +551,95 @@ function AdminDashboard() {
                 <em className="italic" style={{ color: "var(--green)" }}>fechamentos</em>
               </h2>
             </div>
-            <Link
-              to={"/admin/clientes" as never}
-              className="focus-ring text-[11px] uppercase inline-flex items-center gap-2"
-              style={{ letterSpacing: "2px", color: "var(--foreground)", border: "1px solid var(--foreground)", padding: "10px 18px", fontWeight: 500 }}
-            >
-              Ver todos →
-            </Link>
-          </header>
-          <table className="w-full">
-            <thead>
-              <tr style={{ background: "#FAFAF8" }}>
-                {["Cliente", "Bancos", "Saldo de Caixa", "Pendentes", "Fechamento", "Saúde", "Status"].map((h) => (
-                  <th key={h} className="text-left px-7 lg:px-9 py-4 text-[11px] uppercase" style={{ fontWeight: 600, letterSpacing: "2px", color: "var(--muted-foreground)" }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={7} className="px-7 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando...</td>
-                </tr>
-              )}
-              {!loading && clientesVisiveis.map((c) => (
-                <tr
-                  key={c.id}
-                  style={{ borderTop: "1px solid var(--line)", transition: "background 0.15s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(40,76,43,0.04)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                >
-                  <td className="px-7 lg:px-9 py-5">
-                    <div className="text-[14px]" style={{ fontWeight: 500, color: "var(--foreground)" }}>{c.name}</div>
-                  </td>
-                  <td className="px-7 lg:px-9 py-5 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-                    {c.banks.join(" · ") || "—"}
-                  </td>
-                  <td className="px-7 lg:px-9 py-5 aurora-value" style={{ fontSize: 22, color: c.saldo >= 0 ? "var(--navy)" : "var(--expense)" }}>
-                    {brl(c.saldo)}
-                  </td>
-                  <td className="px-7 lg:px-9 py-5">
-                    {c.pendentes > 0 ? (
-                      <Link to={"/admin/pendentes" as never} className="text-[11px] uppercase px-3 py-1" style={{ background: "rgba(184,149,106,0.12)", color: "var(--tan)", letterSpacing: "1.5px", fontWeight: 600 }}>
-                        {c.pendentes} pendente{c.pendentes !== 1 ? "s" : ""}
-                      </Link>
-                    ) : (
-                      <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>—</span>
-                    )}
-                  </td>
-                  <td className="px-7 lg:px-9 py-5">
-                    <ClosingBadge closing={c.closing} />
-                  </td>
-                  <td className="px-7 lg:px-9 py-5">
-                    <HealthBadge health={c.health} margem={c.margem} segment={c.segment} />
-                  </td>
-                  <td className="px-7 lg:px-9 py-5">
-                    <StatusBadge status={c.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!loading && clientes.length > 10 && (
-            <div className="px-7 lg:px-9 py-4" style={{ borderTop: "1px solid var(--line)" }}>
-              <button
-                onClick={() => setShowAllClientes((v) => !v)}
-                className="text-[11px] uppercase"
-                style={{
-                  letterSpacing: "2px",
-                  fontWeight: 600,
-                  color: "var(--green)",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 0,
-                }}
+            <div className="flex items-center gap-3">
+              <Link
+                to={"/admin/clientes" as never}
+                className="focus-ring text-[11px] uppercase inline-flex items-center gap-2"
+                style={{ letterSpacing: "2px", color: "var(--foreground)", border: "1px solid var(--foreground)", padding: "10px 18px", fontWeight: 500 }}
               >
-                {showAllClientes
-                  ? "▲ Recolher"
-                  : `▼ Ver todos os ${clientes.length} clientes`}
+                Ver todos →
+              </Link>
+              <button
+                onClick={() => setCarteiraExpanded((v) => !v)}
+                aria-label={carteiraExpanded ? "Colapsar tabela" : "Expandir tabela"}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  border: "1px solid var(--line)",
+                  background: "transparent",
+                  color: "var(--muted-foreground)",
+                  fontSize: 11,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--linen)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                {carteiraExpanded ? "▲" : "▼"}
               </button>
             </div>
+          </header>
+
+          {carteiraExpanded && (
+            <table className="w-full">
+              <thead>
+                <tr style={{ background: "#FAFAF8" }}>
+                  {["Cliente", "Bancos", "Saldo de Caixa", "Pendentes", "Fechamento", "Saúde", "Status"].map((h) => (
+                    <th key={h} className="text-left px-7 lg:px-9 py-4 text-[11px] uppercase" style={{ fontWeight: 600, letterSpacing: "2px", color: "var(--muted-foreground)" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading && (
+                  <tr>
+                    <td colSpan={7} className="px-7 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando...</td>
+                  </tr>
+                )}
+                {!loading && clientes.map((c) => (
+                  <tr
+                    key={c.id}
+                    style={{ borderTop: "1px solid var(--line)", transition: "background 0.15s" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(40,76,43,0.04)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <td className="px-7 lg:px-9 py-5">
+                      <div className="text-[14px]" style={{ fontWeight: 500, color: "var(--foreground)" }}>{c.name}</div>
+                    </td>
+                    <td className="px-7 lg:px-9 py-5 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+                      {c.banks.join(" · ") || "—"}
+                    </td>
+                    <td className="px-7 lg:px-9 py-5 aurora-value" style={{ fontSize: 22, color: c.saldo >= 0 ? "var(--navy)" : "var(--expense)" }}>
+                      {brl(c.saldo)}
+                    </td>
+                    <td className="px-7 lg:px-9 py-5">
+                      {c.pendentes > 0 ? (
+                        <Link to={"/admin/pendentes" as never} className="text-[11px] uppercase px-3 py-1" style={{ background: "rgba(184,149,106,0.12)", color: "var(--tan)", letterSpacing: "1.5px", fontWeight: 600 }}>
+                          {c.pendentes} pendente{c.pendentes !== 1 ? "s" : ""}
+                        </Link>
+                      ) : (
+                        <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>—</span>
+                      )}
+                    </td>
+                    <td className="px-7 lg:px-9 py-5">
+                      <ClosingBadge closing={c.closing} />
+                    </td>
+                    <td className="px-7 lg:px-9 py-5">
+                      <HealthBadge health={c.health} margem={c.margem} segment={c.segment} />
+                    </td>
+                    <td className="px-7 lg:px-9 py-5">
+                      <StatusBadge status={c.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </section>
       </div>
