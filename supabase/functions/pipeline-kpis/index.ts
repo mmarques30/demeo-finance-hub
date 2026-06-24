@@ -1,8 +1,8 @@
-// supabase/functions/pipeline-kpis/index.ts
+﻿// supabase/functions/pipeline-kpis/index.ts
 // GET autenticado. Lê v_pipeline_kpis e retorna JSON com cache curto.
 
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
-import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
+import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts"; // owner + admin
 
 Deno.serve(async (req) => {
   const pre = handlePreflight(req);

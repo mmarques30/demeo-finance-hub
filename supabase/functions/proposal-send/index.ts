@@ -1,9 +1,9 @@
-// supabase/functions/proposal-send/index.ts
+﻿// supabase/functions/proposal-send/index.ts
 // POST autenticado. Envia a proposta por e-mail via Resend e atualiza status para 'sent'.
 
 import { z } from "https://esm.sh/zod@3.23.8";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
-import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
+import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts"; // owner + admin
 
 const BodySchema = z.object({ proposal_id: z.string().uuid() });
 

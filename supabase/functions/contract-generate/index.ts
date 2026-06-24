@@ -1,4 +1,4 @@
-// supabase/functions/contract-generate/index.ts
+﻿// supabase/functions/contract-generate/index.ts
 // POST autenticado. Gera PDF do contrato no modelo real Claudia de Meo (17 cláusulas).
 
 import { z } from "https://esm.sh/zod@3.23.8";
@@ -9,7 +9,7 @@ import {
   PDFFont,
 } from "npm:pdf-lib@1.17.1";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
-import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
+import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts"; // owner + admin
 
 const BodySchema = z.object({ contract_id: z.string().uuid() });
 

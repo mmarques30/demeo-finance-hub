@@ -1,5 +1,5 @@
 // supabase/functions/create-client-user/index.ts
-// POST admin-only. Cria usuário no Supabase Auth, vincula ao client_id e envia convite por e-mail via n8n.
+// POST admin-only (owner + admin). Cria usuário no Supabase Auth, vincula ao client_id e envia convite por e-mail via n8n.
 // Aceita: { client_id, email, display_name, portal_role }
 // Retorna: { user_id, email }
 
