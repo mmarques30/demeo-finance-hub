@@ -23,6 +23,9 @@
   --font-sans: 'Space Grotesk', 'Jost', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Cormorant Garamond', ui-serif, Georgia, serif;
 
+  --title-page: 34px;
+  --title-section: 28px;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

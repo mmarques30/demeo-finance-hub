@@ -28,13 +28,11 @@ interface TxRecord {
 
 const MANUAL_KEY = "__manual__";
 
-export function ExtratosPanel({ clientId }: { clientId: string }) {
+export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: string; startDate?: string; endDate?: string }) {
   const [uploads, setUploads] = useState<UploadRecord[]>([]);
   const [txMap, setTxMap] = useState<Record<string, TxRecord[] | undefined>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
-
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [editUpload, setEditUpload] = useState<UploadRecord | null>(null);
   const [deleteUpload, setDeleteUpload] = useState<UploadRecord | null>(null);
   const [editTx, setEditTx] = useState<TxRecord | null>(null);
@@ -120,38 +118,12 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
     }
   }
 
-  const uniqueMonths = Array.from(new Set(uploads.map((u) => u.period)));
-  const filteredUploads = selectedMonth ? uploads.filter((u) => u.period === selectedMonth) : uploads;
+  const filteredUploads = (startDate && endDate)
+    ? uploads.filter((u) => u.created_at >= startDate && u.created_at <= endDate + "T23:59:59")
+    : uploads;
 
   return (
     <div className="px-8 lg:px-12 pb-12 pt-6 grid gap-6">
-      {!loading && uploads.length > 0 && (
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)", fontWeight: 600 }}>
-            Período
-          </span>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="text-[12px] bg-white px-3 py-2"
-            style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-md)", color: "var(--foreground)", minWidth: 140 }}
-          >
-            <option value="">Todos</option>
-            {uniqueMonths.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
-          {selectedMonth && (
-            <button
-              onClick={() => setSelectedMonth("")}
-              className="text-[10px] uppercase transition-opacity hover:opacity-70"
-              style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", background: "none", border: "none", cursor: "pointer" }}
-            >
-              Limpar ×
-            </button>
-          )}
-        </div>
-      )}
 
       {loading && (
         <div className="aurora-card flex items-center gap-3">

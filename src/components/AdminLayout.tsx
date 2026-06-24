@@ -766,10 +766,10 @@ export function PageHeader({
       <h1
         className="aurora-serif"
         style={{
-          fontSize: 28,
+          fontSize: "var(--title-page)",
           fontWeight: 300,
           lineHeight: 1.15,
-          letterSpacing: "-0.6px",
+          letterSpacing: "-0.8px",
           color: "var(--foreground)",
         }}
       >
