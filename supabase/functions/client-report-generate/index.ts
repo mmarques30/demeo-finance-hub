@@ -14,9 +14,8 @@ import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
 
 const BodySchema = z.object({
-  // client_id: aceito mas ignorado para usuários do portal — usamos user_client_mapping como fonte de verdade.
-  // Admin pode passar client_id explícito para gerar relatório de qualquer cliente.
-  client_id: z.string().uuid().optional(),
+  // client_id: ignorado para portal (resolvido via user_client_mapping); obrigatório para admin.
+  client_id: z.string().optional(),
   period:    z.string().regex(/^\d{2}\/\d{4}$/, "period deve ser MM/YYYY"),
 });
 
@@ -181,7 +180,7 @@ Deno.serve(async (req: Request) => {
   // Transações do período
   const { data: txs = [] } = await sb
     .from("transactions")
-    .select("amount, category, type")
+    .select("amount, category")
     .eq("client_id", client_id)
     .eq("status", "approved")
     .gte("date", start)

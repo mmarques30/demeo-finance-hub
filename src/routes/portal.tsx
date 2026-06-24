@@ -68,12 +68,12 @@ function PortalPage() {
     queryFn: async () => {
       const { data } = await supabase()
         .from("transactions")
-        .select("amount, category, type")
+        .select("amount, category")
         .eq("client_id", clientId!)
         .eq("status", "approved")
         .gte("date", mesStart)
         .lte("date", mesEnd);
-      return (data ?? []) as { amount: number; category: string | null; type: string | null }[];
+      return (data ?? []) as { amount: number; category: string | null }[];
     },
   });
 
@@ -110,19 +110,19 @@ function PortalPage() {
     },
   });
 
-  // DRE — transações do mês atual com categoria e type
+  // DRE — transações do mês atual com categoria
   const { data: txDRE = [] } = useQuery({
     queryKey: ["portal", "dre", clientId, mesAtual],
     enabled: !!clientId && features.dfc,
     queryFn: async () => {
       const { data } = await supabase()
         .from("transactions")
-        .select("amount, category, type, date")
+        .select("amount, category, date")
         .eq("client_id", clientId!)
         .eq("status", "approved")
         .gte("date", mesStart)
         .lte("date", mesEnd);
-      return (data ?? []) as { amount: number; category: string | null; type: string | null; date: string }[];
+      return (data ?? []) as { amount: number; category: string | null; date: string }[];
     },
   });
 
