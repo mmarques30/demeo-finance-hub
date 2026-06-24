@@ -365,21 +365,26 @@ Deno.serve(async (req: Request) => {
   const [mm, yyyy] = period.split("/");
   const path = `${client_id}/${yyyy}-${mm}.pdf`;
 
+  // Garante que o bucket existe (idempotente — ignora erro se já existir)
+  await sb.storage.createBucket("reports", { public: false }).catch(() => null);
+
   const { error: upErr } = await sb.storage
     .from("reports")
     .upload(path, pdfBytes, { upsert: true, contentType: "application/pdf" });
   if (upErr) {
-    console.error("upload error:", upErr);
-    return jsonResponse({ error: "Falha ao salvar PDF" }, 500, origin);
+    console.error("[client-report-generate] storage upload error:", JSON.stringify(upErr));
+    return jsonResponse({ error: `Falha ao salvar PDF: ${upErr.message}` }, 500, origin);
   }
 
-  const { data: signed } = await sb.storage
+  const { data: signed, error: signErr } = await sb.storage
     .from("reports")
     .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 dias
 
+  if (signErr) console.error("[client-report-generate] signed URL error:", JSON.stringify(signErr));
+
   const pdfUrl = signed?.signedUrl ?? null;
 
-  // ─── Registro em report_exports ───────────────────────────────────────────
+  // ─── Registro em report_exports (não-fatal) ───────────────────────────────
   await sb.from("report_exports").upsert({
     client_id,
     client_name:  client.name,
@@ -389,7 +394,9 @@ Deno.serve(async (req: Request) => {
     end_date:     end,
     pdf_url:      pdfUrl,
     exported_at:  new Date().toISOString(),
-  }, { onConflict: "client_id,start_date,type" });
+  }, { onConflict: "client_id,start_date,type" }).catch((e: unknown) => {
+    console.error("[client-report-generate] report_exports upsert failed:", e);
+  });
 
   return jsonResponse({ pdf_url: pdfUrl }, 200, origin);
 });

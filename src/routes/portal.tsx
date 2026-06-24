@@ -186,10 +186,16 @@ function PortalPage() {
         headers,
         body: JSON.stringify({ client_id: clientId, period: mesAtual }),
       });
-      if (!res.ok) throw new Error("Falha ao gerar PDF");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error("[portal] client-report-generate error", res.status, errBody);
+        throw new Error(errBody?.error ?? "Falha ao gerar PDF");
+      }
       const { pdf_url } = await res.json();
       if (pdf_url) window.open(pdf_url, "_blank");
-    } catch {
+      else throw new Error("URL do PDF não retornada");
+    } catch (e) {
+      console.error("[portal] handleDownloadPDF:", e);
       alert("Não foi possível gerar o relatório. Tente novamente.");
     } finally {
       setDownloading(false);
