@@ -64,7 +64,9 @@ function ConfigurarAcessoPage() {
     }
 
     setDone(true);
-    setTimeout(() => navigate({ to: "/portal" }), 2500);
+    // Encerra a sessão do convite — cliente vai fazer login explícito como "Cliente"
+    await supabase().auth.signOut();
+    setTimeout(() => navigate({ to: "/login", search: { access: "client" } }), 2500);
   }
 
   return (
