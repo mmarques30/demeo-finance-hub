@@ -21,13 +21,14 @@ export function useIsAdmin() {
     queryKey: ["auth", "isAdmin", session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
-      // Lê de user_roles (padrão Supabase — múltiplos roles por user, RLS dedicada)
+      // 'owner' é superconjunto de 'admin' — ambos têm acesso ao painel admin
       const { data } = await supabase()
         .from("user_roles")
         .select("role")
         .eq("user_id", session!.user.id)
-        .eq("role", "admin")
+        .in("role", ["admin", "owner"])
         .maybeSingle();
+      console.log("[useIsAdmin]", { userId: session!.user.id, role: data?.role, result: !!data });
       return !!data;
     },
     staleTime: 60_000,
