@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
-import { StatusBadge } from "./admin.index";
+import { StatusBadge, ClosingBadge, UploadRow } from "./admin.index";
 import { formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -61,6 +61,8 @@ function ClientesPage() {
   const [novoOpen, setNovoOpen] = useState(false);
   const [editClient, setEditClient] = useState<ClientRow | null>(null);
   const [deleteClient, setDeleteClient] = useState<ClientRow | null>(null);
+  const currentPeriod = new Date().toISOString().slice(0, 7);
+  const qc = useQueryClient();
 
   const { data: clientes = [], isLoading, error } = useQuery({
     queryKey: ["clients"],
@@ -74,6 +76,49 @@ function ClientesPage() {
       return (data ?? []) as ClientRow[];
     },
   });
+
+  const { data: uploadsData = [] } = useQuery({
+    queryKey: ["uploads-month", currentPeriod],
+    queryFn: async (): Promise<UploadRow[]> => {
+      const { data } = await supabase()
+        .from("uploads")
+        .select("client_id, period, tx_classified, tx_pending, status")
+        .eq("period", currentPeriod)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as UploadRow[];
+    },
+  });
+
+  const { data: closingsData = [] } = useQuery({
+    queryKey: ["monthly-closings", currentPeriod],
+    queryFn: async (): Promise<{ client_id: string }[]> => {
+      const { data } = await supabase()
+        .from("monthly_closings")
+        .select("client_id")
+        .eq("period", currentPeriod)
+        .not("completed_at", "is", null);
+      return (data ?? []) as { client_id: string }[];
+    },
+  });
+
+  const uploadByClient = useMemo(() => {
+    const map: Record<string, UploadRow> = {};
+    for (const u of uploadsData) {
+      if (!map[u.client_id]) map[u.client_id] = u;
+    }
+    return map;
+  }, [uploadsData]);
+
+  const closedSet = useMemo(() => new Set(closingsData.map((c) => c.client_id)), [closingsData]);
+
+  async function handleCloseMonth(clientId: string) {
+    const { error } = await supabase().from("monthly_closings").upsert(
+      { client_id: clientId, period: currentPeriod, step1_done: true, step2_done: true, step3_done: true, step4_done: true, completed_at: new Date().toISOString() },
+      { onConflict: "client_id,period" }
+    );
+    if (error) { toast.error("Erro ao fechar mês: " + error.message); return; }
+    qc.invalidateQueries({ queryKey: ["monthly-closings", currentPeriod] });
+  }
 
   const lista = clientes.filter((c) => {
     if (filtro === "Todos") return true;
@@ -183,8 +228,8 @@ function ClientesPage() {
                   <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     {c.client_banks.map((b) => b.bank_name).join(", ") || "—"}
                   </td>
-                  <td className="px-6 py-4 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                    {c.monthly_closing_day ? `Dia ${c.monthly_closing_day}` : "—"}
+                  <td className="px-6 py-4">
+                    <ClosingBadge closing={uploadByClient[c.id] ?? null} isClosed={closedSet.has(c.id)} onClose={() => handleCloseMonth(c.id)} />
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge status={c.status} />
