@@ -124,7 +124,7 @@ function LoginPage() {
                   fontWeight: 500,
                 }}
               >
-                {r === "admin" ? "Gestora (Claudia)" : "Cliente"}
+                {r === "admin" ? "Gestão" : "Cliente"}
               </button>
             ))}
           </div>
