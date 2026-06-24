@@ -21,13 +21,6 @@ interface ClientBank {
   bank_name: string;
 }
 
-interface PortalFeatures {
-  dfc: boolean;
-  projecao: boolean;
-  download: boolean;
-}
-
-const DEFAULT_PORTAL_FEATURES: PortalFeatures = { dfc: true, projecao: false, download: false };
 
 interface ClientRow {
   id: string;
@@ -39,7 +32,6 @@ interface ClientRow {
   last_upload_at: string | null;
   created_at: string;
   monthly_closing_day: number | null;
-  portal_features: PortalFeatures | null;
   client_banks: ClientBank[];
 }
 
@@ -75,7 +67,7 @@ function ClientesPage() {
     queryFn: async (): Promise<ClientRow[]> => {
       const { data, error } = await supabase()
         .from("clients")
-        .select("*, portal_features, client_banks(bank_name)")
+        .select("*, client_banks(bank_name)")
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -348,7 +340,7 @@ function NovoClienteModal({ onClose }: { onClose: () => void }) {
 
 // ─── modal editar cliente ─────────────────────────────────────────────────────
 
-function EditarClienteModal({ client, onClose }: { client: { id: string; name: string; owner_name: string; cnpj: string | null; status: string; segment: string | null; monthly_closing_day: number | null; portal_features: PortalFeatures | null; client_banks: { bank_name: string }[] }; onClose: () => void }) {
+function EditarClienteModal({ client, onClose }: { client: { id: string; name: string; owner_name: string; cnpj: string | null; status: string; segment: string | null; monthly_closing_day: number | null; client_banks: { bank_name: string }[] }; onClose: () => void }) {
   const qc = useQueryClient();
 
   const [nome, setNome] = useState(client.name);
@@ -359,9 +351,6 @@ function EditarClienteModal({ client, onClose }: { client: { id: string; name: s
   const [closingDay, setClosingDay] = useState(String(client.monthly_closing_day ?? ""));
   const [bancos, setBancos] = useState<string[]>(client.client_banks.map((b) => b.bank_name));
   const [bancosInput, setBancosInput] = useState("");
-  const [features, setFeatures] = useState<PortalFeatures>(
-    (client.portal_features as PortalFeatures | null) ?? DEFAULT_PORTAL_FEATURES
-  );
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -377,7 +366,7 @@ function EditarClienteModal({ client, onClose }: { client: { id: string; name: s
       const day = closingDay ? Number(closingDay) : null;
       const { error: err2 } = await supabase()
         .from("clients")
-        .update({ monthly_closing_day: day, segment: segment || null, portal_features: features as any })
+        .update({ monthly_closing_day: day, segment: segment || null })
         .eq("id", client.id);
       if (err2) throw err2;
     },
@@ -455,47 +444,6 @@ function EditarClienteModal({ client, onClose }: { client: { id: string; name: s
         removeBanco={removeBanco}
       />
 
-      {/* Acesso ao Portal */}
-      <div className="flex flex-col gap-3" style={{ borderTop: "1px solid var(--line)", paddingTop: 20 }}>
-        <div className="aurora-cap" style={{ fontWeight: 600 }}>Acesso ao Portal</div>
-        <div className="text-[11px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.5 }}>
-          Controla o que o cliente visualiza no portal de acesso próprio.
-        </div>
-        {(
-          [
-            { key: "dfc", label: "DFC / DRE", desc: "Fluxo de caixa e resultado" },
-            { key: "projecao", label: "Projeção de fluxo", desc: "Visão futura de entradas e saídas" },
-            { key: "download", label: "Download PDF e Excel", desc: "Exportação de relatórios" },
-          ] as { key: keyof PortalFeatures; label: string; desc: string }[]
-        ).map(({ key, label, desc }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setFeatures((f) => ({ ...f, [key]: !f[key] }))}
-            className="flex items-center justify-between px-4 py-3 text-left transition-colors"
-            style={{
-              border: `1px solid ${features[key] ? "var(--green)" : "var(--line)"}`,
-              background: features[key] ? "rgba(74,103,65,0.04)" : "#fff",
-            }}
-          >
-            <div>
-              <div className="text-[12px]" style={{ fontWeight: 500, color: features[key] ? "var(--green)" : "var(--foreground)" }}>
-                {label}
-              </div>
-              <div className="text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>{desc}</div>
-            </div>
-            <div
-              className="flex-shrink-0 ml-4 w-9 h-5 rounded-full flex items-center transition-colors"
-              style={{ background: features[key] ? "var(--green)" : "var(--line)", padding: "2px" }}
-            >
-              <div
-                className="w-4 h-4 rounded-full bg-white transition-transform"
-                style={{ transform: features[key] ? "translateX(16px)" : "translateX(0)" }}
-              />
-            </div>
-          </button>
-        ))}
-      </div>
     </ClienteModal>
   );
 }

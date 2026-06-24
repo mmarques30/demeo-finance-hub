@@ -14,6 +14,14 @@ export const Route = createFileRoute("/admin/clientes/$clientId")({
   head: () => ({ meta: [{ title: "Cliente · Aurora" }] }),
 });
 
+interface PortalFeatures {
+  dfc: boolean;
+  projecao: boolean;
+  download: boolean;
+}
+
+const DEFAULT_PORTAL_FEATURES: PortalFeatures = { dfc: true, projecao: false, download: false };
+
 interface ClientDetail {
   id: string;
   name: string;
@@ -24,6 +32,7 @@ interface ClientDetail {
   created_at: string;
   segment: string | null;
   monthly_closing_day: number | null;
+  portal_features: PortalFeatures | null;
   client_banks: { bank_name: string }[];
 }
 
@@ -77,15 +86,22 @@ function ClientePage() {
   const [addUserError, setAddUserError] = useState<string | null>(null);
   const [addUserSuccess, setAddUserSuccess] = useState(false);
 
+  // Features do portal (DFC, Projeção, Download)
+  const [features, setFeatures] = useState<PortalFeatures>(DEFAULT_PORTAL_FEATURES);
+  const [savingFeatures, setSavingFeatures] = useState(false);
+
   useEffect(() => {
     supabase()
       .from("clients")
-      .select("*, client_banks(bank_name)")
+      .select("*, portal_features, client_banks(bank_name)")
       .eq("id", clientId)
       .single()
       .then(({ data, error: err }) => {
         if (err) setError(err.message);
-        else setClient(data as ClientDetail);
+        else {
+          setClient(data as ClientDetail);
+          setFeatures((data as ClientDetail).portal_features ?? DEFAULT_PORTAL_FEATURES);
+        }
         setLoading(false);
       });
   }, [clientId]);
@@ -183,6 +199,12 @@ function ClientePage() {
     if (!confirm("Remover acesso deste usuário ao portal?")) return;
     await supabase().from("user_client_mapping").delete().eq("user_id", userId).eq("client_id", clientId);
     loadPortalUsers();
+  }
+
+  async function handleSaveFeatures() {
+    setSavingFeatures(true);
+    await supabase().from("clients").update({ portal_features: features as any }).eq("id", clientId);
+    setSavingFeatures(false);
   }
 
   const receita = useMemo(
@@ -594,6 +616,62 @@ function ClientePage() {
         {/* ── Aba: Usuários do Portal ──────────────────────────────────────── */}
         {activeTab === "usuarios" && (
           <div className="flex flex-col gap-6">
+
+            {/* Acesso ao Portal — features */}
+            <div className="aurora-card">
+              <div className="aurora-cap mb-1">Acesso ao Portal</div>
+              <div className="aurora-serif text-[20px] mb-1">
+                O que o cliente <em className="italic" style={{ color: "var(--green)" }}>visualiza</em>
+              </div>
+              <div className="text-[11px] mb-5" style={{ color: "var(--muted-foreground)", lineHeight: 1.6 }}>
+                Controla os módulos disponíveis no portal de acesso próprio do cliente.
+              </div>
+              <div className="flex flex-col gap-3 mb-5">
+                {(
+                  [
+                    { key: "dfc",      label: "DFC / DRE",            desc: "Fluxo de caixa e resultado" },
+                    { key: "projecao", label: "Projeção de fluxo",     desc: "Visão futura de entradas e saídas" },
+                    { key: "download", label: "Download PDF e Excel",  desc: "Exportação de relatórios (só owner)" },
+                  ] as { key: keyof PortalFeatures; label: string; desc: string }[]
+                ).map(({ key, label, desc }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setFeatures((f) => ({ ...f, [key]: !f[key] }))}
+                    className="flex items-center justify-between px-4 py-3 text-left transition-colors"
+                    style={{
+                      border: `1px solid ${features[key] ? "var(--green)" : "var(--line)"}`,
+                      background: features[key] ? "rgba(74,103,65,0.04)" : "transparent",
+                    }}
+                  >
+                    <div>
+                      <div className="text-[12px]" style={{ fontWeight: 500, color: features[key] ? "var(--green)" : "var(--foreground)" }}>
+                        {label}
+                      </div>
+                      <div className="text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>{desc}</div>
+                    </div>
+                    <div
+                      className="flex-shrink-0 ml-4 w-9 h-5 rounded-full flex items-center transition-colors"
+                      style={{ background: features[key] ? "var(--green)" : "var(--line)", padding: "2px" }}
+                    >
+                      <div
+                        className="w-4 h-4 rounded-full bg-white transition-transform"
+                        style={{ transform: features[key] ? "translateX(16px)" : "translateX(0)" }}
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={handleSaveFeatures}
+                disabled={savingFeatures}
+                className="text-[10px] uppercase px-6 py-3 disabled:opacity-50 transition-opacity"
+                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+              >
+                {savingFeatures ? "Salvando…" : "Salvar configurações →"}
+              </button>
+            </div>
+
             {/* Lista de usuários */}
             <div className="aurora-card p-0 overflow-hidden">
               <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
