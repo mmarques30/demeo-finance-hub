@@ -61,13 +61,19 @@ Deno.serve(async (req: Request) => {
   });
 
   if (linkErr) {
-    // Usuário já existe no Auth — buscar pelo e-mail
+    // Usuário já existe no Auth — buscar pelo e-mail e gerar link de acesso
     if (linkErr.message?.toLowerCase().includes("already") || (linkErr as { status?: number }).status === 422) {
       const { data: users } = await sb.auth.admin.listUsers();
       const found = users?.users?.find((u) => u.email === email);
       if (!found) return jsonResponse({ error: `Erro ao criar usuário: ${linkErr.message}` }, 500, origin);
       userId = found.id;
-      // Usuário já ativo — não reenviar convite
+      // Gerar link de recuperação para usuário existente (mesmo fluxo de configurar senha)
+      const { data: recoveryData } = await sb.auth.admin.generateLink({
+        type: "recovery",
+        email,
+        options: { redirectTo: PORTAL_URL },
+      });
+      if (recoveryData) inviteUrl = recoveryData.properties.action_link;
     } else {
       return jsonResponse({ error: `Erro ao criar usuário: ${linkErr.message}` }, 500, origin);
     }
