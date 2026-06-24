@@ -271,6 +271,28 @@ function ImportarPage() {
           })
         );
         setSelected(new Set());
+
+        // Marca o upload como "approved" quando todos os lançamentos foram aprovados
+        const { data: txUploadRows } = await supabase()
+          .from("transactions")
+          .select("upload_id")
+          .in("id", Array.from(approvedIds))
+          .not("upload_id", "is", null);
+
+        const uploadIds = [...new Set((txUploadRows ?? []).map((r: { upload_id: string }) => r.upload_id))];
+
+        if (uploadIds.length > 0) {
+          await Promise.all(uploadIds.map(async (uploadId: string) => {
+            const { count } = await supabase()
+              .from("transactions")
+              .select("id", { count: "exact", head: true })
+              .eq("upload_id", uploadId)
+              .neq("status", "approved");
+            if (count === 0) {
+              await supabase().from("uploads").update({ status: "approved" }).eq("id", uploadId);
+            }
+          }));
+        }
       }
     } catch (e) {
       setError(String(e));
