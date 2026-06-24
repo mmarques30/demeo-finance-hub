@@ -11,6 +11,8 @@ type SidebarItem = {
   to: string;
   label: string;
   icon: string;
+  subLabel?: string;
+  indent?: boolean;
 };
 type SidebarGroup = { id: string; label: string; items: SidebarItem[] };
 
@@ -38,16 +40,10 @@ const GROUPS: SidebarGroup[] = [
     label: "Comercial",
     items: [
       { to: "/admin/pipeline", label: "Pipeline", icon: "⋯" },
-      { to: "/admin/propostas", label: "Propostas", icon: "✎" },
-      { to: "/admin/contratos", label: "Contratos", icon: "❍" },
-    ],
-  },
-  {
-    id: "catalogo",
-    label: "Catálogo",
-    items: [
-      { to: "/admin/servicos", label: "Serviços", icon: "◇" },
-      { to: "/admin/insights/precificacao", label: "Precificação", icon: "↗" },
+      { to: "/admin/propostas", label: "Propostas", icon: "✎", subLabel: "Documentos", indent: true },
+      { to: "/admin/contratos", label: "Contratos", icon: "❍", indent: true },
+      { to: "/admin/servicos", label: "Serviços", icon: "◇", subLabel: "Catálogo", indent: true },
+      { to: "/admin/insights/precificacao", label: "Precificação", icon: "↗", indent: true },
     ],
   },
   {
@@ -122,7 +118,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     visao: true,
     operacao: true,
     comercial: true,
-    catalogo: true,
   });
 
   const [collapsed, setCollapsedState] = useState<boolean>(false);
@@ -130,7 +125,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     visao: true,
     operacao: true,
     comercial: true,
-    catalogo: true,
   });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
@@ -554,13 +548,26 @@ function SidebarContent({
                       ? pendentesCount
                       : 0;
                   return (
+                    <div key={item.to}>
+                      {!collapsed && item.subLabel && (
+                        <div
+                          className="px-3 pt-3 pb-1 text-[9px] uppercase"
+                          style={{
+                            letterSpacing: "2px",
+                            color: "rgba(255,255,255,0.35)",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {item.subLabel}
+                        </div>
+                      )}
                     <Link
-                      key={item.to}
                       to={item.to as string}
                       title={collapsed ? item.label : undefined}
                       className="group relative flex items-center gap-3 mx-1.5 my-0.5 transition-all"
                       style={{
                         padding: collapsed ? "12px" : "11px 14px",
+                        paddingLeft: !collapsed && item.indent ? "22px" : undefined,
                         justifyContent: collapsed ? "center" : undefined,
                         color: active ? "#fff" : "rgba(255,255,255,.78)",
                         background: active
@@ -636,6 +643,7 @@ function SidebarContent({
                         />
                       )}
                     </Link>
+                    </div>
                   );
                 })}
               </div>
