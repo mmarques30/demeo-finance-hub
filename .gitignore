@@ -18,13 +18,13 @@ M[0-9][0-9]_*.md
 # Claude Code — contexto local, nunca subir
 .claude/
 
-# Ambiente de teste local — nunca subir ao repositório
-tests/local/
+# Suite de testes + config — nunca subir ao repositório
+tests/
+playwright.config.ts
+playwright-report/
+test-results/
 *.test.local.*
 test-fixtures/
-
-# Playwright report
-tests/e2e/report/
 
 # Logs
 logs
