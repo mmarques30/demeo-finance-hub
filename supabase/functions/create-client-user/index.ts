@@ -98,9 +98,9 @@ Deno.serve(async (req: Request) => {
     user_metadata: { display_name, client_id },
   }).catch(() => null);
 
-  // Disparar e-mail de convite via n8n (só para usuários novos)
+  // Disparar e-mail de convite via n8n — awaited para garantir envio antes de retornar
   if (inviteUrl) {
-    fetch(N8N_INVITE_WEBHOOK, {
+    await fetch(N8N_INVITE_WEBHOOK, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
