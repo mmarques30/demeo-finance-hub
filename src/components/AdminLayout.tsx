@@ -42,8 +42,7 @@ const GROUPS: SidebarGroup[] = [
       { to: "/admin/pipeline", label: "Pipeline", icon: "⋯" },
       { to: "/admin/propostas", label: "Propostas", icon: "✎", subLabel: "Documentos", indent: true },
       { to: "/admin/contratos", label: "Contratos", icon: "❍", indent: true },
-      { to: "/admin/servicos", label: "Serviços", icon: "◇", subLabel: "Catálogo", indent: true },
-      { to: "/admin/insights/precificacao", label: "Precificação", icon: "↗", indent: true },
+      { to: "/admin/insights/precificacao", label: "Precificação", icon: "↗", subLabel: "Serviços", indent: true },
     ],
   },
   {
@@ -118,18 +117,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   });
 
   const [getCollapsed, setCollapsed] = useLocalStorage<boolean>("aurora.admin.collapsed", false);
-  const [getExpanded, setExpanded] = useLocalStorage<Record<string, boolean>>("aurora.admin.groups", {
-    visao: true,
-    operacao: true,
-    comercial: true,
-  });
+  const [getExpanded, setExpanded] = useLocalStorage<Record<string, boolean>>("aurora.admin.groups", {});
 
   const [collapsed, setCollapsedState] = useState<boolean>(false);
-  const [expanded, setExpandedState] = useState<Record<string, boolean>>({
-    visao: true,
-    operacao: true,
-    comercial: true,
-  });
+  const [expanded, setExpandedState] = useState<Record<string, boolean>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const userRef = useRef<HTMLDivElement | null>(null);
@@ -137,9 +128,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   // Hidrata do localStorage no client-side
   useEffect(() => {
     setCollapsedState(getCollapsed());
-    setExpandedState((prev) => ({ ...prev, ...getExpanded() }));
-    // Garante que o grupo da página atual fica aberto
-    setExpandedState((prev) => ({ ...prev, [activeGroupId(path)]: true }));
+    setExpandedState(getExpanded());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -710,8 +699,8 @@ const MODULE_MAP: Record<string, ModuleIdentity> = {
   "/admin/pipeline": { icon: "⋯", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
   "/admin/propostas": { icon: "✎", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
   "/admin/contratos": { icon: "❍", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
-  "/admin/servicos": { icon: "◇", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Catálogo" },
-  "/admin/insights/precificacao": { icon: "↗", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Catálogo" },
+  "/admin/servicos": { icon: "◇", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Comercial" },
+  "/admin/insights/precificacao": { icon: "↗", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Comercial" },
   "/admin/categorias": { icon: "⊞", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
   "/admin/regras": { icon: "⊟", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
   "/admin/usuarios": { icon: "◫", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
