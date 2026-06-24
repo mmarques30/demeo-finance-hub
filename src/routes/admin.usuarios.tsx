@@ -19,6 +19,11 @@ interface PortalUser {
   clients: { name: string } | null;
 }
 
+interface PortalFeatures { dfc: boolean; projecao: boolean; download: boolean; }
+const DEFAULT_FEATURES: PortalFeatures = { dfc: true, projecao: false, download: false };
+
+interface ClientFeatureRow { id: string; name: string; portal_features: PortalFeatures | null; }
+
 type FilterRole = "todos" | "owner" | "financeiro";
 
 function UsuariosPage() {
@@ -27,6 +32,7 @@ function UsuariosPage() {
   const [filterClient, setFilterClient] = useState("");
   const [filterRole, setFilterRole] = useState<FilterRole>("todos");
   const [showInvite, setShowInvite] = useState(false);
+  const [savingFeature, setSavingFeature] = useState<string | null>(null);
 
   // Lista todos os usuários do portal
   const { data: users = [], isLoading } = useQuery({
@@ -43,18 +49,26 @@ function UsuariosPage() {
     },
   });
 
-  // Lista de clientes para o formulário de convite
-  const { data: clients = [] } = useQuery({
+  // Lista de clientes para o formulário de convite e para os toggles de features
+  const { data: clients = [], refetch: refetchClients } = useQuery({
     queryKey: ["admin", "clientsList"],
     queryFn: async () => {
       const { data } = await supabase()
         .from("clients")
-        .select("id, name")
+        .select("id, name, portal_features")
         .is("deleted_at", null)
         .order("name");
-      return (data ?? []) as { id: string; name: string }[];
+      return (data ?? []) as ClientFeatureRow[];
     },
   });
+
+  async function handleToggleFeature(clientId: string, key: keyof PortalFeatures, current: PortalFeatures) {
+    setSavingFeature(`${clientId}-${key}`);
+    const updated = { ...current, [key]: !current[key] };
+    await supabase().from("clients").update({ portal_features: updated as any }).eq("id", clientId);
+    await refetchClients();
+    setSavingFeature(null);
+  }
 
   // Atualizar role
   const updateRole = useMutation({
@@ -228,6 +242,59 @@ function UsuariosPage() {
               </tbody>
             </table>
           )}
+        </div>
+        {/* Funcionalidades por cliente */}
+        <div className="aurora-card p-0 overflow-hidden">
+          <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
+            <div className="aurora-cap mb-0.5">Acesso ao Portal</div>
+            <div className="aurora-serif text-[20px]">
+              Funcionalidades por <em className="italic" style={{ color: "var(--green)" }}>cliente</em>
+            </div>
+          </div>
+          <table className="w-full">
+            <thead>
+              <tr style={{ background: "#FAFAF8" }}>
+                {["Cliente", "DFC / DRE", "Projeção", "Download PDF"].map((h) => (
+                  <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500, fontSize: 9, borderBottom: "1px solid var(--line)", letterSpacing: "2px" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {clients.map((c) => {
+                const f: PortalFeatures = (c.portal_features as PortalFeatures | null) ?? DEFAULT_FEATURES;
+                return (
+                  <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
+                    <td className="px-5 py-3 text-[13px]" style={{ fontWeight: 500 }}>{c.name}</td>
+                    {(["dfc", "projecao", "download"] as (keyof PortalFeatures)[]).map((key) => {
+                      const busy = savingFeature === `${c.id}-${key}`;
+                      return (
+                        <td key={key} className="px-5 py-3">
+                          <button
+                            onClick={() => handleToggleFeature(c.id, key, f)}
+                            disabled={!!savingFeature}
+                            className="flex items-center gap-2 transition-opacity disabled:opacity-40"
+                          >
+                            <div
+                              className="w-9 h-5 rounded-full flex items-center flex-shrink-0 transition-colors"
+                              style={{ background: f[key] ? "var(--green)" : "var(--line)", padding: "2px" }}
+                            >
+                              <div
+                                className="w-4 h-4 rounded-full bg-white transition-transform"
+                                style={{ transform: f[key] ? "translateX(16px)" : "translateX(0)" }}
+                              />
+                            </div>
+                            <span className="text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: f[key] ? "var(--green)" : "var(--muted-foreground)" }}>
+                              {busy ? "…" : f[key] ? "On" : "Off"}
+                            </span>
+                          </button>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
