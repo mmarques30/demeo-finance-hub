@@ -512,11 +512,11 @@ function AdminDashboard() {
               <div className="text-[12px] text-center py-8" style={{ color: "var(--muted-foreground)" }}>Nenhum cliente cadastrado.</div>
             ) : (
               <div style={{ overflowX: "auto", paddingBottom: 6 }}>
-              <div className="flex gap-6 items-end" style={{ height: 260, minWidth: "max-content" }}>
+              <div className="flex gap-4 items-end" style={{ height: 260, minWidth: "100%", width: clientes.length * 112 + "px" }}>
                 {clientes.map((c) => {
                   const height = (c.receita / maxReceita) * 100;
                   return (
-                    <div key={c.id} className="flex flex-col items-stretch gap-4 h-full justify-end" style={{ width: 88, flexShrink: 0 }}>
+                    <div key={c.id} className="flex flex-col items-stretch gap-3 h-full justify-end" style={{ flex: 1, minWidth: 64, flexShrink: 0 }}>
                       <div className="aurora-value text-center" style={{ fontSize: 22, color: c.receita > 0 ? "var(--green)" : "var(--muted-foreground)" }}>
                         {brl(c.receita).replace(",00", "")}
                       </div>
@@ -604,7 +604,7 @@ function AdminDashboard() {
                     <td colSpan={7} className="px-7 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando...</td>
                   </tr>
                 )}
-                {!loading && clientes.map((c) => (
+                {!loading && clientes.slice(0, 10).map((c) => (
                   <tr
                     key={c.id}
                     style={{ borderTop: "1px solid var(--line)", transition: "background 0.15s" }}
