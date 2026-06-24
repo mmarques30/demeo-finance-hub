@@ -12,7 +12,6 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [role, setRole] = useState<"admin" | "client">("admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,19 +25,27 @@ function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const { error: authError } = await supabase().auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase().auth.signInWithPassword({
       email,
       password,
     });
 
-    setLoading(false);
-
     if (authError) {
+      setLoading(false);
       setError("E-mail ou senha incorretos.");
       return;
     }
 
-    navigate({ to: role === "admin" ? "/admin" : "/portal" });
+    // Consultar papel real no banco — nunca confiar na escolha da UI
+    const { data: roleRow } = await supabase()
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", authData.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    setLoading(false);
+    navigate({ to: roleRow ? "/admin" : "/portal" });
   }
 
   async function handleForgotPassword(e: React.FormEvent) {
@@ -100,26 +107,6 @@ function LoginPage() {
           <p className="text-[12px] mb-7" style={{ color: "var(--muted-foreground)" }}>
             Use as credenciais enviadas pela Claudia.
           </p>
-
-          {/* Role tabs */}
-          <div className="grid grid-cols-2 mb-6" style={{ border: "1px solid var(--line)" }}>
-            {(["admin", "client"] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                className="text-[10px] uppercase py-2.5 transition-colors"
-                style={{
-                  letterSpacing: "2px",
-                  background: role === r ? "var(--green)" : "transparent",
-                  color: role === r ? "#fff" : "var(--muted-foreground)",
-                  fontWeight: 500,
-                }}
-              >
-                {r === "admin" ? "Gestora (Claudia)" : "Cliente"}
-              </button>
-            ))}
-          </div>
 
           {forgotMode ? (
             /* ── Modo: recuperar senha ─── */

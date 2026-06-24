@@ -1,9 +1,9 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LogoMark } from "./Logo";
 import { supabase } from "@/lib/supabase";
-import { useSession } from "@/lib/auth";
+import { useSession, useIsAdmin } from "@/lib/auth";
 import { useClickOutside, useLocalStorage } from "@/hooks/useClickOutside";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
@@ -78,8 +78,17 @@ function activeGroupId(pathname: string): string {
 export function AdminLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const path = location.pathname;
+  const navigate = useNavigate();
 
   const { data: session } = useSession();
+  const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
+
+  // Guard: sem sessão → login; sessão mas não admin → portal
+  useEffect(() => {
+    if (!session) { navigate({ to: "/login" }); return; }
+    if (!adminLoading && isAdmin === false) navigate({ to: "/portal" });
+  }, [session, isAdmin, adminLoading, navigate]);
+
   const adminEmail = session?.user?.email ?? "";
   const adminName = (session?.user?.user_metadata?.display_name ?? adminEmail) || "Admin";
   const adminRole = "Gestora";
