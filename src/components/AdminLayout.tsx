@@ -11,7 +11,8 @@ type SidebarItem = {
   to: string;
   label: string;
   icon: string;
-  subLabel?: string;
+  subLabel?: string;   // header do sub-grupo (renderizado como botão toggle)
+  subGroupId?: string; // id do sub-grupo ao qual este item pertence
   indent?: boolean;
 };
 type SidebarGroup = { id: string; label: string; items: SidebarItem[] };
@@ -40,9 +41,9 @@ const GROUPS: SidebarGroup[] = [
     label: "Comercial",
     items: [
       { to: "/admin/pipeline", label: "Pipeline", icon: "⋯" },
-      { to: "/admin/propostas", label: "Propostas", icon: "✎", subLabel: "Documentos", indent: true },
-      { to: "/admin/contratos", label: "Contratos", icon: "❍", indent: true },
-      { to: "/admin/insights/precificacao", label: "Precificação", icon: "↗", subLabel: "Serviços", indent: true },
+      { to: "/admin/propostas", label: "Propostas", icon: "✎", subLabel: "Documentos", subGroupId: "documentos", indent: true },
+      { to: "/admin/contratos", label: "Contratos", icon: "❍", subGroupId: "documentos", indent: true },
+      { to: "/admin/insights/precificacao", label: "Precificação", icon: "↗", subLabel: "Serviços", subGroupId: "servicos", indent: true },
     ],
   },
   {
@@ -399,6 +400,11 @@ function SidebarContent({
   pendentesCount?: number;
   mobile?: boolean;
 }) {
+  const [subExpanded, setSubExpanded] = useState<Record<string, boolean>>({});
+  function toggleSubGroup(id: string) {
+    setSubExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
   return (
     <>
       {/* Header */}
@@ -540,21 +546,36 @@ function SidebarContent({
                     item.to === "/admin/pendentes"
                       ? pendentesCount
                       : 0;
+                  const subOpen = item.subGroupId ? (subExpanded[item.subGroupId] ?? false) : true;
                   return (
                     <div key={item.to}>
                       {!collapsed && item.subLabel && (
-                        <div
-                          className="px-3 pt-3 pb-1 text-[9px] uppercase"
+                        <button
+                          onClick={() => item.subGroupId && toggleSubGroup(item.subGroupId)}
+                          className="flex items-center justify-between w-full px-3 pt-3 pb-1 text-[9px] uppercase transition-colors hover:opacity-80"
                           style={{
                             letterSpacing: "2px",
-                            color: "rgba(255,255,255,0.35)",
+                            color: "rgba(255,255,255,0.45)",
                             fontWeight: 600,
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
                           }}
                         >
-                          {item.subLabel}
-                        </div>
+                          <span>{item.subLabel}</span>
+                          <span
+                            style={{
+                              fontSize: 8,
+                              transition: "transform 0.22s",
+                              transform: subOpen ? "rotate(90deg)" : "rotate(0)",
+                              opacity: 0.7,
+                            }}
+                          >
+                            ▶
+                          </span>
+                        </button>
                       )}
-                    <Link
+                    {subOpen && <Link
                       to={item.to as string}
                       title={collapsed ? item.label : undefined}
                       className="group relative flex items-center gap-3 mx-1.5 my-0.5 transition-all"
@@ -635,7 +656,7 @@ function SidebarContent({
                           }}
                         />
                       )}
-                    </Link>
+                    </Link>}
                     </div>
                   );
                 })}
