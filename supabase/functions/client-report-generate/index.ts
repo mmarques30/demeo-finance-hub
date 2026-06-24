@@ -189,7 +189,7 @@ Deno.serve(async (req: Request) => {
   const { start, end, label } = periodToDates(period);
 
   // Transações do período
-  const { data: txs = [] } = await sb
+  const { data: txsRaw, error: txErr } = await sb
     .from("transactions")
     .select("amount, category")
     .eq("client_id", client_id)
@@ -197,12 +197,26 @@ Deno.serve(async (req: Request) => {
     .gte("date", start)
     .lte("date", end);
 
+  if (txErr) {
+    console.error("[client-report-generate] transactions query error:", JSON.stringify(txErr));
+    return jsonResponse({ error: `Falha ao buscar transações: ${txErr.message}` }, 500, origin);
+  }
+
+  const txs = txsRaw ?? [];
+
   // Categorias para DRE
-  const { data: cats = [] } = await sb
+  const { data: catsRaw, error: catsErr } = await sb
     .from("categories")
     .select("name, group_name, type")
     .eq("client_id", client_id)
     .eq("is_active", true);
+
+  if (catsErr) {
+    console.error("[client-report-generate] categories query error:", JSON.stringify(catsErr));
+    return jsonResponse({ error: `Falha ao buscar categorias: ${catsErr.message}` }, 500, origin);
+  }
+
+  const cats = catsRaw ?? [];
   const catMap = new Map<string, CatInfo>();
   for (const c of cats) catMap.set(c.name, { group_name: c.group_name });
 
@@ -404,18 +418,24 @@ Deno.serve(async (req: Request) => {
   const pdfUrl = signed?.signedUrl ?? null;
 
   // ─── Registro em report_exports (não-fatal) ───────────────────────────────
-  await sb.from("report_exports").upsert({
-    client_id,
-    client_name:  client.name,
-    type:         "pdf",
-    period_label: label,
-    start_date:   start,
-    end_date:     end,
-    pdf_url:      pdfUrl,
-    exported_at:  new Date().toISOString(),
-  }, { onConflict: "client_id,start_date,type" }).catch((e: unknown) => {
-    console.error("[client-report-generate] report_exports upsert failed:", e);
-  });
+  try {
+    const { error: exportErr } = await sb.from("report_exports").upsert({
+      client_id,
+      client_name:  client.name,
+      type:         "pdf",
+      period_label: label,
+      start_date:   start,
+      end_date:     end,
+      pdf_url:      pdfUrl,
+      exported_at:  new Date().toISOString(),
+    }, { onConflict: "client_id,start_date,type" });
+
+    if (exportErr) {
+      console.error("[client-report-generate] report_exports upsert failed:", JSON.stringify(exportErr));
+    }
+  } catch (e) {
+    console.error("[client-report-generate] report_exports upsert threw:", e);
+  }
 
   return jsonResponse({ pdf_url: pdfUrl }, 200, origin);
 
