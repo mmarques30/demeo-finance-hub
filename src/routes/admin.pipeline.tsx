@@ -268,11 +268,11 @@ function DealCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
     background: "#fff",
     border: "1px solid var(--line)",
     padding: 12,
-    cursor: "grab",
+    cursor: "pointer",
   };
   const days = daysSince(deal.stage_changed_at);
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onDoubleClick={onClick}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={onClick}>
       <div className="text-[12px]" style={{ fontWeight: 500 }}>
         {deal.contact_name}
       </div>
