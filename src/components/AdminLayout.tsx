@@ -82,9 +82,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   // Guard: sem sessão → login; sessão mas não admin → portal
   // sessionLoading protege contra redirect prematuro no primeiro render (antes de ler localStorage)
   useEffect(() => {
+    console.log("[AdminLayout guard]", { sessionLoading, adminLoading, userId: session?.user?.id, isAdmin });
     if (sessionLoading) return;
     if (!session) { navigate({ to: "/login" }); return; }
-    if (!adminLoading && isAdmin === false) navigate({ to: "/portal" });
+    if (!adminLoading && isAdmin === false) {
+      console.warn("[AdminLayout] isAdmin=false → redirect /portal. role provavelmente é 'owner', não 'admin'.");
+      navigate({ to: "/portal" });
+    }
   }, [session, sessionLoading, isAdmin, adminLoading, navigate]);
 
   const adminEmail = session?.user?.email ?? "";
