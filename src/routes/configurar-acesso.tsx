@@ -20,24 +20,33 @@ function ConfigurarAcessoPage() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    // Detectar tipo do link (invite / recovery) pelo hash
     const hash = window.location.hash;
     const params = new URLSearchParams(hash.replace(/^#/, ""));
     const tokenType = params.get("type");
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+
     if (tokenType === "invite" || tokenType === "recovery") {
       setType(tokenType);
     }
 
-    // onAuthStateChange dispara SIGNED_IN depois que o Supabase JS troca o token do hash.
-    // Não usar setReady(true) sem sessão — causaria 422 no updateUser.
     const { data: { subscription } } = supabase().auth.onAuthStateChange((_event, session) => {
       if (session) setReady(true);
     });
 
-    // Checar sessão já existente (ex: usuário voltou à página)
-    supabase().auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-    });
+    if (accessToken && refreshToken) {
+      // Forçar a sessão do link de convite/recuperação, sobrescrevendo qualquer sessão
+      // existente (ex: admin logada no mesmo browser). Sem isso, updateUser usaria
+      // a sessão errada e retornaria 422.
+      supabase().auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .then(({ data, error }) => {
+          if (!error && data.session) setReady(true);
+        });
+    } else {
+      supabase().auth.getSession().then(({ data }) => {
+        if (data.session) setReady(true);
+      });
+    }
 
     return () => subscription.unsubscribe();
   }, []);
@@ -59,7 +68,7 @@ function ConfigurarAcessoPage() {
     setLoading(false);
 
     if (updateErr) {
-      setError("Não foi possível definir a senha. O link pode ter expirado — solicite um novo convite à Claudia.");
+      setError(updateErr.message ?? "Não foi possível definir a senha. Solicite um novo convite à Claudia.");
       return;
     }
 
