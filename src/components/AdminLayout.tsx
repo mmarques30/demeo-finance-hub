@@ -496,7 +496,7 @@ function SidebarContent({
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-2 pt-2 pb-4 flex flex-col gap-1">
         {GROUPS.map((group) => {
-          const isOpen = expanded[group.id] ?? true;
+          const isOpen = expanded[group.id] ?? false;
           const hasActive = group.items.some((it) => isActive(path, it.to));
           return (
             <div key={group.id} className="flex flex-col">

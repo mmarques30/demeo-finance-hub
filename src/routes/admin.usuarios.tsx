@@ -50,8 +50,8 @@ function UsuariosPage() {
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [savingFeature, setSavingFeature] = useState<string | null>(null);
 
-  const [adminSectionOpen, setAdminSectionOpen] = useState(true);
-  const [usersSectionOpen, setUsersSectionOpen] = useState(true);
+  const [adminSectionOpen, setAdminSectionOpen] = useState(false);
+  const [usersSectionOpen, setUsersSectionOpen] = useState(false);
 
   const { data: adminUsers = [], isLoading: loadingAdmins } = useQuery({
     queryKey: ["admin", "adminUsers"],
