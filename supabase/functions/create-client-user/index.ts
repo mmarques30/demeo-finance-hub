@@ -1,5 +1,5 @@
 // supabase/functions/create-client-user/index.ts
-// POST admin-only. Cria usuário no Supabase Auth e vincula ao client_id com portal_role.
+// POST admin-only. Cria usuário no Supabase Auth, vincula ao client_id e envia convite por e-mail via n8n.
 // Aceita: { client_id, email, display_name, portal_role }
 // Retorna: { user_id, email }
 
@@ -14,13 +14,15 @@ const BodySchema = z.object({
   portal_role:  z.enum(["owner", "financeiro"]).default("owner"),
 });
 
+const N8N_INVITE_WEBHOOK = "https://iaplicada.app.n8n.cloud/webhook/aurora-invite-user";
+const PORTAL_URL = "https://demeo-finance-hub.lovable.app/configurar-acesso";
+
 Deno.serve(async (req: Request) => {
   const pre = handlePreflight(req);
   if (pre) return pre;
   const origin = req.headers.get("origin") ?? "";
   if (req.method !== "POST") return jsonResponse({ error: "method not allowed" }, 405, origin);
 
-  // Somente admins podem criar usuários de portal
   const caller = await userFromAuthHeader(req);
   if (!caller) return jsonResponse({ error: "Não autenticado" }, 401, origin);
   if (!(await isAdmin(caller.id))) return jsonResponse({ error: "Acesso restrito a administradores" }, 403, origin);
@@ -36,41 +38,42 @@ Deno.serve(async (req: Request) => {
   const { data: client } = await sb.from("clients").select("id, name").eq("id", client_id).single();
   if (!client) return jsonResponse({ error: "Cliente não encontrado" }, 404, origin);
 
-  // Verificar se email já está mapeado para este cliente
+  // Verificar se e-mail já está vinculado a este cliente
   const { data: existing } = await sb
     .from("user_client_mapping")
-    .select("id")
+    .select("user_id")
     .eq("client_id", client_id)
     .eq("email", email)
     .maybeSingle();
   if (existing) return jsonResponse({ error: "Este e-mail já está vinculado a este cliente" }, 409, origin);
 
-  // Criar usuário no Supabase Auth (ou reutilizar se já existe no Auth)
-  // sendEmail: true envia o e-mail de confirmação/convite automaticamente
+  // Gerar link de convite (cria o usuário no Auth se não existir)
   let userId: string;
-  const { data: created, error: createErr } = await sb.auth.admin.createUser({
+  let inviteUrl: string | null = null;
+
+  const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
+    type: "invite",
     email,
-    email_confirm: false,         // força envio do confirmation email
-    user_metadata: {
-      display_name,
-      client_id,                  // JWT claim usado pelo portal
+    options: {
+      data: { display_name, client_id },
+      redirectTo: PORTAL_URL,
     },
   });
 
-  if (createErr) {
-    // Se o usuário já existe no Auth, buscar pelo e-mail
-    if (createErr.message?.toLowerCase().includes("already") || createErr.status === 422) {
+  if (linkErr) {
+    // Usuário já existe no Auth — buscar pelo e-mail
+    if (linkErr.message?.toLowerCase().includes("already") || (linkErr as { status?: number }).status === 422) {
       const { data: users } = await sb.auth.admin.listUsers();
       const found = users?.users?.find((u) => u.email === email);
-      if (!found) return jsonResponse({ error: `Erro ao criar usuário: ${createErr.message}` }, 500, origin);
+      if (!found) return jsonResponse({ error: `Erro ao criar usuário: ${linkErr.message}` }, 500, origin);
       userId = found.id;
+      // Usuário já ativo — não reenviar convite
     } else {
-      return jsonResponse({ error: `Erro ao criar usuário: ${createErr.message}` }, 500, origin);
+      return jsonResponse({ error: `Erro ao criar usuário: ${linkErr.message}` }, 500, origin);
     }
   } else {
-    userId = created.user.id;
-    // Enviar invite (password reset email para definir senha)
-    await sb.auth.admin.inviteUserByEmail(email).catch(() => null);
+    userId = linkData.user.id;
+    inviteUrl = linkData.properties.action_link;
   }
 
   // Vincular ao cliente
@@ -84,10 +87,25 @@ Deno.serve(async (req: Request) => {
 
   if (mapErr) return jsonResponse({ error: `Erro ao vincular usuário: ${mapErr.message}` }, 500, origin);
 
-  // Atualizar user_metadata com client_id (necessário para o JWT claim)
+  // Atualizar user_metadata com client_id para o JWT claim
   await sb.auth.admin.updateUserById(userId, {
     user_metadata: { display_name, client_id },
   }).catch(() => null);
+
+  // Disparar e-mail de convite via n8n (só para usuários novos)
+  if (inviteUrl) {
+    fetch(N8N_INVITE_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        display_name,
+        client_name: client.name,
+        portal_role,
+        invite_url: inviteUrl,
+      }),
+    }).catch(() => null);
+  }
 
   return jsonResponse({ user_id: userId, email, portal_role }, 200, origin);
 });
