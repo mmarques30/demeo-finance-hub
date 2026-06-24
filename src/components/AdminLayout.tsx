@@ -80,14 +80,16 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const path = location.pathname;
   const navigate = useNavigate();
 
-  const { data: session } = useSession();
+  const { data: session, isLoading: sessionLoading } = useSession();
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
 
   // Guard: sem sessão → login; sessão mas não admin → portal
+  // sessionLoading protege contra redirect prematuro no primeiro render (antes de ler localStorage)
   useEffect(() => {
+    if (sessionLoading) return;
     if (!session) { navigate({ to: "/login" }); return; }
     if (!adminLoading && isAdmin === false) navigate({ to: "/portal" });
-  }, [session, isAdmin, adminLoading, navigate]);
+  }, [session, sessionLoading, isAdmin, adminLoading, navigate]);
 
   const adminEmail = session?.user?.email ?? "";
   const adminName = (session?.user?.user_metadata?.display_name ?? adminEmail) || "Admin";

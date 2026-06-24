@@ -51,6 +51,7 @@ export function ExtratosPanel({ clientId }: { clientId: string }) {
         .from("uploads")
         .select("id, bank_name, filename, period, status, tx_total, tx_classified, tx_pending, created_at")
         .eq("client_id", clientId)
+        .eq("status", "approved")
         .order("created_at", { ascending: false }),
       supabase()
         .from("transactions")
