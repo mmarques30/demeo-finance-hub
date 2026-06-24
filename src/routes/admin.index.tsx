@@ -464,7 +464,7 @@ function AdminDashboard() {
                 <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "var(--sage)", fontWeight: 600 }}>
                   Histórico · Últimos 6 meses
                 </div>
-                <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 300, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
+                <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 400, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
                   Entradas e{" "}
                   <em className="italic" style={{ color: "var(--navy)" }}>saídas</em>
                 </h2>
@@ -493,7 +493,7 @@ function AdminDashboard() {
               <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "var(--green)", fontWeight: 600 }}>
                 Receita · Por cliente
               </div>
-              <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 300, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
+              <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 400, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
                 {periodoLabel} ·{" "}
                 <span style={{ color: "var(--green)" }}>
                   {brl(totalReceita).replace(",00", "")}
@@ -548,7 +548,7 @@ function AdminDashboard() {
               <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "var(--sage)", fontWeight: 600 }}>
                 Carteira · Detalhe
               </div>
-              <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 300, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
+              <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 400, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
                 Status dos{" "}
                 <em className="italic" style={{ color: "var(--green)" }}>fechamentos</em>
               </h2>
