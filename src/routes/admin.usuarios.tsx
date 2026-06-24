@@ -36,7 +36,10 @@ function UsuariosPage() {
         .from("user_client_mapping")
         .select("user_id, client_id, email, display_name, portal_role, clients(name)")
         .order("display_name");
-      return (data ?? []) as PortalUser[];
+      return (data ?? []).map((row: any) => ({
+        ...row,
+        clients: Array.isArray(row.clients) ? (row.clients[0] ?? null) : row.clients,
+      })) as PortalUser[];
     },
   });
 
