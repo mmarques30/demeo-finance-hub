@@ -43,6 +43,7 @@ interface ClientSummary extends ClientRow {
   pendentes: number;
   banks: string[];
   closing: UploadRow | null;
+  isClosed: boolean;
   health: HealthLevel;
   margem: number;
 }
@@ -164,6 +165,7 @@ function AdminDashboard() {
   }, []);
 
   const loadDashboard = useCallback(async (start: string, end: string) => {
+    const currentPeriod = new Date().toISOString().slice(0, 7);
 
     const [
       { data: clientsData },
@@ -171,6 +173,7 @@ function AdminDashboard() {
       { data: pendingData },
       { data: banksData },
       { data: uploadsData },
+      { data: closingsData },
     ] = await Promise.all([
       supabase().from("clients").select("id, name, status, last_upload_at, segment").is("deleted_at", null).order("name"),
       // Somente o mês atual — evita carregar todo o histórico
@@ -192,6 +195,12 @@ function AdminDashboard() {
         .select("client_id, period, tx_classified, tx_pending, status")
         .eq("period", currentMonthStr())
         .order("created_at", { ascending: false }),
+      // Fechamentos concluídos no mês corrente
+      supabase()
+        .from("monthly_closings")
+        .select("client_id")
+        .eq("period", currentPeriod)
+        .not("completed_at", "is", null),
     ]);
 
     const clients = (clientsData ?? []) as ClientRow[];
@@ -223,6 +232,9 @@ function AdminDashboard() {
       if (!uploadByClient[u.client_id]) uploadByClient[u.client_id] = u;
     }
 
+    // Clientes com fechamento concluído no mês corrente
+    const closedSet = new Set((closingsData ?? []).map((c: { client_id: string }) => c.client_id));
+
     let totalPend = 0;
     const summaries: ClientSummary[] = clients.map((c) => {
       const clientTx = txByClient[c.id] ?? [];
@@ -232,9 +244,10 @@ function AdminDashboard() {
       const pendentes = pendingByClient[c.id] ?? 0;
       totalPend += pendentes;
       const closing = uploadByClient[c.id] ?? null;
+      const isClosed = closedSet.has(c.id);
       const health = computeHealthLevel(receita, despesas, c.segment);
       const margem = healthMargemPct(receita, despesas);
-      return { ...c, receita, saldo, pendentes, banks: banksMap[c.id] ?? [], closing, health, margem };
+      return { ...c, receita, saldo, pendentes, banks: banksMap[c.id] ?? [], closing, isClosed, health, margem };
     });
 
     setClientes(summaries);
@@ -251,6 +264,17 @@ function AdminDashboard() {
     setActivePreset(preset.label);
     setStartDate(preset.start());
     setEndDate(preset.end());
+  }
+
+  async function handleCloseMonth(clientId: string) {
+    const period = new Date().toISOString().slice(0, 7);
+    const { error } = await supabase().from("monthly_closings").upsert(
+      { client_id: clientId, period, step1_done: true, step2_done: true, step3_done: true, step4_done: true, completed_at: new Date().toISOString() },
+      { onConflict: "client_id,period" }
+    );
+    if (error) { console.error("[handleCloseMonth]", error); return; }
+    setClientes((prev) => prev.map((c) => c.id === clientId ? { ...c, isClosed: true } : c));
+    setClosingAlerts((prev) => prev.map((a) => a.clientId === clientId ? { ...a, completed: true } : a));
   }
 
   const ativos = clientes.length;
@@ -316,6 +340,7 @@ function AdminDashboard() {
                 }}
               >
                 Fechamentos{" "}
+                {closingAlerts.filter((a) => !a.completed).length > 0 && (
                 <span
                   style={{
                     background: "var(--navy)",
@@ -327,8 +352,9 @@ function AdminDashboard() {
                     letterSpacing: "0.5px",
                   }}
                 >
-                  {closingAlerts.length}
+                  {closingAlerts.filter((a) => !a.completed).length}
                 </span>
+                )}
                 <span style={{ fontSize: 10, color: "var(--muted-foreground)", marginLeft: 2 }}>
                   {closingDropdownOpen ? "▲" : "▼"}
                 </span>
@@ -630,7 +656,7 @@ function AdminDashboard() {
                       )}
                     </td>
                     <td className="px-7 lg:px-9 py-5">
-                      <ClosingBadge closing={c.closing} />
+                      <ClosingBadge closing={c.closing} isClosed={c.isClosed} onClose={() => handleCloseMonth(c.id)} />
                     </td>
                     <td className="px-7 lg:px-9 py-5">
                       <HealthBadge health={c.health} margem={c.margem} segment={c.segment} />
@@ -746,7 +772,11 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
   );
 }
 
-function ClosingBadge({ closing }: { closing: UploadRow | null }) {
+function ClosingBadge({ closing, isClosed, onClose }: {
+  closing: UploadRow | null;
+  isClosed: boolean;
+  onClose: () => void;
+}) {
   if (!closing) {
     return (
       <span className="inline-flex items-center gap-1.5 text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: "rgba(192,57,43,0.08)", color: "#C0392B", padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>
@@ -763,11 +793,22 @@ function ClosingBadge({ closing }: { closing: UploadRow | null }) {
       </Link>
     );
   }
+  if (isClosed) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: "rgba(74,103,65,0.10)", color: "var(--green)", padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>
+        <span style={{ width: 5, height: 5, borderRadius: 999, background: "var(--green)" }} />
+        Fechado
+      </span>
+    );
+  }
   return (
-    <span className="inline-flex items-center gap-1.5 text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: "rgba(74,103,65,0.10)", color: "var(--green)", padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>
-      <span style={{ width: 5, height: 5, borderRadius: 999, background: "var(--green)" }} />
-      Fechado
-    </span>
+    <button
+      onClick={onClose}
+      className="inline-flex items-center gap-1.5 text-[10px] uppercase transition-opacity hover:opacity-70"
+      style={{ letterSpacing: "1.5px", fontWeight: 600, background: "transparent", color: "var(--green)", padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap", border: "1px solid var(--green)", cursor: "pointer" }}
+    >
+      Fechar mês
+    </button>
   );
 }
 
