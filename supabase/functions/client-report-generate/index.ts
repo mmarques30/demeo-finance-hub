@@ -33,8 +33,17 @@ const A4 = { width: 595.28, height: 841.89 };
 const ML = 50;
 const MR = 50;
 
+// Formatação manual — toLocaleString("pt-BR") não é confiável em Deno edge functions
 function brl(n: number): string {
-  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const neg = n < 0;
+  const parts = Math.abs(n).toFixed(2).split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${neg ? "-" : ""}R$ ${parts[0]},${parts[1]}`;
+}
+
+function todayBR(): string {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
 }
 
 function periodToDates(period: string): { start: string; end: string; label: string } {
@@ -134,6 +143,8 @@ Deno.serve(async (req: Request) => {
   const pre = handlePreflight(req);
   if (pre) return pre;
   const origin = req.headers.get("origin") ?? "";
+
+  try {
   if (req.method !== "POST") return jsonResponse({ error: "method not allowed" }, 405, origin);
 
   // Auth
@@ -279,7 +290,7 @@ Deno.serve(async (req: Request) => {
   // Nota de rodapé da página
   y = Math.max(y, 70);
   p1.drawText(
-    `Gerado em ${new Date().toLocaleDateString("pt-BR")} · Aurora Gestão Financeira`,
+    `Gerado em ${todayBR()} · Aurora Gestão Financeira`,
     { x: ML, y: 58, font, size: 8, color: MUTED }
   );
 
@@ -407,4 +418,9 @@ Deno.serve(async (req: Request) => {
   });
 
   return jsonResponse({ pdf_url: pdfUrl }, 200, origin);
+
+  } catch (err) {
+    console.error("[client-report-generate] unhandled error:", err);
+    return jsonResponse({ error: String(err) }, 500, origin);
+  }
 });
