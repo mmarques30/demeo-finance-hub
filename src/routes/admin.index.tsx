@@ -273,15 +273,15 @@ function AdminDashboard() {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to={"/admin/clientes" as never}
-              className="focus-ring inline-flex items-center gap-2 text-[11px] uppercase"
-              style={{ background: "transparent", color: "var(--green)", letterSpacing: "2.5px", fontWeight: 500, padding: "14px 22px", border: "1px solid var(--green)" }}
+              className="focus-ring inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
+              style={{ background: "transparent", color: "var(--green)", letterSpacing: "2.5px", fontWeight: 500, border: "1px solid var(--green)" }}
             >
               + Cliente
             </Link>
             <Link
               to={"/admin/importar" as never}
-              className="focus-ring inline-flex items-center gap-2 text-[11px] uppercase"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500, padding: "14px 22px" }}
+              className="focus-ring inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
             >
               + Importar extrato
             </Link>
@@ -294,105 +294,107 @@ function AdminDashboard() {
         {/* Topo compacto: Fechamentos + filtro de período + KPIs */}
         <div className="flex flex-col gap-4">
 
-        {/* Notificações de Fechamento — dropdown */}
-        {closingAlerts.length > 0 && (
-          <div style={{ position: "relative", alignSelf: "flex-start" }}>
-            <button
-              onClick={() => setClosingDropdownOpen((v) => !v)}
-              className="flex items-center gap-2 text-[11px] uppercase"
-              style={{
-                letterSpacing: "2px",
-                fontWeight: 600,
-                background: "#fff",
-                border: "1px solid var(--line)",
-                color: "var(--foreground)",
-                padding: "10px 16px",
-                cursor: "pointer",
-                borderRadius: "var(--radius-md)",
-                boxShadow: "var(--shadow-soft)",
-              }}
-            >
-              Fechamentos{" "}
-              <span
-                style={{
-                  background: "var(--navy)",
-                  color: "#fff",
-                  borderRadius: 999,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: "1px 7px",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {closingAlerts.length}
-              </span>
-              <span style={{ fontSize: 10, color: "var(--muted-foreground)", marginLeft: 2 }}>
-                {closingDropdownOpen ? "▲" : "▼"}
-              </span>
-            </button>
+        {/* Filtro de período + Fechamentos na mesma linha */}
+        <div className="flex flex-wrap items-center gap-3">
 
-            {closingDropdownOpen && (
-              <div
+          {/* Notificações de Fechamento — esquerda */}
+          {closingAlerts.length > 0 && (
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => setClosingDropdownOpen((v) => !v)}
+                className="flex items-center gap-2 text-[11px] uppercase"
                 style={{
-                  position: "absolute",
-                  top: "calc(100% + 6px)",
-                  left: 0,
-                  zIndex: 50,
+                  letterSpacing: "2px",
+                  fontWeight: 600,
                   background: "#fff",
                   border: "1px solid var(--line)",
+                  color: "var(--foreground)",
+                  padding: "8px 14px",
+                  cursor: "pointer",
                   borderRadius: "var(--radius-md)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
-                  minWidth: 340,
-                  overflow: "hidden",
+                  boxShadow: "var(--shadow-soft)",
                 }}
               >
-                <div
-                  className="px-4 py-2.5 text-[10px] uppercase"
-                  style={{ letterSpacing: "2px", fontWeight: 700, color: "var(--muted-foreground)", borderBottom: "1px solid var(--line)", background: "var(--linen)" }}
+                Fechamentos{" "}
+                <span
+                  style={{
+                    background: "var(--navy)",
+                    color: "#fff",
+                    borderRadius: 999,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "1px 7px",
+                    letterSpacing: "0.5px",
+                  }}
                 >
-                  Todos os clientes · por data de fechamento
-                </div>
-                {closingAlerts.map((a) => (
+                  {closingAlerts.length}
+                </span>
+                <span style={{ fontSize: 10, color: "var(--muted-foreground)", marginLeft: 2 }}>
+                  {closingDropdownOpen ? "▲" : "▼"}
+                </span>
+              </button>
+
+              {closingDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 6px)",
+                    left: 0,
+                    zIndex: 50,
+                    background: "#fff",
+                    border: "1px solid var(--line)",
+                    borderRadius: "var(--radius-md)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
+                    minWidth: 340,
+                    overflow: "hidden",
+                  }}
+                >
                   <div
-                    key={a.clientId}
-                    className="flex items-center justify-between px-4 py-3"
-                    style={{ borderBottom: "1px solid var(--line)", gap: 12 }}
+                    className="px-4 py-2.5 text-[10px] uppercase"
+                    style={{ letterSpacing: "2px", fontWeight: 700, color: "var(--muted-foreground)", borderBottom: "1px solid var(--line)", background: "var(--linen)" }}
                   >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[13px]" style={{ fontWeight: 500, color: "var(--foreground)" }}>
-                        {a.clientName}
-                      </span>
-                      <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-                        Dia {a.closingDay}{" "}·{" "}
-                        {a.daysUntil === 0
-                          ? "hoje"
-                          : a.daysUntil === 1
-                          ? "amanhã"
-                          : `em ${a.daysUntil} dias`}
+                    Todos os clientes · por data de fechamento
+                  </div>
+                  {closingAlerts.map((a) => (
+                    <div
+                      key={a.clientId}
+                      className="flex items-center justify-between px-4 py-3"
+                      style={{ borderBottom: "1px solid var(--line)", gap: 12 }}
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[13px]" style={{ fontWeight: 500, color: "var(--foreground)" }}>
+                          {a.clientName}
+                        </span>
+                        <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                          Dia {a.closingDay}{" "}·{" "}
+                          {a.daysUntil === 0
+                            ? "hoje"
+                            : a.daysUntil === 1
+                            ? "amanhã"
+                            : `em ${a.daysUntil} dias`}
+                        </span>
+                      </div>
+                      <span
+                        className="text-[10px] uppercase shrink-0"
+                        style={{
+                          letterSpacing: "1.5px",
+                          fontWeight: 600,
+                          padding: "3px 10px",
+                          borderRadius: 999,
+                          background: a.completed ? "rgba(74,103,65,0.10)" : "rgba(184,149,106,0.12)",
+                          color: a.completed ? "var(--green)" : "var(--tan)",
+                        }}
+                      >
+                        {a.completed ? "Concluído" : "Pendente"}
                       </span>
                     </div>
-                    <span
-                      className="text-[10px] uppercase shrink-0"
-                      style={{
-                        letterSpacing: "1.5px",
-                        fontWeight: 600,
-                        padding: "3px 10px",
-                        borderRadius: 999,
-                        background: a.completed ? "rgba(74,103,65,0.10)" : "rgba(184,149,106,0.12)",
-                        color: a.completed ? "var(--green)" : "var(--tan)",
-                      }}
-                    >
-                      {a.completed ? "Concluído" : "Pendente"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-        {/* Filtro de período */}
-        <div className="flex flex-wrap items-center gap-3">
+          {/* Presets de período */}
           <div className="flex flex-wrap gap-2">
             {PRESETS.map((p) => (
               <button
