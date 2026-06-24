@@ -97,6 +97,7 @@ function AdminDashboard() {
   const [trendData, setTrendData] = useState<TrendPoint[]>([]);
   const [closingAlerts, setClosingAlerts] = useState<ClosingAlertItem[]>([]);
   const [closingDropdownOpen, setClosingDropdownOpen] = useState(false);
+  const [showAllClientes, setShowAllClientes] = useState(false);
 
   useEffect(() => {
     const fetchTrend = async () => {
@@ -251,6 +252,8 @@ function AdminDashboard() {
     setStartDate(preset.start());
     setEndDate(preset.end());
   }
+
+  const clientesVisiveis = showAllClientes ? clientes : clientes.slice(0, 10);
 
   const ativos = clientes.length;
   const comPendencia = clientes.filter((c) => c.pendentes > 0).length;
@@ -564,7 +567,7 @@ function AdminDashboard() {
                   <td colSpan={7} className="px-7 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando...</td>
                 </tr>
               )}
-              {!loading && clientes.map((c) => (
+              {!loading && clientesVisiveis.map((c) => (
                 <tr
                   key={c.id}
                   style={{ borderTop: "1px solid var(--line)", transition: "background 0.15s" }}
@@ -602,6 +605,27 @@ function AdminDashboard() {
               ))}
             </tbody>
           </table>
+          {!loading && clientes.length > 10 && (
+            <div className="px-7 lg:px-9 py-4" style={{ borderTop: "1px solid var(--line)" }}>
+              <button
+                onClick={() => setShowAllClientes((v) => !v)}
+                className="text-[11px] uppercase"
+                style={{
+                  letterSpacing: "2px",
+                  fontWeight: 600,
+                  color: "var(--green)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                {showAllClientes
+                  ? "▲ Recolher"
+                  : `▼ Ver todos os ${clientes.length} clientes`}
+              </button>
+            </div>
+          )}
         </section>
       </div>
     </AdminLayout>
