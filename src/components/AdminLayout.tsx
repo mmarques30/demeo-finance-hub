@@ -767,7 +767,7 @@ export function PageHeader({
         className="aurora-serif"
         style={{
           fontSize: "var(--title-page)",
-          fontWeight: 300,
+          fontWeight: 400,
           lineHeight: 1.15,
           letterSpacing: "-0.8px",
           color: "var(--foreground)",

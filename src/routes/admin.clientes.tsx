@@ -494,7 +494,7 @@ function ClienteModal({
         <div className="flex items-center justify-between px-8 py-6" style={{ borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-1" style={{ color: "var(--sage)" }}>{cap}</div>
-            <h2 className="aurora-serif" style={{ fontSize: 22, fontWeight: 300, letterSpacing: "-0.5px" }}>
+            <h2 className="aurora-serif" style={{ fontSize: 22, fontWeight: 400, letterSpacing: "-0.5px" }}>
               {title}
             </h2>
           </div>
