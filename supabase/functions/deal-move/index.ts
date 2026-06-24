@@ -1,9 +1,9 @@
-// supabase/functions/deal-move/index.ts
+﻿// supabase/functions/deal-move/index.ts
 // POST autenticado (admin). Move um deal de stage, gravando atividades opcionais.
 
 import { z } from "https://esm.sh/zod@3.23.8";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
-import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
+import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts"; // owner + admin
 
 const BodySchema = z.object({
   deal_id: z.string().uuid(),

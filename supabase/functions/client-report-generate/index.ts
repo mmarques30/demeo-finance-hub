@@ -1,4 +1,4 @@
-// supabase/functions/client-report-generate/index.ts
+﻿// supabase/functions/client-report-generate/index.ts
 // POST autenticado (portal cliente). Gera PDF DFC+DRE do período e salva no bucket "reports".
 // Aceita: { client_id: uuid, period: "MM/YYYY" }
 // Requer: usuário autenticado vinculado ao client_id (user_client_mapping) OU admin.
@@ -11,7 +11,7 @@ import {
   PDFFont,
 } from "npm:pdf-lib@1.17.1";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
-import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
+import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts"; // owner + admin
 
 const BodySchema = z.object({
   // client_id: ignorado para portal (resolvido via user_client_mapping); obrigatório para admin.

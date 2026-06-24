@@ -1,9 +1,9 @@
-// supabase/functions/contract-send/index.ts
+﻿// supabase/functions/contract-send/index.ts
 // POST autenticado. Envia o contrato por e-mail via n8n e atualiza status para 'sent'.
 
 import { z } from "https://esm.sh/zod@3.23.8";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
-import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
+import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts"; // owner + admin
 
 const BodySchema = z.object({ contract_id: z.string().uuid() });
 

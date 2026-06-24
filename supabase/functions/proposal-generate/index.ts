@@ -1,4 +1,4 @@
-// supabase/functions/proposal-generate/index.ts
+﻿// supabase/functions/proposal-generate/index.ts
 // POST autenticado. Gera PDF da proposta no modelo Claudia de Meo e salva no bucket "proposals".
 
 import { z } from "https://esm.sh/zod@3.23.8";
@@ -9,7 +9,7 @@ import {
   PDFFont,
 } from "npm:pdf-lib@1.17.1";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
-import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
+import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts"; // owner + admin
 
 const BodySchema = z.object({ proposal_id: z.string().uuid() });
 

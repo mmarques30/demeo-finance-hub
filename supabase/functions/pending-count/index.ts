@@ -1,11 +1,11 @@
-// Aurora · Edge Function: pending-count
+﻿// Aurora · Edge Function: pending-count
 // Retorna o total de transações pendentes agrupado por cliente.
 // Usado pelo n8n para o digest agendado das 09:00.
 //
 // Auth: aceita Bearer token de admin JWT ou header X-Aurora-Service-Key (n8n/cron).
 
 import { corsHeaders, handlePreflight, jsonResponse } from "../_shared/cors.ts";
-import { userFromAuthHeader, isAdmin, serviceClient } from "../_shared/supabase.ts";
+import { userFromAuthHeader, isAdmin, serviceClient } from "../_shared/supabase.ts"; // owner + admin
 
 Deno.serve(async (req) => {
   const preflight = handlePreflight(req);
