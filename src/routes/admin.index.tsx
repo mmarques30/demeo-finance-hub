@@ -485,12 +485,12 @@ function AdminDashboard() {
         {/* Gráfico de tendência — últimos 6 meses */}
         {trendData.length > 0 && (
           <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
-            <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)" }}>
+            <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)", background: "rgba(153,169,137,0.12)" }}>
               <div>
-                <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "var(--sage)", fontWeight: 600 }}>
+                <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "#1C2D45", fontWeight: 600 }}>
                   Histórico · Últimos 6 meses
                 </div>
-                <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 400, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
+                <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 400, letterSpacing: "-0.8px", lineHeight: 1.1, color: "#2D2D2D" }}>
                   Entradas e{" "}
                   <em className="italic" style={{ color: "var(--navy)" }}>saídas</em>
                 </h2>
@@ -514,12 +514,12 @@ function AdminDashboard() {
 
         {/* Receita por cliente */}
         <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
-          <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)" }}>
+          <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)", background: "rgba(153,169,137,0.12)" }}>
             <div>
-              <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "var(--green)", fontWeight: 600 }}>
+              <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "#1C2D45", fontWeight: 600 }}>
                 Receita · Por cliente
               </div>
-              <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 400, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
+              <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 400, letterSpacing: "-0.8px", lineHeight: 1.1, color: "#2D2D2D" }}>
                 {periodoLabel} ·{" "}
                 <span style={{ color: "var(--green)" }}>
                   {brl(totalReceita).replace(",00", "")}
@@ -552,9 +552,6 @@ function AdminDashboard() {
                       <div className="text-[12px] text-center" style={{ color: "var(--foreground)", fontWeight: 500, lineHeight: 1.3 }}>
                         {c.name}
                       </div>
-                      <div className="flex justify-center">
-                        <StatusBadge status={c.status} />
-                      </div>
                     </div>
                   );
                 })}
@@ -568,13 +565,13 @@ function AdminDashboard() {
         <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
           <header
             className="flex items-center justify-between flex-wrap gap-4 px-7 lg:px-9 py-6"
-            style={{ borderBottom: carteiraExpanded ? "1px solid var(--line)" : "none" }}
+            style={{ borderBottom: carteiraExpanded ? "1px solid var(--line)" : "none", background: "rgba(153,169,137,0.12)" }}
           >
             <div>
-              <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "var(--sage)", fontWeight: 600 }}>
+              <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "#1C2D45", fontWeight: 600 }}>
                 Carteira · Detalhe
               </div>
-              <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 400, letterSpacing: "-0.8px", lineHeight: 1.1 }}>
+              <h2 className="aurora-serif" style={{ fontSize: 28, fontWeight: 400, letterSpacing: "-0.8px", lineHeight: 1.1, color: "#2D2D2D" }}>
                 Status dos{" "}
                 <em className="italic" style={{ color: "var(--green)" }}>fechamentos</em>
               </h2>
