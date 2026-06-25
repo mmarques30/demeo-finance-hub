@@ -217,21 +217,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           }}
         >
           <div className="flex items-center gap-3">
-            {/* Hamburger mobile */}
-            <div
-              className="lg:hidden"
-              style={{
-                border: "1px solid #EFEFEF",
-                borderRadius: 8,
-                padding: "6px 8px",
-                display: "flex",
-                alignItems: "center",
-                color: "var(--foreground)",
-              }}
-            >
-              <AnimatedMenuToggle toggle={() => setDrawerOpen((v) => !v)} isOpen={drawerOpen} />
-            </div>
-
             {/* Breadcrumb dinâmico */}
             <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
               <Link
