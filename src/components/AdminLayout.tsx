@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import { useClickOutside, useLocalStorage } from "@/hooks/useClickOutside";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 type SidebarItem = {
   to: string;
