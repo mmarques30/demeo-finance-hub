@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import { useClickOutside, useLocalStorage } from "@/hooks/useClickOutside";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { motion, AnimatePresence } from "framer-motion";
 
 type SidebarItem = {
   to: string;
@@ -217,16 +218,19 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         >
           <div className="flex items-center gap-3">
             {/* Hamburger mobile */}
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="lg:hidden p-2 rounded-md flex flex-col gap-1"
-              aria-label="Abrir menu"
-              style={{ border: "1px solid #EFEFEF" }}
+            <div
+              className="lg:hidden"
+              style={{
+                border: "1px solid #EFEFEF",
+                borderRadius: 8,
+                padding: "6px 8px",
+                display: "flex",
+                alignItems: "center",
+                color: "var(--foreground)",
+              }}
             >
-              {[0, 1, 2].map((i) => (
-                <span key={i} style={{ width: 16, height: 1.5, background: "var(--foreground)", display: "block" }} />
-              ))}
-            </button>
+              <AnimatedMenuToggle toggle={() => setDrawerOpen((v) => !v)} isOpen={drawerOpen} />
+            </div>
 
             {/* Breadcrumb dinâmico */}
             <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
@@ -512,16 +516,13 @@ function SidebarContent({
                   aria-expanded={isOpen}
                 >
                   <span>{group.label}</span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      transition: "transform 0.25s",
-                      transform: isOpen ? "rotate(90deg)" : "rotate(0)",
-                      opacity: 0.6,
-                    }}
+                  <motion.span
+                    animate={{ rotate: isOpen ? 90 : 0 }}
+                    transition={{ duration: 0.22, ease: [0.22, 0.61, 0.36, 1] }}
+                    style={{ fontSize: 11, opacity: 0.6, display: "inline-block" }}
                   >
                     ▶
-                  </span>
+                  </motion.span>
                 </button>
               )}
               {collapsed && (
@@ -575,10 +576,16 @@ function SidebarContent({
                           </span>
                         </button>
                       )}
-                    {subOpen && <Link
+                    {subOpen && <motion.div
+                      className="mx-1.5 my-0.5"
+                      style={{ borderRadius: 10, overflow: "hidden" }}
+                      whileHover={!active ? { backgroundColor: "rgba(255,255,255,0.08)" } : {}}
+                      whileTap={{ scale: 0.985 }}
+                      transition={{ duration: 0.15 }}
+                    ><Link
                       to={item.to as string}
                       title={collapsed ? item.label : undefined}
-                      className="group relative flex items-center gap-3 mx-1.5 my-0.5 transition-all"
+                      className="group relative flex items-center gap-3 transition-all"
                       style={{
                         padding: collapsed ? "12px" : "11px 14px",
                         paddingLeft: !collapsed && item.indent ? "22px" : undefined,
@@ -656,7 +663,7 @@ function SidebarContent({
                           }}
                         />
                       )}
-                    </Link>}
+                    </Link></motion.div>}
                     </div>
                   );
                 })}
@@ -685,6 +692,53 @@ function SidebarContent({
         )}
       </div>
     </>
+  );
+}
+
+function AnimatedMenuToggle({ toggle, isOpen }: { toggle: () => void; isOpen: boolean }) {
+  return (
+    <button onClick={toggle} aria-label="Toggle menu" className="focus:outline-none flex items-center justify-center">
+      <motion.svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        initial="closed"
+        animate={isOpen ? "open" : "closed"}
+        transition={{ duration: 0.3 }}
+      >
+        <motion.path
+          fill="transparent"
+          strokeWidth="2.5"
+          stroke="currentColor"
+          strokeLinecap="round"
+          variants={{
+            closed: { d: "M 2 2.5 L 22 2.5" },
+            open: { d: "M 3 16.5 L 17 2.5" },
+          }}
+        />
+        <motion.path
+          fill="transparent"
+          strokeWidth="2.5"
+          stroke="currentColor"
+          strokeLinecap="round"
+          variants={{
+            closed: { d: "M 2 12 L 22 12", opacity: 1 },
+            open: { opacity: 0 },
+          }}
+          transition={{ duration: 0.2 }}
+        />
+        <motion.path
+          fill="transparent"
+          strokeWidth="2.5"
+          stroke="currentColor"
+          strokeLinecap="round"
+          variants={{
+            closed: { d: "M 2 21.5 L 22 21.5" },
+            open: { d: "M 3 2.5 L 17 16.5" },
+          }}
+        />
+      </motion.svg>
+    </button>
   );
 }
 
