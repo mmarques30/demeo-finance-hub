@@ -27,7 +27,7 @@ const LINE  = rgb(0xE2 / 255, 0xD8 / 255, 0xCC / 255);
 const TAN   = rgb(0xC0 / 255, 0x7E / 255, 0x48 / 255);
 
 const AURORA_EMAIL = "claudia@aurora.com.br";
-const CM_PHONE     = "19-98112.22.77";
+const CM_PHONE     = "(19) 3702-4878";
 
 const A4 = { width: 595.28, height: 841.89 };
 const ML = 50;

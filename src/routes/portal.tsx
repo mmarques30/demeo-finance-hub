@@ -424,7 +424,7 @@ function PortalPage() {
 
         <div className="flex justify-start">
           <a
-            href="https://wa.me/5519981122277"
+            href="https://wa.me/551937024878"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[10px] uppercase px-6 py-3.5 transition-opacity hover:opacity-80"

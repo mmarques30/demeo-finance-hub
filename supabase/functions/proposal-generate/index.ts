@@ -22,8 +22,8 @@ const WHITE    = rgb(1, 1, 1);
 // ─── Dados Aurora ─────────────────────────────────────────────────────────────
 const CM_CNPJ     = "41.062.652/0001-38";
 const CM_CITY     = "Limeira";
-const CM_PHONE    = "19-98112.22.77";
-const CM_WA       = "19-3702.48.78";
+const CM_PHONE    = "(19) 3702-4878";
+const CM_WA       = "(19) 3702-4878";
 const AURORA_EMAIL = "claudia@aurora.com.br";
 
 // ─── Dimensões A4 ─────────────────────────────────────────────────────────────
