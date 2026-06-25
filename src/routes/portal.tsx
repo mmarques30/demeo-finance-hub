@@ -37,6 +37,7 @@ function PortalPage() {
 
   const [tab, setTab] = useState<"dfc" | "dre" | "projecao">("dfc");
   const [downloading, setDownloading] = useState(false);
+  const [mesAtual, setMesAtual] = useState(() => monthOptions(1)[0]);
 
   async function handleSignOut() {
     await supabase().auth.signOut();
@@ -59,7 +60,6 @@ function PortalPage() {
 
   const features: PortalFeatures = (client?.portal_features as PortalFeatures | null) ?? DEFAULT_FEATURES;
 
-  const mesAtual = monthOptions(1)[0];
   const { start: mesStart, end: mesEnd } = monthRangeDates(mesAtual);
 
   const { data: txMes = [], isLoading } = useQuery({
@@ -172,7 +172,8 @@ function PortalPage() {
 
   const dre = computeDRE(txDRE, catMap);
 
-  const mesLabel = new Date().toLocaleDateString("pt-BR", { month: "long" });
+  const [_mesM, _mesY] = mesAtual.split("/");
+  const mesLabel = new Date(Number(_mesY), Number(_mesM) - 1, 1).toLocaleDateString("pt-BR", { month: "long" });
   const mesLabelCap = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
   const updatedAt = new Date().toLocaleDateString("pt-BR");
 
@@ -279,6 +280,35 @@ function PortalPage() {
         {/* DFC/DRE — gateado por portal_features.dfc */}
         {features.dfc ? (
           <>
+            {/* Seletor de mês */}
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] uppercase" style={{ letterSpacing: "2px", fontWeight: 600, color: "var(--muted-foreground)" }}>
+                Período
+              </span>
+              <select
+                value={mesAtual}
+                onChange={(e) => setMesAtual(e.target.value)}
+                style={{
+                  background: "white",
+                  border: "1px solid var(--line)",
+                  borderRadius: 8,
+                  padding: "5px 12px",
+                  color: "var(--foreground)",
+                  fontSize: 11,
+                  letterSpacing: "1.5px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  outline: "none",
+                }}
+              >
+                {monthOptions(12).map((m) => {
+                  const [mm, yy] = m.split("/");
+                  const raw = new Date(Number(yy), Number(mm) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+                  return <option key={m} value={m}>{raw.charAt(0).toUpperCase() + raw.slice(1)}</option>;
+                })}
+              </select>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-5">
               <div className="aurora-card">
                 <div className="aurora-cap mb-3">Receitas · {mesLabelCap}</div>
