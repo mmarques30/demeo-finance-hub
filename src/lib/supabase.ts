@@ -19,6 +19,6 @@ export function supabaseWithProposalToken(token: string): SupabaseClient {
 }
 
 export const FUNCTIONS_URL = url ? `${url}/functions/v1` : "";
-export const AURORA_WHATSAPP = "https://wa.me/5519981122777";
+export const AURORA_WHATSAPP = "https://wa.me/551937024878";
 export const AURORA_APP_URL =
   (import.meta.env.VITE_AURORA_APP_URL as string | undefined) ?? "https://aurora.com.br";
