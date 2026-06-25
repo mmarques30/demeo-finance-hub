@@ -507,11 +507,14 @@ function SidebarContent({
               {!collapsed && (
                 <button
                   onClick={() => onToggleGroup(group.id)}
-                  className="flex items-center justify-between px-3 py-2.5 text-[11px] uppercase transition-colors"
+                  className={`flex items-center justify-between w-full px-3 py-2.5 text-[11px] uppercase transition-all rounded-[10px] mb-1 ${
+                    hasActive ? "bg-[rgba(153,169,137,0.16)]" : "bg-white/[0.06] hover:bg-white/[0.10]"
+                  }`}
                   style={{
-                    letterSpacing: "2.5px",
-                    color: hasActive ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.5)",
+                    letterSpacing: "2px",
+                    color: hasActive ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.65)",
                     fontWeight: 600,
+                    border: "1px solid rgba(255,255,255,0.08)",
                   }}
                   aria-expanded={isOpen}
                 >
