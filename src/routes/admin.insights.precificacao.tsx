@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { Pencil } from "lucide-react";
+import { toast } from "sonner";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/insights/precificacao")({
@@ -18,6 +21,11 @@ function brl(n: number) {
 }
 
 function PrecificacaoPage() {
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState<{ id: string; name: string; base_price: number } | null>(null);
+  const [priceInput, setPriceInput] = useState("");
+  const [saving, setSaving] = useState(false);
+
   const { data: services = [] } = useQuery({
     queryKey: ["services-active"],
     queryFn: async (): Promise<ServiceRow[]> => {
@@ -96,6 +104,47 @@ function PrecificacaoPage() {
     },
   });
 
+  function openEdit(svc: { id: string; name: string; base_price: number }) {
+    setEditing(svc);
+    setPriceInput(String(svc.base_price));
+  }
+
+  async function savePrice() {
+    if (!editing) return;
+    const newPrice = Number(priceInput);
+    if (!Number.isFinite(newPrice) || newPrice < 0) {
+      toast.error("Informe um preço válido.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase().from("services").update({ base_price: newPrice }).eq("id", editing.id);
+    if (error) {
+      toast.error(error.message);
+      setSaving(false);
+      return;
+    }
+    if (newPrice !== editing.base_price) {
+      await supabase().from("service_price_history").insert({
+        service_id: editing.id,
+        price: newPrice,
+        source: "manual_update",
+        notes: "Atualização manual (Precificação)",
+      });
+      toast.success("Preço atualizado (histórico registrado)");
+    } else {
+      toast.success("Salvo");
+    }
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["services-active"] }),
+      qc.invalidateQueries({ queryKey: ["pricing-cards"] }),
+      qc.invalidateQueries({ queryKey: ["price-history-monthly"] }),
+      qc.invalidateQueries({ queryKey: ["admin", "services"] }),
+      qc.invalidateQueries({ queryKey: ["public", "services"] }),
+    ]);
+    setSaving(false);
+    setEditing(null);
+  }
+
   const chartData = useMemo(
     () =>
       monthly.map((m) => ({
@@ -115,7 +164,21 @@ function PrecificacaoPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
           {cards.map((c) => (
             <div key={c.id} className="aurora-card">
-              <div className="aurora-cap mb-2">{c.name}</div>
+              <div className="flex items-start justify-between mb-2 gap-2">
+                <div className="aurora-cap">{c.name}</div>
+                <button
+                  type="button"
+                  onClick={() => openEdit({ id: c.id, name: c.name, base_price: c.base_price })}
+                  title="Editar preço-base"
+                  aria-label={`Editar preço de ${c.name}`}
+                  className="shrink-0 transition-colors"
+                  style={{ color: "var(--muted-foreground)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--green)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted-foreground)")}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              </div>
               <div className="aurora-serif" style={{ fontSize: 28, color: "var(--green)", lineHeight: 1 }}>
                 {brl(c.recent)}
               </div>
@@ -199,6 +262,52 @@ function PrecificacaoPage() {
           </table>
         </div>
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="bg-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar preço-base{editing ? ` · ${editing.name}` : ""}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 py-2">
+            <label className="aurora-cap" htmlFor="edit-base-price">
+              Preço-base (R$)
+            </label>
+            <input
+              id="edit-base-price"
+              type="number"
+              step="0.01"
+              min="0"
+              value={priceInput}
+              onChange={(e) => setPriceInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !saving && savePrice()}
+              className="aurora-input"
+              autoFocus
+            />
+            <div className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+              A alteração registra um novo ponto no histórico de preços.
+            </div>
+          </div>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setEditing(null)}
+              className="text-[10px] uppercase px-3 py-1.5"
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={savePrice}
+              className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40"
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+            >
+              {saving ? "Salvando…" : "Salvar"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
