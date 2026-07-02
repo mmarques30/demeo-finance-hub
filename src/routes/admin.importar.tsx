@@ -71,7 +71,6 @@ function ImportarPage() {
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientId, setClientId] = useState("");
   const [clientsLoading, setClientsLoading] = useState(true);
-  const [bank, setBank] = useState("Itaú");
   const [uploadPeriod, setUploadPeriod] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -179,7 +178,6 @@ function ImportarPage() {
             file_base64,
             filename: file.name,
             client_id: uploadClientId,
-            bank_name: bank,
             period: uploadPeriod.split("-").reverse().join("/"),
           }),
         });
@@ -925,8 +923,7 @@ function ImportarPage() {
         <ConfirmUploadModal
           clientName={clients.find((c) => c.id === clientId)?.name ?? ""}
           files={files}
-          bank={bank}
-          onConfirm={(confirmedBank) => { setBank(confirmedBank); setAwaitingConfirm(false); handleUpload(files); }}
+          onConfirm={() => { setAwaitingConfirm(false); handleUpload(files); }}
           onCancel={() => { setAwaitingConfirm(false); setFiles([]); setError(null); if (inputRef.current) inputRef.current.value = ""; }}
         />
       )}
@@ -994,18 +991,15 @@ function CancelUploadModal({
   );
 }
 
-const BANKS = ["Itaú", "Santander", "Bradesco", "Banco do Brasil", "Inter", "Nubank"];
-
 function ConfirmUploadModal({
-  clientName, files, bank, onConfirm, onCancel,
+  clientName, files, onConfirm, onCancel,
 }: {
   clientName: string;
   files: File[];
-  bank: string;
-  onConfirm: (confirmedBank: string) => void;
+  onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const [confirmedBank, setConfirmedBank] = React.useState(bank);
+  const multi = files.length > 1;
 
   return (
     <div
@@ -1013,51 +1007,56 @@ function ConfirmUploadModal({
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div className="w-full max-w-md bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+      <div className="w-full bg-white overflow-hidden" style={{ maxWidth: 480, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
         <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5">Confirmar</div>
-            <div className="aurora-serif text-[20px]">Importar extrato</div>
+            <div className="aurora-serif text-[20px]">{multi ? "Importar extratos" : "Importar extrato"}</div>
           </div>
           <button onClick={onCancel} className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100">×</button>
         </div>
         <div className="px-6 py-5 flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex justify-between items-center text-[13px]">
-              <span style={{ color: "var(--muted-foreground)" }}>Cliente</span>
-              <span style={{ fontWeight: 500 }}>{clientName}</span>
-            </div>
-            {/* Banco editável com destaque */}
-            <div
-              className="flex items-center justify-between gap-3 px-4 py-3"
-              style={{ background: "rgba(184,149,106,0.1)", border: "1px solid var(--tan)", borderRadius: 6 }}
-            >
-              <div>
-                <div className="text-[10px] uppercase mb-0.5" style={{ letterSpacing: "1.5px", fontWeight: 600, color: "var(--tan)" }}>
-                  Banco — confirme se está correto
-                </div>
-                <select
-                  value={confirmedBank}
-                  onChange={(e) => setConfirmedBank(e.target.value)}
-                  className="bg-transparent text-[13px] font-medium outline-none"
-                  style={{ color: "var(--foreground)", border: "none", cursor: "pointer" }}
+          <div className="flex justify-between items-center text-[13px]">
+            <span style={{ color: "var(--muted-foreground)" }}>Cliente</span>
+            <span style={{ fontWeight: 500 }}>{clientName}</span>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+              {multi ? `${files.length} arquivos` : "Arquivo"}
+            </span>
+            <div className="flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: 200 }}>
+              {files.map((f, i) => (
+                <div
+                  key={i}
+                  className="text-[12px] truncate px-3 py-2"
+                  title={f.name}
+                  style={{ background: "#FAFAF8", border: "1px solid var(--line)", borderRadius: 4 }}
                 >
-                  {BANKS.map((b) => <option key={b}>{b}</option>)}
-                </select>
-              </div>
-              <span style={{ fontSize: 18 }}>🏦</span>
-            </div>
-            <div className="flex justify-between text-[13px]">
-              <span style={{ color: "var(--muted-foreground)" }}>{files.length === 1 ? "Arquivo" : "Arquivos"}</span>
-              <span style={{ textAlign: "right", maxWidth: 200 }}>{files.map((f) => f.name).join(", ")}</span>
+                  {f.name}
+                </div>
+              ))}
             </div>
           </div>
+
+          {/* Banco detectado automaticamente pela IA */}
+          <div
+            className="flex items-start gap-3 px-4 py-3"
+            style={{ background: "rgba(74,103,65,0.08)", border: "1px solid rgba(74,103,65,0.25)", borderRadius: 6 }}
+          >
+            <span style={{ fontSize: 16, lineHeight: 1.2 }}>🏦</span>
+            <div className="text-[12px]" style={{ color: "var(--foreground)", lineHeight: 1.6 }}>
+              O banco {multi ? "de cada extrato" : "do extrato"} será <strong>identificado automaticamente</strong> pela IA a partir do conteúdo do arquivo. Se necessário, você pode corrigir depois em <strong>Histórico de Extratos</strong>.
+            </div>
+          </div>
+
           <div
             className="text-[12px] px-4 py-3"
             style={{ background: "rgba(27,57,77,0.06)", color: "var(--foreground)", lineHeight: 1.6 }}
           >
-            Os lançamentos deste extrato serão vinculados a <strong>{clientName}</strong> como banco <strong>{confirmedBank}</strong>.
+            Os lançamentos serão vinculados a <strong>{clientName}</strong>.
           </div>
+
           <div className="flex justify-end gap-3 pt-1">
             <button
               type="button"
@@ -1069,7 +1068,7 @@ function ConfirmUploadModal({
             </button>
             <button
               type="button"
-              onClick={() => onConfirm(confirmedBank)}
+              onClick={onConfirm}
               className="text-[10px] uppercase px-6 py-3 transition-opacity"
               style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
             >

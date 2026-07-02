@@ -23,12 +23,13 @@ Deno.serve(async (req) => {
 
     console.log("[create-upload] payload recebido", { filename, client_id, bank_name, period, file_base64_length: file_base64?.length });
 
-    if (!file_base64 || !filename || !client_id || !bank_name) {
+    if (!file_base64 || !filename || !client_id) {
       return new Response(
-        JSON.stringify({ error: "Campos obrigatórios: file_base64, filename, client_id, bank_name" }),
+        JSON.stringify({ error: "Campos obrigatórios: file_base64, filename, client_id" }),
         { status: 400, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
+    // bank_name é opcional: o parse-extract identifica o banco pelo conteúdo do arquivo.
 
     // 1. Upload para Storage
     const fileBytes = Uint8Array.from(atob(file_base64), (c) => c.charCodeAt(0));
@@ -79,7 +80,7 @@ Deno.serve(async (req) => {
       .from("uploads")
       .insert({
         client_id,
-        bank_name,
+        bank_name: bank_name || "Identificando…",
         filename,
         storage_path: storagePath,
         period: uploadPeriod,
