@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
     // 5. Busca transações pós-classificação (statuses atualizados)
     const { data: transactions } = await supabase
       .from("transactions")
-      .select("id, date, description, amount, category, status, is_recurring, confidence")
+      .select("id, date, description, amount, category, status, is_recurring, confidence, bank")
       .eq("upload_id", upload.id)
       .order("date");
 
@@ -187,6 +187,7 @@ Deno.serve(async (req) => {
         success: true,
         upload_id: upload.id,
         tx_count: parseResult.tx_count,
+        bank: parseResult.bank ?? null,
         transactions: transactions || [],
         classify_timedout: classifyTimedOut,
       }),

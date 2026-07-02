@@ -22,9 +22,13 @@ interface Transaction {
   status: string;
   is_recurring: boolean | null;
   confidence: number | null;
+  bank: string | null;
   installment_number?: number | null;
   installment_total?: number | null;
 }
+
+// Opções de banco para edição inline (inclui "Outro" para extratos não identificados)
+const BANK_OPTIONS = ["Itaú", "Santander", "Bradesco", "Banco do Brasil", "Inter", "Nubank", "Outro"];
 
 interface InstallmentState {
   enabled: boolean;
@@ -88,6 +92,7 @@ function ImportarPage() {
   const [canceling, setCanceling] = useState(false);
   const [cancelUploadOpen, setCancelUploadOpen] = useState(false);
   const [classifyTimedOut, setClassifyTimedOut] = useState(false);
+  const [fileBanks, setFileBanks] = useState<{ name: string; bank: string }[]>([]);
   const [installments, setInstallments] = useState<Record<string, InstallmentState>>({});
 
   const CATEGORIAS = useCategories(clientId);
@@ -145,10 +150,12 @@ function ImportarPage() {
     setFiles(fileList);
     setError(null);
     setClassifyTimedOut(false);
+    setFileBanks([]);
     setCurrentFileIndex(0);
     setStage("reading");
 
     const allTransactions: Transaction[] = [];
+    const allFileBanks: { name: string; bank: string }[] = [];
     let anyTimedOut = false;
 
     const {
@@ -191,6 +198,7 @@ function ImportarPage() {
         }
 
         allTransactions.push(...(result.transactions ?? []));
+        allFileBanks.push({ name: file.name, bank: result.bank ?? "Outro" });
         if (result.classify_timedout) anyTimedOut = true;
       } catch (err) {
         const msg = `${file.name}: ${String(err)}`;
@@ -200,8 +208,16 @@ function ImportarPage() {
 
     // n8n notificado pela Edge Function create-upload (N8N_WEBHOOK_URL) — não duplicar aqui
     setTransactions(allTransactions);
+    setFileBanks(allFileBanks);
     if (anyTimedOut) setClassifyTimedOut(true);
     setStage("done");
+  }
+
+  // Edição inline do banco de um lançamento (corrige a detecção automática)
+  async function changeBank(txId: string, bank: string) {
+    setTransactions((prev) => prev.map((t) => (t.id === txId ? { ...t, bank } : t)));
+    const { error: err } = await supabase().from("transactions").update({ bank }).eq("id", txId);
+    if (err) setError(`Erro ao atualizar banco: ${err.message}`);
   }
 
   function onDrop(e: React.DragEvent) {
@@ -426,12 +442,18 @@ function ImportarPage() {
             <div className="aurora-card">
               <div className="aurora-cap mb-3">Arquivos enviados</div>
               <ul className="flex flex-col gap-2">
-                {files.map((f) => (
-                  <li key={f.name} className="text-[12px] flex items-center gap-2">
-                    <span style={{ color: "var(--green)" }}>▸</span>
-                    {f.name}
-                  </li>
-                ))}
+                {files.map((f) => {
+                  const fb = fileBanks.find((x) => x.name === f.name);
+                  return (
+                    <li key={f.name} className="text-[12px] flex items-center gap-2">
+                      <span style={{ color: "var(--green)" }}>▸</span>
+                      <span className="flex-1 truncate" title={f.name}>{f.name}</span>
+                      {fb && (
+                        <span className="text-[11px] shrink-0" style={{ color: "var(--sage)" }}>→ {fb.bank}</span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
             <div className="aurora-card">
@@ -492,6 +514,23 @@ function ImportarPage() {
             </div>
           </div>
         )}
+
+        {/* Resumo dos bancos identificados automaticamente pela IA */}
+        {stage === "done" && fileBanks.length > 0 && (() => {
+          const counts = new Map<string, number>();
+          for (const fb of fileBanks) counts.set(fb.bank, (counts.get(fb.bank) ?? 0) + 1);
+          const resumo = Array.from(counts.entries()).map(([b, n]) => `${b} (${n})`).join(" · ");
+          return (
+            <div className="flex items-start gap-3 px-5 py-4 rounded-xl text-[12px]"
+              style={{ background: "rgba(74,103,65,0.08)", border: "1px solid rgba(74,103,65,0.25)", color: "var(--foreground)" }}>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>🏦</span>
+              <div>
+                <strong style={{ fontWeight: 600 }}>Banco identificado pela IA:</strong> {resumo}.
+                Confira a coluna <em>Banco</em> na tabela e ajuste se necessário.
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Aviso de timeout na classificação automática */}
         {stage === "done" && classifyTimedOut && (
@@ -554,7 +593,7 @@ function ImportarPage() {
                   <th className="px-4 py-3">
                     <input type="checkbox" checked={selected.size === transactions.length && transactions.length > 0} onChange={toggleAll} />
                   </th>
-                  {["Data", "Descrição", "Valor", "Categoria sugerida", "Parcelamento", "Status", "Ação"].map((h) => (
+                  {["Data", "Descrição", "Valor", "Banco", "Categoria sugerida", "Parcelamento", "Status", "Ação"].map((h) => (
                     <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>
                       {h}
                     </th>
@@ -599,6 +638,17 @@ function ImportarPage() {
                       >
                         {tx.amount >= 0 ? "+" : ""}
                         {brl(tx.amount)}
+                      </td>
+                      <td className="px-5 py-3">
+                        <select
+                          value={BANK_OPTIONS.includes(tx.bank ?? "") ? (tx.bank as string) : "Outro"}
+                          onChange={(e) => changeBank(tx.id, e.target.value)}
+                          className="text-[11px] px-1.5 py-1 bg-white outline-none"
+                          style={{ border: "1px solid var(--line)", borderRadius: 4, cursor: "pointer" }}
+                          title="Banco detectado — ajuste se necessário"
+                        >
+                          {BANK_OPTIONS.map((b) => <option key={b}>{b}</option>)}
+                        </select>
                       </td>
                       <td
                         className="px-5 py-3 text-[12px]"

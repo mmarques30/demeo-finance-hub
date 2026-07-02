@@ -312,29 +312,47 @@ Deno.serve(async (req) => {
     }
 
     const BATCH_SIZE = 50;
+    const AI_CONCURRENCY = 6; // lotes simultâneos ao Claude — reduz o tempo total sem estourar rate limit
     let aiApproved = 0;
     let aiPending = 0;
 
     if (categoryNames.length > 0) {
+      // Divide os lançamentos restantes em lotes
+      const batches: TxRow[][] = [];
       for (let i = 0; i < remainingForAI.length; i += BATCH_SIZE) {
-        const batch = remainingForAI.slice(i, i + BATCH_SIZE);
+        batches.push(remainingForAI.slice(i, i + BATCH_SIZE));
+      }
 
-        let results: AIResult[] = [];
-        try {
-          results = await classifyWithAI(batch, categoryNames, clientName, clientSegment, topPatterns ?? []);
-        } catch (aiErr) {
-          console.error("[classify-batch] AI batch failed after 3 retries, marking as pending:", aiErr);
+      // Executa os lotes em paralelo, em ondas de AI_CONCURRENCY (antes era sequencial → timeout em uploads grandes)
+      const settled: { batch: TxRow[]; results: AIResult[] | null }[] = [];
+      for (let i = 0; i < batches.length; i += AI_CONCURRENCY) {
+        const wave = batches.slice(i, i + AI_CONCURRENCY);
+        const waveResults = await Promise.all(
+          wave.map(async (batch) => {
+            try {
+              const results = await classifyWithAI(batch, categoryNames, clientName, clientSegment, topPatterns ?? []);
+              return { batch, results };
+            } catch (aiErr) {
+              console.error("[classify-batch] AI batch failed after 3 retries, marking as pending:", aiErr);
+              return { batch, results: null };
+            }
+          }),
+        );
+        settled.push(...waveResults);
+      }
+
+      // Agrega os resultados de TODOS os lotes em grupos de classificação idêntica → 1 UPDATE por grupo (evita N+1)
+      const approvedGroups = new Map<
+        string,
+        { ids: string[]; category: string | null; is_recurring: boolean; confidence: number }
+      >();
+
+      for (const { batch, results } of settled) {
+        if (!results) {
           aiPending += batch.length;
           continue;
         }
-
-        // Agrupar por (category, is_recurring) para batch UPDATE — evita N+1 queries
         const resultIds = new Set(results.map((r) => r.id));
-        const approvedGroups = new Map<
-          string,
-          { ids: string[]; category: string | null; is_recurring: boolean; confidence: number }
-        >();
-
         for (const r of results) {
           const isKnownCategory = categoryNames.includes(r.cat);
           if (!isKnownCategory) {
@@ -348,24 +366,23 @@ Deno.serve(async (req) => {
           approvedGroups.get(key)!.ids.push(r.id);
           aiApproved++;
         }
-
-        // 1 query por grupo de classificação idêntica
-        for (const { ids, category, is_recurring, confidence } of approvedGroups.values()) {
-          await supabase
-            .from("transactions")
-            .update({
-              category,
-              is_recurring,
-              confidence,
-              status: "approved",
-            })
-            .in("id", ids);
-        }
-
         // Transações sem resultado da IA: contabilizar (já estão como pending no banco)
         for (const tx of batch) {
           if (!resultIds.has(tx.id)) aiPending++;
         }
+      }
+
+      // 1 query por grupo de classificação idêntica
+      for (const { ids, category, is_recurring, confidence } of approvedGroups.values()) {
+        await supabase
+          .from("transactions")
+          .update({
+            category,
+            is_recurring,
+            confidence,
+            status: "approved",
+          })
+          .in("id", ids);
       }
     } else {
       aiPending = remainingForAI.length;
