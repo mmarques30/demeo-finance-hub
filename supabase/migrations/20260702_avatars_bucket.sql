@@ -1,15 +1,16 @@
 -- ============================================================
 -- Bucket de fotos de perfil (avatars) — usado pelo "Meu perfil"
--- Público para leitura; cada usuário só escreve na própria pasta
+-- Bucket PRIVADO: a topbar exibe o avatar via URL assinada
+-- (createSignedUrl). Cada usuário só escreve na própria pasta
 -- (caminho começa pelo auth.uid()).
 -- ============================================================
 
--- 1. Bucket público (criar via SQL de storage não é suportado; usar INSERT seguro)
+-- 1. Bucket privado (criar via SQL de storage não é suportado; usar INSERT seguro)
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('avatars', 'avatars', true)
+VALUES ('avatars', 'avatars', false)
 ON CONFLICT (id) DO NOTHING;
 
--- 2. Leitura pública (avatars aparecem na topbar)
+-- 2. Permissão de leitura (necessária p/ o usuário gerar a URL assinada do avatar)
 DROP POLICY IF EXISTS "avatars_public_read" ON storage.objects;
 CREATE POLICY "avatars_public_read"
   ON storage.objects
