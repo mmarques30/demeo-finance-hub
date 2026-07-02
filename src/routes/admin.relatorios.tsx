@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
 import { computeForecastMonths, type ForecastMonth, type PayableProjection } from "@/hooks/useDFCForecast";
 import { computeDRE, DRE_EBITDA_PIVOT, type CatInfo } from "@/lib/dre";
+import { computeHealthLevel, healthMargemPct, SEGMENT_BENCHMARKS } from "@/lib/healthScore";
 
 export const Route = createFileRoute("/admin/relatorios")({
   component: RelatoriosPage,
@@ -19,14 +20,35 @@ function fmtLabel(iso: string) {
   return new Date(iso + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+// Arredonda para "cima bonito" (eixo do gráfico): 1/2/2.5/5/10 × 10^n
+function niceCeil(n: number): number {
+  if (n <= 0) return 1;
+  const pow = Math.pow(10, Math.floor(Math.log10(n)));
+  const f = n / pow;
+  const nice = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+  return nice * pow;
+}
+
+// Rótulo compacto para eixo (ex.: 48000 → "48k")
+function brlK(n: number): string {
+  if (Math.abs(n) >= 1000) return (n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "k";
+  return String(Math.round(n));
+}
+
+const MES_ABBR = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
 // ─── tipos ────────────────────────────────────────────────────────────────────
 interface ClientRow {
   id: string;
   name: string;
   last_upload_at: string | null;
+  segment: string | null;
 }
 
 interface ClientPeriod { start: string; end: string }
+
+// Ponto da série mensal (gráfico entradas × saídas)
+interface MonthPoint { label: string; ent: number; sai: number }
 
 interface Tx {
   date: string;
@@ -86,238 +108,301 @@ async function fetchCategories(clientId: string): Promise<Map<string, CatInfo>> 
   return map;
 }
 
+// Série mensal (6 meses até o mês do fim do período) — entradas × saídas por mês
+async function fetchMonthlySeries(clientId: string, endISO: string): Promise<MonthPoint[]> {
+  const endDt = new Date(endISO + "T12:00:00");
+  const mIdx = endDt.getMonth();
+  const yyyy = endDt.getFullYear();
+  const startDt = new Date(yyyy, mIdx - 5, 1);
+  const startStr = `${startDt.getFullYear()}-${String(startDt.getMonth() + 1).padStart(2, "0")}-01`;
+  const lastDay = new Date(yyyy, mIdx + 1, 0).getDate();
+  const endStr = `${yyyy}-${String(mIdx + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  const { data } = await supabase()
+    .from("transactions")
+    .select("date, amount")
+    .eq("client_id", clientId)
+    .eq("status", "approved")
+    .gte("date", startStr)
+    .lte("date", endStr);
+  const buckets = new Map<string, { ent: number; sai: number }>();
+  const order: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const dt = new Date(yyyy, mIdx - 5 + i, 1);
+    const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+    buckets.set(key, { ent: 0, sai: 0 });
+    order.push(key);
+  }
+  for (const t of (data ?? []) as { date: string; amount: number }[]) {
+    const b = buckets.get(t.date.slice(0, 7));
+    if (!b) continue;
+    if (t.amount > 0) b.ent += t.amount;
+    else b.sai += Math.abs(t.amount);
+  }
+  return order.map((key) => {
+    const mo = parseInt(key.slice(5, 7), 10);
+    const b = buckets.get(key)!;
+    return { label: MES_ABBR[mo - 1], ent: b.ent, sai: b.sai };
+  });
+}
+
+// Fechamento do mês concluído? (period = "YYYY-MM")
+async function fetchClosingStatus(clientId: string, endISO: string): Promise<boolean> {
+  const { data } = await supabase()
+    .from("monthly_closings")
+    .select("completed_at")
+    .eq("client_id", clientId)
+    .eq("period", endISO.slice(0, 7))
+    .not("completed_at", "is", null)
+    .maybeSingle();
+  return !!data;
+}
+
 // ─── exportações ──────────────────────────────────────────────────────────────
 function openPrintReport(
   clientName: string,
   periodoLabel: string,
   txs: Tx[],
   forecast: ForecastMonth[],
-  catMap: Map<string, CatInfo>,
-  revenues: RevenueEntry[],
+  segment: string | null,
+  monthly: MonthPoint[],
+  closed: boolean,
   format: ReportFormat = "DFC",
 ) {
-  const dfcTitle = format === "DFC Gerencial" ? "DFC Gerencial — Demonstrativo Executivo" : "Demonstrativo de Fluxo de Caixa";
+  const docTitle = format === "DFC Gerencial" ? "Relatório Executivo · Gerencial" : "Relatório Executivo";
   const d = computeReport(txs);
-  const dre = computeDRE(txs, catMap);
   const today = new Date().toLocaleDateString("pt-BR");
 
-  const projRows = forecast
-    .map((p) => {
-      const r = p.rec - p.des;
-      return `<tr>
-        <td>${p.mes}</td>
-        <td style="color:#8FA688">${brl(p.rec)}</td>
-        <td style="color:#B8956A">${brl(p.des)}</td>
-        <td style="color:${r >= 0 ? "#8FA688" : "#B8956A"};font-weight:bold">${brl(r)}</td>
-      </tr>`;
-    })
-    .join("");
+  // ── saúde financeira ──
+  const margem = healthMargemPct(d.receitas, d.despesas);
+  const level = computeHealthLevel(d.receitas, d.despesas, segment);
+  const bench = SEGMENT_BENCHMARKS[segment ?? ""] ?? SEGMENT_BENCHMARKS["default"];
+  const HEALTH = {
+    saudavel: { color: "#8FA688", label: "Saudável" },
+    atencao: { color: "#B8956A", label: "Atenção" },
+    critico: { color: "#A15C4A", label: "Crítico" },
+    sem_dados: { color: "#8C8676", label: "Sem dados" },
+  } as const;
+  const h = HEALTH[level];
+  const gaugeMax = Math.max(bench.healthy * 1.4, 1);
+  const gaugePct = Math.max(0, Math.min(100, (margem / gaugeMax) * 100));
 
-  const dreRowsArr: string[] = [];
-  for (const g of dre.groups) {
-    const isReceita = g.name === "Receita";
-    const color = isReceita ? "#8FA688" : "#B8956A";
-    const prefix = isReceita ? "" : "(−) ";
-    const lineRows = g.lines
-      .map((l) => `<tr>
-        <td style="padding-left:24px;color:#555">${l.cat}</td>
-        <td style="text-align:right;color:${color}">${isReceita ? brl(l.total) : `(${brl(l.total)})`}</td>
-      </tr>`)
-      .join("");
-    dreRowsArr.push(`<tr style="background:#F8F6F1">
-        <td style="font-weight:600;padding:8px 10px;letter-spacing:1px;font-size:11px;text-transform:uppercase;font-family:sans-serif;color:#555">${prefix}${g.name}</td>
-        <td></td>
-      </tr>
-      ${lineRows}
-      <tr style="border-top:1px solid #E8E3D9">
-        <td style="font-weight:500;font-family:sans-serif;font-size:12px;padding-left:8px">Subtotal ${g.name}</td>
-        <td style="text-align:right;font-weight:600;color:${color}">${isReceita ? brl(g.subtotal) : `(${brl(g.subtotal)})`}</td>
-      </tr>
-      <tr><td colspan="2" style="padding:4px"></td></tr>`);
-    if (g.name === DRE_EBITDA_PIVOT) {
-      dreRowsArr.push(`<tr style="background:#E8F0E4;border-top:2px solid #8FA688">
-        <td style="font-weight:700;font-size:13px;padding:10px 10px;font-family:sans-serif">= Resultado Operacional (EBITDA)</td>
-        <td style="text-align:right;font-weight:700;font-size:14px;color:${dre.ebitda >= 0 ? "#8FA688" : "#B8956A"};padding:10px">${brl(dre.ebitda)}</td>
-      </tr><tr><td colspan="2" style="padding:4px"></td></tr>`);
+  // ── deltas (mês atual vs anterior, a partir da série mensal) ──
+  const nM = monthly.length;
+  const cur = nM ? monthly[nM - 1] : null;
+  const prev = nM > 1 ? monthly[nM - 2] : null;
+  const pctDelta = (c: number, p: number): number | null => (!p ? null : ((c - p) / Math.abs(p)) * 100);
+  const dRec = cur && prev ? pctDelta(cur.ent, prev.ent) : null;
+  const dDes = cur && prev ? pctDelta(cur.sai, prev.sai) : null;
+  const dRes = cur && prev ? pctDelta(cur.ent - cur.sai, prev.ent - prev.sai) : null;
+  const deltaHtml = (dv: number | null, goodWhenUp = true): string => {
+    if (dv === null || !isFinite(dv)) return `<div class="delta" style="color:#8C8676">—</div>`;
+    const good = goodWhenUp ? dv > 0 : dv < 0;
+    const arrow = dv > 0 ? "▲" : dv < 0 ? "▼" : "—";
+    const col = dv === 0 ? "#8C8676" : good ? "#4A6741" : "#A15C4A";
+    return `<div class="delta" style="color:${col}">${arrow} ${Math.abs(dv).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% <span style="color:#8C8676">vs mês ant.</span></div>`;
+  };
+
+  // ── composição de despesas ──
+  const compTotal = d.fixos + d.variaveis;
+  const fixosPct = compTotal > 0 ? Math.round((d.fixos / compTotal) * 100) : 0;
+  const varPct = compTotal > 0 ? Math.round((d.variaveis / compTotal) * 100) : 0;
+  const top5 = d.byCategory.filter((c) => !c.isReceita).slice(0, 5);
+  const catMaxV = top5.length ? Math.max(...top5.map((c) => c.total)) : 1;
+
+  // ── gráfico: entradas × saídas + linha de resultado (eixo único) ──
+  const barChart = (() => {
+    if (!monthly.length) return `<div class="empty">Sem histórico suficiente para o gráfico.</div>`;
+    const W = 720, H = 230, padL = 6, padR = 6, padT = 22, padB = 26;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const yMax = niceCeil(Math.max(...monthly.flatMap((m) => [m.ent, m.sai]), 1));
+    const y = (v: number) => padT + plotH - (v / yMax) * plotH;
+    const gW = plotW / monthly.length;
+    const barW = Math.min(24, (gW - 12) / 2), gap = 4, base = y(0);
+    let grid = "", bars = "";
+    for (let g = 0; g <= 4; g++) {
+      const gv = (yMax / 4) * g, gy = y(gv);
+      grid += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="#EFE9DC" stroke-width="1"/>`;
+      grid += `<text x="${padL}" y="${gy - 4}" font-size="8.5" fill="#B7B0A0">${brlK(gv)}</text>`;
     }
-  }
-  const dreRows = dreRowsArr.join("");
+    const pts: [number, number, number][] = [];
+    monthly.forEach((m, i) => {
+      const cx = padL + gW * i + gW / 2;
+      const ye = y(m.ent), ys = y(m.sai);
+      bars += `<rect x="${cx - barW - gap / 2}" y="${ye}" width="${barW}" height="${Math.max(0, base - ye)}" rx="4" fill="#4A6741"/>`;
+      bars += `<rect x="${cx + gap / 2}" y="${ys}" width="${barW}" height="${Math.max(0, base - ys)}" rx="4" fill="#B8956A"/>`;
+      bars += `<text x="${cx}" y="${H - padB + 15}" font-size="9.5" fill="#8C8676" text-anchor="middle">${m.label}</text>`;
+      pts.push([cx, y(m.ent - m.sai), m.ent - m.sai]);
+    });
+    const line = `<polyline points="${pts.map((p) => p[0] + "," + p[1]).join(" ")}" fill="none" stroke="#1B394D" stroke-width="2" stroke-linejoin="round"/>`;
+    let dots = "";
+    pts.forEach((p, i) => {
+      dots += `<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="#fff" stroke="#1B394D" stroke-width="2"/>`;
+      if (i === pts.length - 1) dots += `<text x="${p[0]}" y="${p[1] - 8}" font-size="10" font-weight="600" fill="#1B394D" text-anchor="middle">${brl(p[2])}</text>`;
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Entradas, saídas e resultado nos últimos meses">${grid}${bars}${line}${dots}</svg>`;
+  })();
 
-  const fixosPct = d.despesas > 0 ? ((d.fixos / d.despesas) * 100).toFixed(1) : "0";
-  const varPct = d.despesas > 0 ? ((d.variaveis / d.despesas) * 100).toFixed(1) : "0";
+  const donut = (() => {
+    if (compTotal <= 0) return `<div class="empty">Sem despesas no período.</div>`;
+    const r = 50, cx = 66, cy = 66, sw = 19, circ = 2 * Math.PI * r;
+    const fLen = (d.fixos / compTotal) * circ, vLen = (d.variaveis / compTotal) * circ;
+    return `<svg viewBox="0 0 132 132" width="132" height="132" role="img" aria-label="Composição das despesas">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#EFE9DC" stroke-width="${sw}"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1B394D" stroke-width="${sw}" stroke-dasharray="${fLen} ${circ - fLen}" transform="rotate(-90 ${cx} ${cy})"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#B8956A" stroke-width="${sw}" stroke-dasharray="${vLen} ${circ - vLen}" stroke-dashoffset="${-fLen}" transform="rotate(-90 ${cx} ${cy})"/>
+      <text x="${cx}" y="${cy - 3}" font-size="8" fill="#8C8676" text-anchor="middle" letter-spacing="1">DESPESAS</text>
+      <text x="${cx}" y="${cy + 13}" font-size="14" fill="#1B394D" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif">${brl(compTotal)}</text>
+    </svg>`;
+  })();
 
-  // Detalhamento — Receitas Brutas (regime de competência)
-  const revTotalBruto = revenues.reduce((s, r) => s + Number(r.gross_amount), 0);
-  const revTotalImpostos = revenues.reduce((s, r) => s + Number(r.taxes_withheld), 0);
-  const revTotalLiquido = revTotalBruto - revTotalImpostos;
-  const revRows = revenues.length > 0
-    ? `<div style="margin-bottom:24px">
-    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#888;font-family:sans-serif;margin-bottom:8px">Regime de Competência — Receitas Brutas</div>
-    <table>
-      <thead><tr><th>Data</th><th>NF / Referência</th><th>Canal de Venda</th><th style="text-align:right">Valor Bruto</th><th style="text-align:right">Impostos</th><th style="text-align:right">Valor Líquido</th></tr></thead>
-      <tbody>
-        ${revenues.map((r) => {
-          const liq = Number(r.gross_amount) - Number(r.taxes_withheld);
-          return `<tr>
-            <td>${new Date(r.entry_date + "T12:00:00").toLocaleDateString("pt-BR")}</td>
-            <td>${r.invoice_ref || "—"}</td>
-            <td>${r.sales_channel || "—"}</td>
-            <td style="text-align:right;color:#8FA688">${brl(Number(r.gross_amount))}</td>
-            <td style="text-align:right;color:#B8956A">(${brl(Number(r.taxes_withheld))})</td>
-            <td style="text-align:right;font-weight:600">${brl(liq)}</td>
-          </tr>`;
-        }).join("")}
-        <tr style="background:#1B3950">
-          <td colspan="3" style="font-weight:700;color:#fff;padding:10px">Totais</td>
-          <td style="text-align:right;color:#A8D5A2;font-weight:700;padding:10px">${brl(revTotalBruto)}</td>
-          <td style="text-align:right;color:#F4A57E;font-weight:700;padding:10px">(${brl(revTotalImpostos)})</td>
-          <td style="text-align:right;color:#fff;font-weight:700;padding:10px">${brl(revTotalLiquido)}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>`
-    : "";
-
-  // Detalhamento — Movimentações (regime de caixa)
-  const totalEntradas = txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const totalSaidas = txs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-  const movRows = `<div>
-    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#888;font-family:sans-serif;margin-bottom:8px">Regime de Caixa — Movimentações</div>
-    <table>
-      <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th style="text-align:right">Valor</th></tr></thead>
-      <tbody>
-        ${txs.map((t) => `<tr>
-          <td>${t.date}</td>
-          <td>${t.description}</td>
-          <td style="color:#888">${t.category || "—"}</td>
-          <td style="text-align:right;color:${t.amount >= 0 ? "#8FA688" : "#B8956A"}">${t.amount < 0 ? `(${brl(Math.abs(t.amount))})` : brl(t.amount)}</td>
-        </tr>`).join("")}
-        <tr style="background:#F8F6F1;border-top:1px solid #E8E3D9">
-          <td colspan="3" style="font-weight:600;font-family:sans-serif;font-size:11px;padding:8px 10px">Total Entradas</td>
-          <td style="text-align:right;font-weight:700;color:#8FA688">${brl(totalEntradas)}</td>
-        </tr>
-        <tr style="background:#F8F6F1">
-          <td colspan="3" style="font-weight:600;font-family:sans-serif;font-size:11px;padding:8px 10px">Total Saídas</td>
-          <td style="text-align:right;font-weight:700;color:#B8956A">(${brl(totalSaidas)})</td>
-        </tr>
-        <tr style="background:#1B3950">
-          <td colspan="3" style="font-weight:700;color:#fff;padding:10px;font-family:sans-serif">Resultado do Período</td>
-          <td style="text-align:right;font-weight:700;color:${(totalEntradas - totalSaidas) >= 0 ? "#A8D5A2" : "#F4A57E"};padding:10px">${brl(totalEntradas - totalSaidas)}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>`;
-
-  const detSection = `<div class="sec">
-    <div class="sec-title">Detalhamento</div>
-    ${revRows}
-    ${movRows}
-  </div>`;
-
-  // Parcelamentos
-  const instTxs = txs.filter((t) => t.installment_group_id);
-  const instSection = instTxs.length > 0
-    ? `<div class="sec">
-    <div class="sec-title">Parcelamentos</div>
-    <table>
-      <thead><tr><th>Data</th><th>Descrição</th><th style="text-align:right">Valor Parcela</th><th style="text-align:center">Parcela Nº</th><th style="text-align:center">Total</th></tr></thead>
-      <tbody>
-        ${instTxs.map((t) => `<tr>
-          <td>${t.date}</td>
-          <td>${t.description}</td>
-          <td style="text-align:right;color:#B8956A">(${brl(Math.abs(t.amount))})</td>
-          <td style="text-align:center">${t.installment_number ?? "—"}</td>
-          <td style="text-align:center">${t.installment_total ?? "—"}</td>
-        </tr>`).join("")}
-      </tbody>
-    </table>
-  </div>`
-    : "";
+  const projCards = forecast.slice(0, 3).map((p) => {
+    const r = p.rec - p.des;
+    return `<div class="proj">
+      <div class="proj-m">${p.mes}</div>
+      <div class="proj-r" style="color:${r >= 0 ? "#4A6741" : "#A15C4A"}">${brl(r)}</div>
+      <div class="proj-sub">+${brl(p.rec)} · −${brl(p.des)}</div>
+    </div>`;
+  }).join("");
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório Aurora</title>
+<title>Relatório Executivo Aurora — ${clientName}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&family=Jost:wght@300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+  :root{--verde:#4A6741;--prussian:#1B394D;--salvia:#8FA688;--ambar:#B8956A;--biscoito:#D4B896;--linho:#F7F1E8;--ink:#1B394D;--muted:#8C8676;--line:#E8E1D3;--clay:#A15C4A;
+    --serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost',system-ui,Helvetica,Arial,sans-serif}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Georgia,'Times New Roman',serif;color:#1B3950;background:#fff;padding:16mm}
-  h1{font-size:36px;font-weight:normal;margin:16px 0 4px}
-  .sub{font-size:13px;color:#888;margin-bottom:40px;font-family:sans-serif}
-  .sec{margin-bottom:36px}
-  .sec-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#8FA688;margin-bottom:12px;font-family:sans-serif}
-  .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .card{border:1px solid #E8E3D9;padding:16px}
-  .card-lbl{font-family:sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:8px}
-  .card-val{font-size:24px;font-weight:bold}
-  .card-sub{font-size:11px;color:#888;margin-top:4px;font-family:sans-serif}
-  table{width:100%;border-collapse:collapse;font-size:12px;font-family:sans-serif}
-  th{text-align:left;padding:8px 10px;background:#F8F6F1;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#888}
-  td{padding:8px 10px;border-bottom:1px solid #E8E3D9}
-  @page{size:A4;margin:0}
-  @media print{body{padding:16mm}}
+  body{font-family:var(--sans);color:var(--ink);background:#fff;padding:12mm 12mm 8mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:1px solid var(--biscoito)}
+  .brand{display:flex;align-items:center;gap:11px}
+  .wm .n{font-family:var(--serif);font-size:25px;letter-spacing:-1px;color:#1C1C19;line-height:1}
+  .wm .s{font-size:8px;letter-spacing:2.5px;color:var(--muted);margin-top:3px}
+  .doc{text-align:right}
+  .doc .eyebrow{font-size:9px;letter-spacing:3px;color:var(--salvia);text-transform:uppercase}
+  .doc .client{font-family:var(--serif);font-size:21px;color:var(--prussian);margin-top:2px}
+  .doc .period{font-size:11px;color:var(--muted);margin-top:2px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+  .kpi{background:var(--linho);border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+  .kpi .lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+  .kpi .val{font-family:var(--serif);font-size:25px;margin-top:6px;font-variant-numeric:tabular-nums;line-height:1}
+  .delta{font-size:10px;margin-top:6px}
+  .health{display:flex;align-items:center;gap:18px;background:var(--prussian);color:#fff;border-radius:9px;padding:12px 18px;margin-top:12px}
+  .health .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .health .h-cap{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9FB3C4}
+  .health .h-val{font-family:var(--serif);font-size:16px}
+  .gauge{flex:1;height:7px;border-radius:6px;background:rgba(255,255,255,.14);position:relative;overflow:hidden}
+  .gauge>i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;display:block}
+  .gauge-lbls{display:flex;justify-content:space-between;font-size:8.5px;color:#9FB3C4;margin-top:5px}
+  .close .c1{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#9FB3C4;text-align:right}
+  .close .c2{font-size:12px;margin-top:3px;text-align:right}
+  .sec{margin-top:16px}
+  .sec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+  .sec-title{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--salvia)}
+  .legend{display:flex;gap:16px}
+  .legend .li{display:flex;align-items:center;gap:6px;font-size:10px}
+  .legend .sw{width:10px;height:10px;border-radius:3px}
+  .panel{border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+  .donut-wrap{display:flex;align-items:center;gap:16px}
+  .dl{display:flex;flex-direction:column;gap:9px;flex:1}
+  .dl .row{display:flex;justify-content:space-between;align-items:baseline;font-size:11px}
+  .dl .row .k{display:flex;align-items:center;gap:7px;color:var(--muted)}
+  .dl .row .k .sw{width:10px;height:10px;border-radius:3px}
+  .dl .row .v{font-variant-numeric:tabular-nums}
+  .dl .row .v b{font-family:var(--serif);font-weight:500;font-size:14px}
+  .catbar+.catbar{margin-top:10px}
+  .catbar .top{display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:4px}
+  .catbar .top .ck{color:var(--muted)}
+  .catbar .top .cv{font-variant-numeric:tabular-nums}
+  .catbar .track{height:8px;background:var(--linho);border-radius:6px;overflow:hidden}
+  .catbar .track>i{display:block;height:100%;border-radius:6px;background:var(--ambar)}
+  .projrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .proj{background:var(--linho);border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+  .proj-m{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .proj-r{font-family:var(--serif);font-size:19px;margin-top:5px;font-variant-numeric:tabular-nums}
+  .proj-sub{font-size:9.5px;color:var(--muted);margin-top:3px}
+  .empty{font-size:11px;color:var(--muted);padding:20px;text-align:center}
+  .foot{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--line);margin-top:16px;font-size:9.5px;color:#B0A996}
+  @page{size:A4 portrait;margin:0}
 </style>
 </head>
 <body>
-  <svg width="200" height="69" viewBox="0 0 400 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Aurora · Gestão Financeira">
-    <rect x="0" y="26" width="12" height="40" rx="6" fill="#4A6741"/>
-    <rect x="17" y="14" width="12" height="52" rx="6" fill="#4A6741" opacity=".65"/>
-    <rect x="34" y="4" width="12" height="62" rx="6" fill="#4A6741" opacity=".38"/>
-    <text x="58" y="60" font-family="'Cormorant Garamond',serif" font-size="50" font-weight="300" fill="#1C1C19" letter-spacing="-2">Aurora</text>
-    <text x="59" y="78" font-family="'Jost',sans-serif" font-size="9" font-weight="300" fill="#7A7260" letter-spacing="2.5">GESTÃO FINANCEIRA</text>
-  </svg>
-  <h1>${clientName}</h1>
-  <div class="sub">Período: ${periodoLabel} &nbsp;·&nbsp; Gerado em ${today}</div>
-
-  <div class="sec">
-    <div class="sec-title">${dfcTitle}</div>
-    <div class="g4">
-      <div class="card"><div class="card-lbl">Receitas</div><div class="card-val" style="color:#8FA688">${brl(d.receitas)}</div></div>
-      <div class="card"><div class="card-lbl">Despesas</div><div class="card-val" style="color:#B8956A">${brl(d.despesas)}</div></div>
-      <div class="card"><div class="card-lbl">Saldo do Período</div><div class="card-val" style="color:${d.resultado >= 0 ? "#8FA688" : "#B8956A"}">${brl(d.resultado)}</div></div>
-      <div class="card"><div class="card-lbl">Lançamentos</div><div class="card-val" style="color:#1B3950">${txs.length}</div></div>
+  <div class="head">
+    <div class="brand">
+      <svg width="40" height="44" viewBox="0 0 46 66" aria-hidden="true">
+        <rect x="0" y="26" width="12" height="40" rx="6" fill="#4A6741"/>
+        <rect x="17" y="14" width="12" height="52" rx="6" fill="#4A6741" opacity=".65"/>
+        <rect x="34" y="4" width="12" height="62" rx="6" fill="#4A6741" opacity=".38"/>
+      </svg>
+      <div class="wm"><div class="n">Aurora</div><div class="s">GESTÃO FINANCEIRA</div></div>
+    </div>
+    <div class="doc">
+      <div class="eyebrow">${docTitle}</div>
+      <div class="client">${clientName}</div>
+      <div class="period">${periodoLabel}</div>
     </div>
   </div>
 
-  ${d.despesas > 0 ? `<div class="sec">
-    <div class="sec-title">Composição das Despesas</div>
-    <div class="g2">
-      <div class="card"><div class="card-lbl">Despesas Fixas</div><div class="card-val" style="color:#1B3950">${brl(d.fixos)}</div><div class="card-sub">${fixosPct}% das despesas</div></div>
-      <div class="card"><div class="card-lbl">Despesas Variáveis</div><div class="card-val" style="color:#B8956A">${brl(d.variaveis)}</div><div class="card-sub">${varPct}% das despesas</div></div>
+  <div class="kpis">
+    <div class="kpi"><div class="lbl">Receitas</div><div class="val" style="color:#4A6741">${brl(d.receitas)}</div>${deltaHtml(dRec)}</div>
+    <div class="kpi"><div class="lbl">Despesas</div><div class="val" style="color:#B8956A">${brl(d.despesas)}</div>${deltaHtml(dDes, false)}</div>
+    <div class="kpi"><div class="lbl">Resultado</div><div class="val" style="color:${d.resultado >= 0 ? "#1B394D" : "#A15C4A"}">${brl(d.resultado)}</div>${deltaHtml(dRes)}</div>
+    <div class="kpi"><div class="lbl">Margem</div><div class="val" style="color:#1B394D">${margem.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</div><div class="delta" style="color:${h.color}">meta setor: ${bench.healthy}%</div></div>
+  </div>
+
+  <div class="health">
+    <span class="dot" style="background:${h.color}"></span>
+    <div><div class="h-cap">Saúde financeira</div><div class="h-val">${h.label}</div></div>
+    <div style="flex:1">
+      <div class="gauge"><i style="width:${gaugePct.toFixed(0)}%;background:${h.color}"></i></div>
+      <div class="gauge-lbls"><span>Crítico</span><span>Atenção ${bench.caution}%</span><span>Saudável ${bench.healthy}%</span></div>
     </div>
-  </div>` : ""}
-
-  <div class="sec">
-    <div class="sec-title">DRE — Demonstrativo do Resultado do Exercício</div>
-    <table>
-      <thead><tr><th>Conta</th><th style="text-align:right">Valor</th></tr></thead>
-      <tbody>
-        ${dreRows}
-        <tr style="background:#1B3950">
-          <td style="font-weight:700;font-size:13px;padding:12px 10px;color:#fff">= Resultado Líquido do Período</td>
-          <td style="text-align:right;font-weight:700;font-size:15px;color:${dre.resultadoLiquido >= 0 ? "#A8D5A2" : "#F4A57E"};padding:12px 10px">${brl(dre.resultadoLiquido)}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="close"><div class="c1">Fechamento</div><div class="c2" style="color:${closed ? "#CFE3D0" : "#E8C89A"}">${closed ? "✓ Concluído" : "◷ Em aberto"} · ${txs.length} lanç.</div></div>
   </div>
 
-  ${detSection}
-
-  ${instSection}
-
   <div class="sec">
-    <div class="sec-title">Projeção — Próximos 90 dias</div>
-    <table>
-      <thead><tr><th>Mês</th><th>Receitas Previstas</th><th>Despesas Previstas</th><th>Resultado Previsto</th></tr></thead>
-      <tbody>${projRows}</tbody>
-    </table>
+    <div class="sec-head">
+      <div class="sec-title">Entradas × Saídas — últimos meses</div>
+      <div class="legend">
+        <span class="li"><span class="sw" style="background:#4A6741"></span>Entradas</span>
+        <span class="li"><span class="sw" style="background:#B8956A"></span>Saídas</span>
+        <span class="li"><span class="sw" style="background:#1B394D;border-radius:50%"></span>Resultado</span>
+      </div>
+    </div>
+    <div class="panel" style="padding:10px 12px 4px">${barChart}</div>
   </div>
 
-  <div style="margin-top:48px;padding-top:16px;border-top:1px solid #E8E3D9;font-size:11px;color:#aaa;font-family:sans-serif">
-    Aurora · ${today}
+  <div class="cols">
+    <div>
+      <div class="sec-title" style="margin-bottom:9px">Composição das despesas</div>
+      <div class="panel donut-wrap">
+        ${donut}
+        <div class="dl">
+          <div class="row"><span class="k"><span class="sw" style="background:#1B394D"></span>Fixas</span><span class="v"><b>${brl(d.fixos)}</b> · ${fixosPct}%</span></div>
+          <div class="row"><span class="k"><span class="sw" style="background:#B8956A"></span>Variáveis</span><span class="v"><b>${brl(d.variaveis)}</b> · ${varPct}%</span></div>
+          <div class="row" style="border-top:1px solid var(--line);padding-top:8px"><span class="k" style="color:var(--ink)">Total</span><span class="v"><b>${brl(compTotal)}</b></span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-title" style="margin-bottom:9px">Onde o dinheiro foi — top 5</div>
+      <div class="panel">
+        ${top5.length ? top5.map((c) => `<div class="catbar"><div class="top"><span class="ck">${c.cat}</span><span class="cv">${brl(c.total)}</span></div><div class="track"><i style="width:${Math.round((c.total / catMaxV) * 100)}%"></i></div></div>`).join("") : `<div class="empty">Sem despesas categorizadas.</div>`}
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title" style="margin-bottom:9px">Projeção — próximos 90 dias</div>
+    <div class="projrow">${projCards || `<div class="empty">Sem dados para projeção.</div>`}</div>
+  </div>
+
+  <div class="foot">
+    <span>Aurora · Gestão Financeira &nbsp;·&nbsp; regime de caixa · valores aprovados no período</span>
+    <span>claudia@aurora.com.br &nbsp;·&nbsp; gerado em ${today}</span>
   </div>
 </body>
 </html>`;
@@ -493,7 +578,7 @@ function RelatoriosPage() {
   useEffect(() => {
     supabase()
       .from("clients")
-      .select("id, name, last_upload_at")
+      .select("id, name, last_upload_at, segment")
       .is("deleted_at", null)
       .order("name")
       .then(({ data }) => {
@@ -629,14 +714,14 @@ function RelatoriosPage() {
     const client = clients.find((c) => c.id === clientId);
     if (!client) return;
     setExporting((e) => ({ ...e, [clientId]: "pdf" }));
-    const [txs, forecast, catMap, revenues] = await Promise.all([
+    const [txs, forecast, monthly, closed] = await Promise.all([
       fetchTxs(clientId, p),
       fetchForecast(clientId, p),
-      fetchCategories(clientId),
-      fetchRevenues(clientId, p),
+      fetchMonthlySeries(clientId, p.end),
+      fetchClosingStatus(clientId, p.end),
     ]);
     setExporting((e) => ({ ...e, [clientId]: null }));
-    openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, catMap, revenues, "DFC Gerencial");
+    openPrintReport(client.name, `${fmtLabel(p.start)} – ${fmtLabel(p.end)}`, txs, forecast, client.segment, monthly, closed, "DFC Gerencial");
     await saveExportRecord(clientId, client.name, "pdf", p, forecast, "DFC Gerencial");
   }
 
@@ -670,7 +755,12 @@ function RelatoriosPage() {
     ]);
     const forecast = r.forecast_json ?? await fetchForecast(r.client_id, p);
     if (r.type === "pdf") {
-      openPrintReport(r.client_name, r.period_label, txs, forecast, catMap, revenues, format);
+      const [monthly, closed] = await Promise.all([
+        fetchMonthlySeries(r.client_id, r.end_date),
+        fetchClosingStatus(r.client_id, r.end_date),
+      ]);
+      const segment = clients.find((c) => c.id === r.client_id)?.segment ?? null;
+      openPrintReport(r.client_name, r.period_label, txs, forecast, segment, monthly, closed, format);
     } else {
       exportExcel(r.client_name, r.period_label, r.start_date, r.end_date, txs, forecast, catMap, revenues, format);
     }
