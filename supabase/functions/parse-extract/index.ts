@@ -99,6 +99,58 @@ const BANK_CONFIGS: Record<string, BankConfig> = {
   },
 };
 
+// Rótulos de exibição dos bancos com parser configurado + lista conhecida (usada na detecção por IA)
+const KEY_TO_DISPLAY: Record<string, string> = {
+  nubank: "Nubank",
+  itau: "Itaú",
+  bradesco: "Bradesco",
+  inter: "Inter",
+  "banco do brasil": "Banco do Brasil",
+  santander: "Santander",
+};
+const KNOWN_BANKS = Object.values(KEY_TO_DISPLAY);
+// Placeholder gravado por create-upload quando o banco ainda não foi identificado
+const BANK_PLACEHOLDER = "Identificando…";
+
+function bankKey(name: string): string {
+  return name.toLowerCase().trim().normalize("NFD").replace(new RegExp("[\\u0300-\\u036f]", "g"), "");
+}
+function isConfiguredBank(name?: string | null): boolean {
+  return !!name && !!BANK_CONFIGS[bankKey(name)];
+}
+function displayBank(name: string): string {
+  return KEY_TO_DISPLAY[bankKey(name)] ?? name;
+}
+
+// Detecta o banco por assinaturas no texto do arquivo (CSV/XLSX)
+function detectBankName(text: string): string | null {
+  const low = text.toLowerCase();
+  const sigs: Array<[RegExp, string]> = [
+    [/nubank|nu pagamentos/, "Nubank"],
+    [/santander/, "Santander"],
+    [/bradesco/, "Bradesco"],
+    [/banco inter|\binter\b/, "Inter"],
+    [/banco do brasil|bancodobrasil/, "Banco do Brasil"],
+    [/ita[uú]|itau unibanco/, "Itaú"],
+  ];
+  for (const [re, name] of sigs) if (re.test(low)) return name;
+  return null;
+}
+
+// CSV: tenta cada config e escolhe a que extrai mais lançamentos válidos
+function parseCSVAuto(text: string): { bank: string; transactions: ParsedTransaction[] } | null {
+  let best: { key: string; txs: ParsedTransaction[] } | null = null;
+  for (const key of Object.keys(BANK_CONFIGS)) {
+    try {
+      const txs = parseCSV(text, key);
+      if (txs.length > 0 && (!best || txs.length > best.txs.length)) best = { key, txs };
+    } catch { /* config não aplicável a este arquivo */ }
+  }
+  if (!best) return null;
+  const bank = KEY_TO_DISPLAY[best.key] ?? best.key;
+  return { bank, transactions: best.txs.map((t) => ({ ...t, bank })) };
+}
+
 function parseDate(raw: string, format: BankConfig["dateFormat"]): string {
   raw = raw.trim().split(" ")[0];
   if (format === "YYYY-MM-DD") return raw;
@@ -297,7 +349,11 @@ interface AITransaction {
 
 const MAX_PDF_BYTES = 20 * 1024 * 1024; // 20 MB — limite da API Claude para documentos
 
-async function parseWithAI(fileData: Blob, filename: string, bankName: string): Promise<ParsedTransaction[]> {
+async function parseWithAI(
+  fileData: Blob,
+  filename: string,
+  hint: string | null,
+): Promise<{ transactions: ParsedTransaction[]; detectedBank: string | null }> {
   const client = new Anthropic();
   const buffer = await fileData.arrayBuffer();
 
@@ -356,18 +412,22 @@ async function parseWithAI(fileData: Blob, filename: string, bankName: string): 
             contentBlock,
             {
               type: "text",
-              text: `Este é um extrato bancário do banco "${bankName}". Extraia TODOS os lançamentos financeiros.
+              text: `Este é um extrato bancário. Faça DUAS coisas:
 
-Retorne SOMENTE um JSON array no formato abaixo, sem texto adicional:
-[{"date":"YYYY-MM-DD","description":"DESCRIÇÃO EM MAIÚSCULAS","amount":valor_numerico}]
+1) Identifique o BANCO emissor. Responda com UM destes valores exatos: ${KNOWN_BANKS.map((b) => `"${b}"`).join(", ")}. Se não conseguir identificar com confiança, use "Outro".
+2) Extraia TODOS os lançamentos financeiros.${hint ? `\nDica: sugeriram que o banco seja "${hint}", mas confirme pelo conteúdo.` : ""}
+
+Retorne SOMENTE um JSON no formato abaixo, sem texto adicional:
+{"bank":"NOME_DO_BANCO","transactions":[{"date":"YYYY-MM-DD","description":"DESCRIÇÃO EM MAIÚSCULAS","amount":valor_numerico}]}
 
 Regras:
+- bank: exatamente um dos valores listados acima (ou "Outro")
 - date: formato ISO YYYY-MM-DD obrigatório
 - description: texto limpo em MAIÚSCULAS, sem caracteres especiais extras
 - amount: número (positivo = crédito/entrada, negativo = débito/saída)
 - Ignore linhas de saldo, totais e cabeçalhos
 - Inclua TODOS os lançamentos visíveis, sem filtrar
-- Se não conseguir identificar lançamentos, retorne []`,
+- Se não houver lançamentos, retorne {"bank":"Outro","transactions":[]}`,
             },
           ],
         },
@@ -375,23 +435,29 @@ Regras:
     })
   );
 
-  const raw = content[0].type === "text" ? content[0].text.trim() : "[]";
-  const jsonMatch = raw.match(/\[[\s\S]*\]/);
+  const raw = content[0].type === "text" ? content[0].text.trim() : "{}";
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    console.error("[parse-extract] AI response had no JSON array. Raw (first 300 chars):", raw.slice(0, 300));
-    return [];
+    console.error("[parse-extract] AI response had no JSON object. Raw (first 300 chars):", raw.slice(0, 300));
+    return { transactions: [], detectedBank: null };
   }
 
-  let parsed: AITransaction[];
+  let parsed: { bank?: string; transactions?: AITransaction[] };
   try {
     parsed = JSON.parse(jsonMatch[0]);
   } catch (e) {
     console.error("[parse-extract] AI returned unparseable JSON. Raw (first 300 chars):", jsonMatch[0].slice(0, 300));
     console.error("[parse-extract] JSON.parse error:", e);
-    return [];
+    return { transactions: [], detectedBank: null };
   }
 
-  return parsed
+  const rawBank = (parsed.bank ?? "").trim();
+  const detectedBank =
+    rawBank && rawBank.toLowerCase() !== "outro"
+      ? (KNOWN_BANKS.find((b) => bankKey(b) === bankKey(rawBank)) ?? null)
+      : null;
+
+  const transactions = (parsed.transactions ?? [])
     .filter((t) => {
       const ok = t.date && t.description && typeof t.amount === "number" && t.amount !== 0;
       if (!ok) console.error("[parse-extract] AI returned invalid transaction row:", JSON.stringify(t));
@@ -402,8 +468,10 @@ Regras:
       description: cleanDescription(t.description),
       raw_description: t.description.trim(),
       amount: t.amount,
-      bank: bankName,
+      bank: detectedBank ?? "Outro",
     }));
+
+  return { transactions, detectedBank };
 }
 
 Deno.serve(async (req) => {
@@ -437,12 +505,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!upload.filename || !upload.bank_name) {
+    if (!upload.filename) {
       await supabase
         .from("uploads")
-        .update({ status: "error", error_message: "filename ou bank_name ausente no registro de upload" })
+        .update({ status: "error", error_message: "filename ausente no registro de upload" })
         .eq("id", upload_id);
-      return new Response(JSON.stringify({ error: "filename ou bank_name ausente" }), {
+      return new Response(JSON.stringify({ error: "filename ausente" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -467,14 +535,33 @@ Deno.serve(async (req) => {
     }
 
     const filename = upload.filename.toLowerCase();
+    const rawHint = (upload.bank_name ?? "").trim();
+    const hint = rawHint && rawHint !== BANK_PLACEHOLDER ? rawHint : null;
     let transactions: ParsedTransaction[] = [];
+    let resolvedBank = "Outro";
 
     if (filename.endsWith(".csv")) {
       const text = await fileData.text();
-      transactions = parseCSV(text, upload.bank_name);
+      // 1) hint configurado ou assinatura no texto; 2) fallback: testa todas as configs
+      const candidate = isConfiguredBank(hint) ? hint! : detectBankName(text);
+      if (candidate && isConfiguredBank(candidate)) {
+        transactions = parseCSV(text, candidate);
+        resolvedBank = displayBank(candidate);
+      }
+      if (transactions.length === 0) {
+        const auto = parseCSVAuto(text);
+        if (auto) { transactions = auto.transactions; resolvedBank = auto.bank; }
+      }
     } else if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
       const buffer = await fileData.arrayBuffer();
-      transactions = parseXLSX(buffer, upload.bank_name);
+      transactions = parseXLSX(buffer, ""); // XLSX é bank-agnóstico (detecta colunas por cabeçalho)
+      let sheetText = "";
+      try {
+        const wb = XLSX.read(buffer, { type: "array" });
+        const sn = wb.SheetNames[0];
+        if (sn) sheetText = XLSX.utils.sheet_to_csv(wb.Sheets[sn]);
+      } catch { /* ignora — usa hint/fallback */ }
+      resolvedBank = (isConfiguredBank(hint) ? displayBank(hint!) : null) ?? detectBankName(sheetText) ?? "Outro";
     } else if (
       filename.endsWith(".pdf") ||
       filename.endsWith(".png") ||
@@ -482,7 +569,9 @@ Deno.serve(async (req) => {
       filename.endsWith(".jpeg") ||
       filename.endsWith(".webp")
     ) {
-      transactions = await parseWithAI(fileData, upload.filename, upload.bank_name);
+      const ai = await parseWithAI(fileData, upload.filename, hint);
+      transactions = ai.transactions;
+      resolvedBank = ai.detectedBank ?? (hint ? displayBank(hint) : "Outro");
     } else {
       await supabase
         .from("uploads")
@@ -497,12 +586,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Rotula todos os lançamentos com o banco resolvido (detectado automaticamente)
+    transactions = transactions.map((t) => ({ ...t, bank: resolvedBank }));
+
     if (transactions.length === 0) {
       await supabase
         .from("uploads")
         .update({
           status: "error",
-          error_message: "Nenhum lançamento encontrado no arquivo. Verifique o formato e o banco selecionado.",
+          error_message: "Nenhum lançamento encontrado no arquivo. Verifique se é um extrato bancário válido.",
         })
         .eq("id", upload_id);
       return new Response(JSON.stringify({ error: "Nenhum lançamento encontrado" }), {
@@ -579,6 +671,7 @@ Deno.serve(async (req) => {
       .from("uploads")
       .update({
         status: "parsed",
+        bank_name: resolvedBank,
         tx_total: deduped.length,
         tx_pending: deduped.length,
         ...(duplicatesCount > 0 && { error_message: `${duplicatesCount} lançamento(s) duplicado(s) ignorado(s)` }),
