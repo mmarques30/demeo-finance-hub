@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { LogoMark } from "./Logo";
 import { supabase } from "@/lib/supabase";
 import { useSession, useIsAdmin } from "@/lib/auth";
@@ -95,6 +96,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const adminEmail = session?.user?.email ?? "";
   const adminName = (session?.user?.user_metadata?.display_name ?? adminEmail) || "Admin";
   const adminRole = "Gestora";
+  const adminAvatar = (session?.user?.user_metadata?.avatar_url as string | undefined) || "";
   const adminInitials = adminName.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
 
   const push = usePushNotifications();
@@ -125,7 +127,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const [expanded, setExpandedState] = useState<Record<string, boolean>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const userRef = useRef<HTMLDivElement | null>(null);
+  const qc = useQueryClient();
 
   // Hidrata do localStorage no client-side
   useEffect(() => {
@@ -288,7 +292,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                   </div>
                 </div>
                 <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium"
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-medium overflow-hidden"
                   style={{
                     background: "linear-gradient(135deg, var(--green), var(--green2))",
                     color: "#fff",
@@ -296,7 +300,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                     boxShadow: "0 4px 12px -4px rgba(40,76,43,0.45)",
                   }}
                 >
-                  {adminInitials}
+                  {adminAvatar ? (
+                    <img src={adminAvatar} alt={adminName} className="w-full h-full object-cover" />
+                  ) : (
+                    adminInitials
+                  )}
                 </div>
                 <span
                   className="hidden md:inline transition-transform"
@@ -333,8 +341,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                     </div>
                   </div>
                   <div className="py-2">
-                    <DropdownItem icon="◷" label="Meu perfil" onClick={() => setUserOpen(false)} />
-                    <DropdownItem icon="⚙" label="Preferências" onClick={() => setUserOpen(false)} />
+                    <DropdownItem icon="◷" label="Meu perfil" onClick={() => { setUserOpen(false); setProfileOpen(true); }} />
                     <DropdownItem icon="?" label="Ajuda" onClick={() => setUserOpen(false)} />
                   </div>
                   <Link
@@ -367,6 +374,163 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             © Aurora Gestão Financeira 2026
           </div>
         </footer>
+      </div>
+
+      {profileOpen && (
+        <ProfileModal
+          userId={session?.user?.id ?? ""}
+          name={adminName}
+          email={adminEmail}
+          role={adminRole}
+          avatarUrl={adminAvatar}
+          onClose={() => setProfileOpen(false)}
+          onSaved={() => qc.invalidateQueries({ queryKey: ["auth", "session"] })}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProfileModal({
+  userId,
+  name,
+  email,
+  role,
+  avatarUrl,
+  onClose,
+  onSaved,
+}: {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [displayName, setDisplayName] = useState(name);
+  const [preview, setPreview] = useState(avatarUrl);
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const initials = displayName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+  function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.type.startsWith("image/")) { setErr("Selecione um arquivo de imagem."); return; }
+    if (f.size > 2 * 1024 * 1024) { setErr("A imagem deve ter no máximo 2 MB."); return; }
+    setErr(null);
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!displayName.trim()) { setErr("Informe seu nome."); return; }
+    setSaving(true);
+    setErr(null);
+
+    let nextAvatarUrl = avatarUrl;
+    if (file) {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${userId}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase()
+        .storage.from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) { setSaving(false); setErr(`Falha no upload da foto: ${upErr.message}`); return; }
+      nextAvatarUrl = supabase().storage.from("avatars").getPublicUrl(path).data.publicUrl;
+    }
+
+    const { error } = await supabase().auth.updateUser({
+      data: { display_name: displayName.trim(), avatar_url: nextAvatarUrl },
+    });
+    setSaving(false);
+    if (error) { setErr(error.message); return; }
+    onSaved();
+    toast.success("Perfil atualizado.");
+    onClose();
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-md bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+          <div>
+            <div className="aurora-cap mb-0.5">Conta</div>
+            <div className="aurora-serif text-[20px]">Meu perfil</div>
+          </div>
+          <button onClick={onClose} className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100">×</button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-5">
+          <div className="flex items-center gap-4">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center text-[16px] font-medium overflow-hidden shrink-0"
+              style={{ background: "linear-gradient(135deg, var(--green), var(--green2))", color: "#fff", letterSpacing: "1px" }}
+            >
+              {preview ? <img src={preview} alt={displayName} className="w-full h-full object-cover" /> : initials}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <input ref={fileRef} type="file" accept="image/*" onChange={pickFile} className="hidden" />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="text-[10px] uppercase px-4 py-2.5 transition-opacity self-start"
+                style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+              >
+                Trocar foto
+              </button>
+              <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>JPG ou PNG, até 2 MB</div>
+            </div>
+          </div>
+
+          <label className="block">
+            <div className="aurora-cap mb-2">Nome</div>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              required
+              className="w-full bg-white px-3 py-2.5 text-[13px] outline-none"
+              style={{ border: "1px solid var(--line)" }}
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="aurora-cap mb-2">E-mail</div>
+              <div className="text-[13px] px-3 py-2.5" style={{ background: "#F7F7F4", color: "var(--muted-foreground)" }}>{email || "—"}</div>
+            </div>
+            <div>
+              <div className="aurora-cap mb-2">Cargo</div>
+              <div className="text-[13px] px-3 py-2.5" style={{ background: "#F7F7F4", color: "var(--muted-foreground)" }}>{role}</div>
+            </div>
+          </div>
+
+          {err && (
+            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
+              {err}
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="text-[10px] uppercase px-5 py-3 transition-opacity"
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving}
+              className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
