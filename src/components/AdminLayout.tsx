@@ -441,8 +441,14 @@ function ProfileModal({
         .storage.from("avatars")
         .upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) { setSaving(false); setErr(`Falha no upload da foto: ${upErr.message}`); return; }
-      nextAvatarUrl = supabase().storage.from("avatars").getPublicUrl(path).data.publicUrl;
+      // Bucket é privado — gera URL assinada de longa duração (1 ano).
+      const { data: signed, error: sErr } = await supabase()
+        .storage.from("avatars")
+        .createSignedUrl(path, 60 * 60 * 24 * 365);
+      if (sErr || !signed?.signedUrl) { setSaving(false); setErr(`Falha ao gerar URL da foto: ${sErr?.message ?? "sem URL"}`); return; }
+      nextAvatarUrl = signed.signedUrl;
     }
+
 
     const { error } = await supabase().auth.updateUser({
       data: { display_name: displayName.trim(), avatar_url: nextAvatarUrl },
