@@ -683,6 +683,7 @@ Deno.serve(async (req) => {
         success: true,
         upload_id,
         tx_count: transactions.length,
+        bank: resolvedBank,
         message: `${transactions.length} lançamentos extraídos com sucesso`,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
