@@ -414,7 +414,7 @@ async function parseWithAI(
               type: "text",
               text: `Este é um extrato bancário. Faça DUAS coisas:
 
-1) Identifique o BANCO emissor. Responda com UM destes valores exatos: ${KNOWN_BANKS.map((b) => `"${b}"`).join(", ")}. Se não conseguir identificar com confiança, use "Outro".
+1) Identifique o BANCO emissor pelo logo/cabeçalho/rodapé. Responda com UM destes rótulos CURTOS e EXATOS: ${KNOWN_BANKS.map((b) => `"${b}"`).join(", ")} — sem "Banco", "Unibanco", "S.A." ou razão social. Ex.: se for "Itaú Unibanco S.A." responda apenas "Itaú"; se for "Nu Pagamentos" responda "Nubank". Só use "Outro" se realmente não der pra identificar.
 2) Extraia TODOS os lançamentos financeiros.${hint ? `\nDica: sugeriram que o banco seja "${hint}", mas confirme pelo conteúdo.` : ""}
 
 Retorne SOMENTE um JSON no formato abaixo, sem texto adicional:
@@ -451,11 +451,25 @@ Regras:
     return { transactions: [], detectedBank: null };
   }
 
+  // Matching tolerante: o Claude às vezes devolve a forma "completa" do nome
+  // ("Itaú Unibanco", "Banco Bradesco S.A.", "Nu Pagamentos") em vez do rótulo
+  // curto pedido, o que não bate no igual-exato e caía tudo em "Outro".
+  // Ordem: (1) igualdade por chave normalizada; (2) assinatura conhecida via
+  // detectBankName (cobre aliases: "nu pagamentos", "itau unibanco", …);
+  // (3) containment (a chave conhecida aparece dentro do texto devolvido).
   const rawBank = (parsed.bank ?? "").trim();
-  const detectedBank =
-    rawBank && rawBank.toLowerCase() !== "outro"
-      ? (KNOWN_BANKS.find((b) => bankKey(b) === bankKey(rawBank)) ?? null)
-      : null;
+  let detectedBank: string | null = null;
+  if (rawBank && rawBank.toLowerCase() !== "outro") {
+    const rawKey = bankKey(rawBank);
+    detectedBank =
+      KNOWN_BANKS.find((b) => bankKey(b) === rawKey) ??
+      detectBankName(rawBank) ??
+      KNOWN_BANKS.find((b) => rawKey.includes(bankKey(b))) ??
+      null;
+    if (!detectedBank) {
+      console.warn(`[parse-extract] banco devolvido pela IA não reconhecido: "${rawBank}" → Outro`);
+    }
+  }
 
   const transactions = (parsed.transactions ?? [])
     .filter((t) => {
