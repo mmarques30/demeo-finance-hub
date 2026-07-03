@@ -27,8 +27,13 @@ interface Transaction {
   installment_total?: number | null;
 }
 
-// Opções de banco para edição inline (inclui "Outro" para extratos não identificados)
-const BANK_OPTIONS = ["Itaú", "Santander", "Bradesco", "Banco do Brasil", "Inter", "Nubank", "Outro"];
+// Opções de banco para edição inline (inclui "Outro" para extratos não identificados).
+// Mantém sincronia com KEY_TO_DISPLAY do parse-extract (bancos que a IA consegue detectar).
+const BANK_OPTIONS = [
+  "Itaú", "Santander", "Bradesco", "Banco do Brasil", "Inter", "Nubank",
+  "Caixa", "Cora", "C6 Bank", "Sicoob", "Sicredi", "PagBank", "Mercado Pago", "BTG", "Safra",
+  "Outro",
+];
 
 interface InstallmentState {
   enabled: boolean;
@@ -640,15 +645,23 @@ function ImportarPage() {
                         {brl(tx.amount)}
                       </td>
                       <td className="px-5 py-3">
-                        <select
-                          value={BANK_OPTIONS.includes(tx.bank ?? "") ? (tx.bank as string) : "Outro"}
-                          onChange={(e) => changeBank(tx.id, e.target.value)}
-                          className="text-[11px] px-1.5 py-1 bg-white outline-none"
-                          style={{ border: "1px solid var(--line)", borderRadius: 4, cursor: "pointer" }}
-                          title="Banco detectado — ajuste se necessário"
-                        >
-                          {BANK_OPTIONS.map((b) => <option key={b}>{b}</option>)}
-                        </select>
+                        {(() => {
+                          // Se a IA detectou um banco fora da lista fixa, inclui como opção
+                          // (evita colapsar um banco válido em "Outro").
+                          const custom = tx.bank && tx.bank !== "Outro" && !BANK_OPTIONS.includes(tx.bank);
+                          const opts = custom ? [tx.bank as string, ...BANK_OPTIONS] : BANK_OPTIONS;
+                          return (
+                            <select
+                              value={opts.includes(tx.bank ?? "") ? (tx.bank as string) : "Outro"}
+                              onChange={(e) => changeBank(tx.id, e.target.value)}
+                              className="text-[11px] px-1.5 py-1 bg-white outline-none"
+                              style={{ border: "1px solid var(--line)", borderRadius: 4, cursor: "pointer" }}
+                              title="Banco detectado — ajuste se necessário"
+                            >
+                              {opts.map((b) => <option key={b}>{b}</option>)}
+                            </select>
+                          );
+                        })()}
                       </td>
                       <td
                         className="px-5 py-3 text-[12px]"

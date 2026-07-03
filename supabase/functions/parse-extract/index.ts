@@ -107,6 +107,15 @@ const KEY_TO_DISPLAY: Record<string, string> = {
   inter: "Inter",
   "banco do brasil": "Banco do Brasil",
   santander: "Santander",
+  caixa: "Caixa",
+  cora: "Cora",
+  "c6 bank": "C6 Bank",
+  sicoob: "Sicoob",
+  sicredi: "Sicredi",
+  pagbank: "PagBank",
+  "mercado pago": "Mercado Pago",
+  btg: "BTG",
+  safra: "Safra",
 };
 const KNOWN_BANKS = Object.values(KEY_TO_DISPLAY);
 // Placeholder gravado por create-upload quando o banco ainda não foi identificado
@@ -125,6 +134,8 @@ function displayBank(name: string): string {
 // Detecta o banco por assinaturas no texto do arquivo (CSV/XLSX)
 function detectBankName(text: string): string | null {
   const low = text.toLowerCase();
+  // Ordem importa: assinaturas mais específicas (fintechs) antes de "caixa",
+  // que usa \bcaixa\b e poderia casar com "caixa econômica" citada como favorecido.
   const sigs: Array<[RegExp, string]> = [
     [/nubank|nu pagamentos/, "Nubank"],
     [/santander/, "Santander"],
@@ -132,6 +143,15 @@ function detectBankName(text: string): string | null {
     [/banco inter|\binter\b/, "Inter"],
     [/banco do brasil|bancodobrasil/, "Banco do Brasil"],
     [/ita[uú]|itau unibanco/, "Itaú"],
+    [/cora scfi|\bcora\b/, "Cora"],
+    [/sicoob/, "Sicoob"],
+    [/sicredi/, "Sicredi"],
+    [/pagbank|pagseguro/, "PagBank"],
+    [/mercado ?pago/, "Mercado Pago"],
+    [/c6 ?bank|banco c6|\bc6\b/, "C6 Bank"],
+    [/btg pactual|\bbtg\b/, "BTG"],
+    [/banco safra|\bsafra\b/, "Safra"],
+    [/caixa econ[oôòó]mica|caixa economica federal|\bcaixa\b|\bcef\b/, "Caixa"],
   ];
   for (const [re, name] of sigs) if (re.test(low)) return name;
   return null;
