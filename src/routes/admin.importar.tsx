@@ -320,12 +320,20 @@ function ImportarPage() {
   }
 
   function approveSelected() {
-    const ids = Array.from(selected).map((i) => transactions[i].id);
+    // Só aprova selecionados que já têm categoria (classificados ou editados).
+    const ids = Array.from(selected)
+      .map((i) => transactions[i])
+      .filter((t) => t && !!t.category)
+      .map((t) => t.id);
     approveTransactions(ids);
   }
 
-  function approveAll() {
-    approveTransactions(transactions.map((t) => t.id));
+  // Aprova os lançamentos classificados (com categoria, aguardando revisão) →
+  // viram "approved" e entram no histórico/relatórios do cliente. Os "pending"
+  // (sem categoria) NÃO são tocados e seguem para a tela Pendentes.
+  function approveClassificados() {
+    const ids = transactions.filter((t) => !!t.category && t.status !== "approved").map((t) => t.id);
+    approveTransactions(ids);
   }
 
   function approveOne(id: string) {
@@ -392,6 +400,11 @@ function ImportarPage() {
       setManualCategory("");
     }
   }
+
+  // Contagens do resultado da importação (para o cabeçalho, botão e avisos)
+  const classifiedCount = transactions.filter((t) => !!t.category && t.status !== "approved").length;
+  const pendingCount = transactions.filter((t) => !t.category && t.status !== "approved").length;
+  const approvedCount = transactions.filter((t) => t.status === "approved").length;
 
   return (
     <AdminLayout>
@@ -549,6 +562,23 @@ function ImportarPage() {
           </div>
         )}
 
+        {/* Divisão do fluxo: classificados vão ao histórico ao aprovar; pendentes vão à revisão */}
+        {stage === "done" && (classifiedCount > 0 || pendingCount > 0) && (
+          <div className="flex items-start gap-3 px-5 py-4 rounded-xl text-[12px]"
+            style={{ background: "rgba(27,57,77,0.06)", border: "1px solid rgba(27,57,77,0.15)", color: "var(--foreground)" }}>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>ℹ</span>
+            <div>
+              {classifiedCount > 0 && (
+                <><strong style={{ fontWeight: 600 }}>{classifiedCount} classificado(s)</strong> vão ao histórico do cliente ao clicar em <em>Aprovar classificados</em>. </>
+              )}
+              {pendingCount > 0 && (
+                <>Os <strong style={{ fontWeight: 600 }}>{pendingCount} sem categoria</strong> seguem para{" "}
+                  <Link to={"/admin/pendentes" as never} className="aurora-link">Pendentes</Link> para revisão manual.</>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Result table */}
         {stage === "done" && transactions.length > 0 && (
           <div className="aurora-card p-0 overflow-hidden">
@@ -559,10 +589,16 @@ function ImportarPage() {
               <div>
                 <div className="aurora-cap mb-1">Resultado</div>
                 <div className="aurora-serif text-[20px]">
-                  {transactions.length} lançamentos ·{" "}
-                  <em className="italic" style={{ color: "var(--green)" }}>
-                    {transactions.filter((t) => t.status === "approved").length} aprovados
-                  </em>
+                  {transactions.length} lançamentos
+                  {classifiedCount > 0 && (
+                    <> · <em className="italic" style={{ color: "var(--navy)" }}>{classifiedCount} classificados</em></>
+                  )}
+                  {approvedCount > 0 && (
+                    <> · <em className="italic" style={{ color: "var(--green)" }}>{approvedCount} aprovados</em></>
+                  )}
+                  {pendingCount > 0 && (
+                    <> · <em className="italic" style={{ color: "var(--tan)" }}>{pendingCount} pendentes</em></>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
@@ -583,12 +619,13 @@ function ImportarPage() {
                   Aprovar selecionados {selected.size > 0 ? `(${selected.size})` : ""}
                 </button>
                 <button
-                  onClick={approveAll}
-                  disabled={approving}
+                  onClick={approveClassificados}
+                  disabled={approving || classifiedCount === 0}
                   className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
                   style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                  title="Aprova os lançamentos classificados pela IA; os sem categoria seguem para Pendentes"
                 >
-                  {approving ? "Aprovando..." : "✓ Aprovar todos"}
+                  {approving ? "Aprovando..." : `✓ Aprovar classificados${classifiedCount > 0 ? ` (${classifiedCount})` : ""}`}
                 </button>
               </div>
             </div>
@@ -608,7 +645,8 @@ function ImportarPage() {
               <tbody>
                 {transactions.map((tx, i) => {
                   const isApproved = tx.status === "approved";
-                  const isPending = tx.status === "pending";
+                  const isClassified = !isApproved && !!tx.category; // categorizado, aguardando aprovação
+                  const isPending = !isApproved && !tx.category;      // sem categoria → tela Pendentes
                   return (
                     <tr
                       key={tx.id}
@@ -717,15 +755,15 @@ function ImportarPage() {
                         <span
                           className="aurora-cap px-2 py-0.5 rounded text-[10px]"
                           style={{
-                            background: isApproved ? "rgba(74,103,65,0.12)" : "rgba(184,149,106,0.15)",
-                            color: isApproved ? "var(--green)" : "var(--tan)",
+                            background: isApproved ? "rgba(74,103,65,0.12)" : isClassified ? "rgba(27,57,77,0.10)" : "rgba(184,149,106,0.15)",
+                            color: isApproved ? "var(--green)" : isClassified ? "var(--navy)" : "var(--tan)",
                           }}
                         >
-                          {isApproved ? "Aprovado" : tx.status === "classified" ? "Classificado" : "Pendente"}
+                          {isApproved ? "Aprovado" : isClassified ? "Classificado" : "Pendente"}
                         </span>
                       </td>
                       <td className="px-5 py-3 text-[11px]">
-                        {!isApproved && (
+                        {isClassified && (
                           <button
                             onClick={() => approveOne(tx.id)}
                             disabled={approving}
@@ -773,7 +811,12 @@ function ImportarPage() {
         )}
 
         {stage === "done" && clientId && (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-5">
+            {pendingCount > 0 && (
+              <Link to={"/admin/pendentes" as never} className="aurora-link text-[12px]">
+                Revisar pendentes ({pendingCount}) →
+              </Link>
+            )}
             <Link
               to={"/admin/dfc" as never}
               search={{ clientId, tab: "extratos" } as never}

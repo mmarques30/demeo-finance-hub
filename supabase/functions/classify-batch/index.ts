@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
           .update({
             category,
             is_recurring,
-            status: "approved",
+            status: "classified", // aguarda aprovação manual da gestora (não entra em relatórios até approved)
             confidence: 100,
           })
           .in("id", ids);
@@ -280,7 +280,7 @@ Deno.serve(async (req) => {
           .update({
             category,
             is_recurring: true,
-            status: "approved",
+            status: "classified", // aguarda aprovação manual da gestora
             confidence: 90,
           })
           .in("id", ids);
@@ -313,7 +313,7 @@ Deno.serve(async (req) => {
 
     const BATCH_SIZE = 50;
     const AI_CONCURRENCY = 6; // lotes simultâneos ao Claude — reduz o tempo total sem estourar rate limit
-    let aiApproved = 0;
+    let aiClassified = 0;
     let aiPending = 0;
 
     if (categoryNames.length > 0) {
@@ -342,9 +342,9 @@ Deno.serve(async (req) => {
       }
 
       // Agrega os resultados de TODOS os lotes em grupos de classificação idêntica → 1 UPDATE por grupo (evita N+1)
-      const approvedGroups = new Map<
+      const classifiedGroups = new Map<
         string,
-        { ids: string[]; category: string | null; is_recurring: boolean; confidence: number }
+        { ids: string[]; category: string; is_recurring: boolean; confidence: number }
       >();
 
       for (const { batch, results } of settled) {
@@ -354,17 +354,19 @@ Deno.serve(async (req) => {
         }
         const resultIds = new Set(results.map((r) => r.id));
         for (const r of results) {
-          const isKnownCategory = categoryNames.includes(r.cat);
-          if (!isKnownCategory) {
-            console.error(`[classify-batch] AI hallucinated category "${r.cat}" for tx ${r.id} — saving null`);
+          // Categoria desconhecida (alucinação): deixa como pending para revisão manual —
+          // nunca marca "classified" sem categoria válida (evita dado sujo nos relatórios).
+          if (!categoryNames.includes(r.cat)) {
+            console.error(`[classify-batch] AI hallucinated category "${r.cat}" for tx ${r.id} — deixando pending`);
+            aiPending++;
+            continue;
           }
-          const category = isKnownCategory ? r.cat : null;
-          const key = `${category}||${r.rec ?? false}||${r.conf ?? 0}`;
-          if (!approvedGroups.has(key)) {
-            approvedGroups.set(key, { ids: [], category, is_recurring: r.rec ?? false, confidence: r.conf ?? 0 });
+          const key = `${r.cat}||${r.rec ?? false}||${r.conf ?? 0}`;
+          if (!classifiedGroups.has(key)) {
+            classifiedGroups.set(key, { ids: [], category: r.cat, is_recurring: r.rec ?? false, confidence: r.conf ?? 0 });
           }
-          approvedGroups.get(key)!.ids.push(r.id);
-          aiApproved++;
+          classifiedGroups.get(key)!.ids.push(r.id);
+          aiClassified++;
         }
         // Transações sem resultado da IA: contabilizar (já estão como pending no banco)
         for (const tx of batch) {
@@ -373,14 +375,14 @@ Deno.serve(async (req) => {
       }
 
       // 1 query por grupo de classificação idêntica
-      for (const { ids, category, is_recurring, confidence } of approvedGroups.values()) {
+      for (const { ids, category, is_recurring, confidence } of classifiedGroups.values()) {
         await supabase
           .from("transactions")
           .update({
             category,
             is_recurring,
             confidence,
-            status: "approved",
+            status: "classified", // aguarda aprovação manual da gestora
           })
           .in("id", ids);
       }
@@ -388,13 +390,13 @@ Deno.serve(async (req) => {
       aiPending = remainingForAI.length;
     }
 
-    // Atualiza contadores do upload
-    const totalApproved = approvedByRule.length + approvedByRecurrence.length + aiApproved;
+    // Atualiza contadores do upload (classificados aguardando aprovação + pendentes de classificação)
+    const totalClassified = approvedByRule.length + approvedByRecurrence.length + aiClassified;
     await supabase
       .from("uploads")
       .update({
         status: "done",
-        tx_classified: totalApproved,
+        tx_classified: totalClassified,
         tx_pending: aiPending,
       })
       .eq("id", upload_id);
@@ -404,16 +406,15 @@ Deno.serve(async (req) => {
       client_id,
       byRule: approvedByRule.length,
       byRecurrence: approvedByRecurrence.length,
-      aiApproved,
+      aiClassified,
       aiPending,
-      totalApproved,
+      totalClassified,
     });
 
     return new Response(
       JSON.stringify({
         success: true,
-        approved: totalApproved,
-        classified: totalApproved,
+        classified: totalClassified,
         pending_manual: aiPending,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

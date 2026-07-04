@@ -38,6 +38,10 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
   const [editTx, setEditTx] = useState<TxRecord | null>(null);
   const [deleteTx, setDeleteTx] = useState<{ tx: TxRecord; uploadId: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Contagem real de lançamentos aguardando revisão por upload (classified) e sem categoria (pending)
+  const [awaiting, setAwaiting] = useState<Record<string, { classified: number; pending: number }>>({});
+  const [approvingUpload, setApprovingUpload] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   const categories = useCategories(clientId);
 
@@ -45,12 +49,15 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
     if (!clientId) return;
     setLoading(true);
     setTxMap({});
+    setErr(null);
     Promise.all([
+      // Mostra extratos já processados (mesmo com itens aguardando revisão), não só os 100% aprovados.
+      // Assim o extrato aparece no histórico do cliente e os classificados não ficam órfãos.
       supabase()
         .from("uploads")
         .select("id, bank_name, filename, period, status, tx_total, tx_classified, tx_pending, created_at")
         .eq("client_id", clientId)
-        .eq("status", "approved")
+        .in("status", ["done", "approved"])
         .order("created_at", { ascending: false }),
       supabase()
         .from("transactions")
@@ -59,12 +66,26 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
         .is("upload_id", null)
         .eq("status", "approved")
         .order("date", { ascending: false }),
-    ]).then(([{ data: uploadsData }, { data: manualData }]) => {
+      // Contagem real de lançamentos aguardando revisão (classified) e sem categoria (pending) por upload
+      supabase()
+        .from("transactions")
+        .select("upload_id, status")
+        .eq("client_id", clientId)
+        .in("status", ["classified", "pending"])
+        .not("upload_id", "is", null),
+    ]).then(([{ data: uploadsData }, { data: manualData }, { data: awaitingData }]) => {
       setUploads((uploadsData ?? []) as UploadRecord[]);
       const manual = (manualData ?? []) as TxRecord[];
       if (manual.length > 0) {
         setTxMap((prev) => ({ ...prev, [MANUAL_KEY]: manual }));
       }
+      const awaitingMap: Record<string, { classified: number; pending: number }> = {};
+      for (const row of (awaitingData ?? []) as { upload_id: string; status: string }[]) {
+        const entry = (awaitingMap[row.upload_id] ||= { classified: 0, pending: 0 });
+        if (row.status === "classified") entry.classified++;
+        else if (row.status === "pending") entry.pending++;
+      }
+      setAwaiting(awaitingMap);
       setLoading(false);
     });
   }, [clientId]);
@@ -118,12 +139,55 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
     }
   }
 
+  // Aprova em lote os lançamentos "classified" (já categorizados pela IA) de um upload
+  // que ficaram sem aprovação — entram no histórico/relatórios. Os "pending" (sem
+  // categoria) continuam na tela Pendentes.
+  async function approveUploadClassified(uploadId: string) {
+    setApprovingUpload(uploadId);
+    setErr(null);
+    const { error } = await supabase()
+      .from("transactions")
+      .update({ status: "approved" })
+      .eq("upload_id", uploadId)
+      .eq("status", "classified");
+    if (error) {
+      setApprovingUpload(null);
+      setErr(`Erro ao aprovar classificados: ${error.message}`);
+      return;
+    }
+    const stillPending = awaiting[uploadId]?.pending ?? 0;
+    // Sem nada mais aguardando → marca o upload como aprovado (fica coerente com o histórico)
+    if (stillPending === 0) {
+      await supabase().from("uploads").update({ status: "approved" }).eq("id", uploadId);
+      setUploads((prev) => prev.map((u) => (u.id === uploadId ? { ...u, status: "approved" } : u)));
+    }
+    setAwaiting((prev) => ({ ...prev, [uploadId]: { classified: 0, pending: stillPending } }));
+    // Se estiver expandido, recarrega as transações aprovadas para refletir na tabela
+    if (expanded.has(uploadId)) {
+      const { data } = await supabase()
+        .from("transactions")
+        .select("id, date, description, amount, category, status, installment_number, installment_total")
+        .eq("upload_id", uploadId)
+        .eq("status", "approved")
+        .order("date");
+      setTxMap((prev) => ({ ...prev, [uploadId]: (data ?? []) as TxRecord[] }));
+    }
+    setApprovingUpload(null);
+  }
+
   const filteredUploads = (startDate && endDate)
     ? uploads.filter((u) => u.created_at >= startDate && u.created_at <= endDate + "T23:59:59")
     : uploads;
 
   return (
     <div className="px-8 lg:px-12 pb-12 pt-6 grid gap-6">
+
+      {err && (
+        <div className="aurora-card flex items-center gap-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)" }}>
+          <span style={{ color: "var(--tan)", fontSize: 18 }}>!</span>
+          <div className="text-[13px]">{err}</div>
+        </div>
+      )}
 
       {loading && (
         <div className="aurora-card flex items-center gap-3">
@@ -143,6 +207,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
       {filteredUploads.map((upload) => {
         const isExpanded = expanded.has(upload.id);
         const txs = txMap[upload.id];
+        const aw = awaiting[upload.id] ?? { classified: 0, pending: 0 };
         return (
           <div key={upload.id} className="aurora-card p-0 overflow-hidden">
             <div
@@ -165,18 +230,38 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
               <div className="flex items-center gap-6 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
                 <span>Período: <strong style={{ color: "var(--foreground)" }}>{upload.period}</strong></span>
                 <span>{upload.tx_total} transações</span>
-                {upload.tx_pending > 0 && (
+                {aw.classified > 0 && (
+                  <span
+                    className="aurora-cap px-2 py-0.5 text-[10px]"
+                    style={{ background: "rgba(27,57,77,0.10)", color: "var(--navy)", border: "1px solid rgba(27,57,77,0.25)" }}
+                    title="Classificados pela IA, aguardando sua aprovação"
+                  >
+                    {aw.classified} aguardando aprovação
+                  </span>
+                )}
+                {aw.pending > 0 && (
                   <span
                     className="aurora-cap px-2 py-0.5 text-[10px]"
                     style={{ background: "rgba(184,149,106,0.15)", color: "var(--tan)", border: "1px solid rgba(184,149,106,0.3)" }}
-                    title="Transações aguardando aprovação no Importar"
+                    title="Sem categoria — revise em Pendentes"
                   >
-                    {upload.tx_pending} aguardando aprovação
+                    {aw.pending} sem categoria
                   </span>
                 )}
                 <span>Importado em {formatDatePtBR(upload.created_at.slice(0, 10))}</span>
               </div>
               <div className="flex items-center gap-3">
+                {aw.classified > 0 && (
+                  <button
+                    onClick={() => approveUploadClassified(upload.id)}
+                    disabled={approvingUpload === upload.id}
+                    className="text-[10px] uppercase px-3 py-1.5 transition-opacity disabled:opacity-50"
+                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px", fontWeight: 500 }}
+                    title="Aprova os classificados pela IA e envia ao histórico/relatórios"
+                  >
+                    {approvingUpload === upload.id ? "Aprovando..." : `✓ Aprovar classificados (${aw.classified})`}
+                  </button>
+                )}
                 <button onClick={() => setEditUpload(upload)} className="aurora-link text-[11px]">
                   Editar
                 </button>
@@ -198,16 +283,20 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
             )}
 
             {isExpanded && txs !== undefined && txs.length === 0 && (
-              <div className="px-6 py-6 text-[12px] text-center" style={{ color: "var(--muted-foreground)" }}>
-                Nenhuma transação encontrada.
-              </div>
-            )}
-
-            {isExpanded && txs !== undefined && txs.length === 0 && upload.tx_pending > 0 && (
-              <div className="px-6 py-5 text-[12px] flex items-center gap-2" style={{ color: "var(--tan)" }}>
-                <span>⚠</span>
-                <span>Nenhuma transação aprovada. Acesse <strong>Importar</strong> para revisar e aprovar os lançamentos pendentes.</span>
-              </div>
+              (aw.classified > 0 || aw.pending > 0) ? (
+                <div className="px-6 py-5 text-[12px] flex items-center gap-2" style={{ color: "var(--navy)" }}>
+                  <span>ℹ</span>
+                  <span>
+                    Nenhuma transação aprovada ainda.
+                    {aw.classified > 0 && <> Clique em <strong>Aprovar classificados</strong> acima para enviá-los ao histórico.</>}
+                    {aw.pending > 0 && <> {aw.pending} sem categoria aguardam revisão em <strong>Pendentes</strong>.</>}
+                  </span>
+                </div>
+              ) : (
+                <div className="px-6 py-6 text-[12px] text-center" style={{ color: "var(--muted-foreground)" }}>
+                  Nenhuma transação encontrada.
+                </div>
+              )
             )}
 
             {isExpanded && txs !== undefined && txs.length > 0 && (
