@@ -72,7 +72,8 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
         .select("upload_id, status")
         .eq("client_id", clientId)
         .in("status", ["classified", "pending"])
-        .not("upload_id", "is", null),
+        .not("upload_id", "is", null)
+        .limit(10000), // evita o corte silencioso de 1000 do PostgREST (contagem por upload)
     ]).then(([{ data: uploadsData }, { data: manualData }, { data: awaitingData }]) => {
       setUploads((uploadsData ?? []) as UploadRecord[]);
       const manual = (manualData ?? []) as TxRecord[];
@@ -145,23 +146,35 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
   async function approveUploadClassified(uploadId: string) {
     setApprovingUpload(uploadId);
     setErr(null);
-    const { error } = await supabase()
+    const { data: updated, error } = await supabase()
       .from("transactions")
       .update({ status: "approved" })
       .eq("upload_id", uploadId)
-      .eq("status", "classified");
+      .eq("status", "classified")
+      .select("id");
     if (error) {
       setApprovingUpload(null);
       setErr(`Erro ao aprovar classificados: ${error.message}`);
       return;
     }
-    const stillPending = awaiting[uploadId]?.pending ?? 0;
-    // Sem nada mais aguardando → marca o upload como aprovado (fica coerente com o histórico)
-    if (stillPending === 0) {
+    if (!updated?.length) {
+      // Nenhuma linha afetada (sessão/RLS) — não marca aprovado à toa
+      setApprovingUpload(null);
+      setErr("Nenhum lançamento foi aprovado. Verifique sua sessão e tente novamente.");
+      return;
+    }
+    // Reconta no banco (não confia no cache do load) para decidir o status do upload
+    // e refletir os pendentes reais que restaram.
+    const { count: remaining } = await supabase()
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("upload_id", uploadId)
+      .neq("status", "approved");
+    if (remaining === 0) {
       await supabase().from("uploads").update({ status: "approved" }).eq("id", uploadId);
       setUploads((prev) => prev.map((u) => (u.id === uploadId ? { ...u, status: "approved" } : u)));
     }
-    setAwaiting((prev) => ({ ...prev, [uploadId]: { classified: 0, pending: stillPending } }));
+    setAwaiting((prev) => ({ ...prev, [uploadId]: { classified: 0, pending: remaining ?? 0 } }));
     // Se estiver expandido, recarrega as transações aprovadas para refletir na tabela
     if (expanded.has(uploadId)) {
       const { data } = await supabase()

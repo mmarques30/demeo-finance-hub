@@ -657,7 +657,9 @@ Deno.serve(async (req) => {
       .select("date, amount, description, bank")
       .eq("client_id", upload.client_id)
       .in("date", candidateDates)
-      .in("status", ["approved", "pending"]);
+      // inclui "classified" (categorizado, aguardando aprovação) senão reimportar um
+      // extrato ainda não aprovado duplica todos os lançamentos
+      .in("status", ["approved", "pending", "classified"]);
 
     const existingKeys = new Set(
       (existing ?? []).map((t) => `${t.date}|${t.amount}|${t.description}|${t.bank ?? ""}`)
