@@ -17,6 +17,7 @@ export type Database = {
       categories: {
         Row: {
           client_id: string
+          code: string | null
           color: string | null
           created_at: string | null
           group_name: string
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           client_id: string
+          code?: string | null
           color?: string | null
           created_at?: string | null
           group_name: string
@@ -39,6 +41,7 @@ export type Database = {
         }
         Update: {
           client_id?: string
+          code?: string | null
           color?: string | null
           created_at?: string | null
           group_name?: string
@@ -51,6 +54,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "categories_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chart_of_accounts_uploads: {
+        Row: {
+          accounts_count: number
+          client_id: string
+          created_at: string | null
+          filename: string
+          id: string
+          is_active: boolean
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          accounts_count?: number
+          client_id: string
+          created_at?: string | null
+          filename: string
+          id?: string
+          is_active?: boolean
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          accounts_count?: number
+          client_id?: string
+          created_at?: string | null
+          filename?: string
+          id?: string
+          is_active?: boolean
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_uploads_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
