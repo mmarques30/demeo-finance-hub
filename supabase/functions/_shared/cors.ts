@@ -2,6 +2,8 @@
 // CORS shared entre todas as edge functions Aurora.
 
 const ALLOWED_ORIGINS = [
+  "https://auroragfe.com",
+  "https://www.auroragfe.com",
   "https://demeo-finance-hub.lovable.app",
   "https://aurora.com.br",
   "https://www.aurora.com.br",
