@@ -47,7 +47,7 @@ function deltaPct(curr: number, prev: number): string | null {
 type DFCTab = "dfc" | "dre" | "recorrencias" | "contas" | "extratos" | "detalhamento";
 
 const DFC_TABS: { key: DFCTab; label: string }[] = [
-  { key: "dfc", label: "DFC Gerencial" },
+  { key: "dfc", label: "DFC" },
   { key: "dre", label: "DRE" },
   { key: "detalhamento", label: "Detalhamento" },
   { key: "contas", label: "Contas" },
