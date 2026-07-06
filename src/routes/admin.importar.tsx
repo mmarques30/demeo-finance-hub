@@ -1012,7 +1012,34 @@ function ImportarPage() {
           onConfirm={async () => {
             const ids = transactions.map((t) => t.id);
             if (ids.length > 0) {
+              // Descobre os uploads desses lançamentos antes de apagá-los
+              const { data: txRows } = await supabase()
+                .from("transactions")
+                .select("upload_id")
+                .in("id", ids);
+              const uploadIds = [...new Set((txRows ?? []).map((r) => r.upload_id).filter(Boolean))];
+
               await supabase().from("transactions").delete().in("id", ids);
+
+              // Remove do histórico do cliente os uploads que ficaram sem lançamentos
+              // (apaga o arquivo no Storage e o registro em uploads)
+              for (const uid of uploadIds) {
+                const { count } = await supabase()
+                  .from("transactions")
+                  .select("id", { count: "exact", head: true })
+                  .eq("upload_id", uid);
+                if (!count) {
+                  const { data: up } = await supabase()
+                    .from("uploads")
+                    .select("storage_path")
+                    .eq("id", uid)
+                    .maybeSingle();
+                  if (up?.storage_path) {
+                    await supabase().storage.from("extratos").remove([up.storage_path]);
+                  }
+                  await supabase().from("uploads").delete().eq("id", uid);
+                }
+              }
             }
             setCancelUploadOpen(false);
             setStage("idle");
