@@ -14,6 +14,7 @@ até **DFC/DRE**, **fechamento mensal**, **portal do cliente** e um **CRM comerc
 
 - [Visão geral](#visão-geral)
 - [Funcionalidades](#funcionalidades)
+- [Modo de uso](#modo-de-uso)
 - [Arquitetura](#arquitetura)
 - [Stack](#stack)
 - [Pipeline de importação](#pipeline-de-importação)
@@ -86,6 +87,62 @@ montando relatórios gerenciais por cliente.
 - Autenticação e autorização com RLS por papel.
 - Notificações web push.
 - Observabilidade: logs, contadores e limitação de taxa (rate limit).
+
+---
+
+## Modo de uso
+
+### Gestora (painel administrativo)
+
+**1. Cadastrar o cliente**
+`Clientes → Novo cliente`. Informe nome, CNPJ e dados básicos. Ao criar, o cliente
+já nasce com um conjunto padrão de categorias.
+
+**2. Definir o plano de contas** *(opcional, recomendado)*
+`Configuração → Plano de Contas → selecione o cliente → envie o arquivo` (XLSX/CSV).
+Confira a **prévia** das contas e clique em **Adicionar contas ao plano**. As contas
+passam a ser usadas pela IA na classificação e se repetem todos os meses.
+
+**3. Importar o extrato**
+`Importar Extratos → selecione o cliente e o período → arraste o arquivo`
+(CSV, XLSX, PDF ou imagem). O sistema detecta o banco, extrai os lançamentos e a IA
+classifica automaticamente em segundos. Vários arquivos podem ser enviados de uma vez.
+
+**4. Revisar e aprovar**
+Na tela de revisão, cada lançamento aparece como:
+- **Classificado** — categorizado pela IA, aguardando sua conferência;
+- **Pendente** — sem categoria (defina-a antes de aprovar).
+
+Ajuste categorias/valores se necessário e clique em **Aprovar classificados**.
+Só depois disso os lançamentos entram em DFC/DRE, relatórios e no portal do cliente.
+Para descartar tudo, use **Cancelar envio** (remove o extrato do histórico).
+
+**5. Tratar pendências**
+`Pendentes` lista os lançamentos sem categoria de todos os clientes. Categorize e
+aprove por ali. Categorias aprovadas repetidamente viram **regras automáticas**.
+
+**6. Analisar DFC / DRE**
+`DFC / DRE` (ou o botão **Ver DFC** no cliente) mostra o fluxo de caixa e o
+demonstrativo de resultado por período, com projeção e detalhamento por conta.
+
+**7. Fechar o mês e exportar**
+No fechamento mensal, valide o checklist e as receitas brutas; em `Relatórios`,
+exporte **PDF** (relatório executivo) ou **Excel** (DFC / DFC Gerencial) por período.
+
+**8. Comercial (opcional)**
+`Pipeline` move negócios entre etapas; a partir de um negócio você gera uma
+**proposta**, envia por e-mail e acompanha o **aceite**; aceita, vira **contrato**.
+
+### Cliente (portal)
+
+1. Acessa com o usuário criado pela gestora (perfil **owner** ou **financeiro**).
+2. No **portal**, escolhe o mês e acompanha os próprios indicadores, DFC/DRE e
+   relatórios — limitados às funcionalidades liberadas no seu plano.
+3. Pode baixar o **relatório executivo** em PDF.
+
+### Meu perfil
+No menu do usuário (topo direito) → **Meu perfil**: edite o nome, **troque a foto**
+(com ajuste de posição e zoom) ou **remova a foto**.
 
 ---
 
