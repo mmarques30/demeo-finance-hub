@@ -26,6 +26,7 @@ import { Route as AdminDfcRouteImport } from './routes/admin.dfc'
 import { Route as AdminContratosRouteImport } from './routes/admin.contratos'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AdminCategoriasRouteImport } from './routes/admin.categorias'
+import { Route as AdminPlanoContasRouteImport } from './routes/admin.plano-contas'
 import { Route as AdminPropostasIndexRouteImport } from './routes/admin.propostas.index'
 import { Route as AdminContratosIndexRouteImport } from './routes/admin.contratos.index'
 import { Route as PPropostaTokenRouteImport } from './routes/p.proposta.$token'
@@ -119,6 +120,11 @@ const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
   path: '/admin/categorias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPlanoContasRoute = AdminPlanoContasRouteImport.update({
+  id: '/admin/plano-contas',
+  path: '/admin/plano-contas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminPropostasIndexRoute = AdminPropostasIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/plano-contas': typeof AdminPlanoContasRoute
   '/admin/clientes': typeof AdminClientesRouteWithChildren
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/plano-contas': typeof AdminPlanoContasRoute
   '/admin/clientes': typeof AdminClientesRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
   '/admin/importar': typeof AdminImportarRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/plano-contas': typeof AdminPlanoContasRoute
   '/admin/clientes': typeof AdminClientesRouteWithChildren
   '/admin/contratos': typeof AdminContratosRouteWithChildren
   '/admin/dfc': typeof AdminDfcRoute
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/admin/categorias'
+    | '/admin/plano-contas'
     | '/admin/clientes'
     | '/admin/contratos'
     | '/admin/dfc'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/admin/categorias'
+    | '/admin/plano-contas'
     | '/admin/clientes'
     | '/admin/dfc'
     | '/admin/importar'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/admin/categorias'
+    | '/admin/plano-contas'
     | '/admin/clientes'
     | '/admin/contratos'
     | '/admin/dfc'
@@ -318,6 +330,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRoute
   AdminCategoriasRoute: typeof AdminCategoriasRoute
+  AdminPlanoContasRoute: typeof AdminPlanoContasRoute
   AdminClientesRoute: typeof AdminClientesRouteWithChildren
   AdminContratosRoute: typeof AdminContratosRouteWithChildren
   AdminDfcRoute: typeof AdminDfcRoute
@@ -455,6 +468,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCategoriasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/plano-contas': {
+      id: '/admin/plano-contas'
+      path: '/admin/plano-contas'
+      fullPath: '/admin/plano-contas'
+      preLoaderRoute: typeof AdminPlanoContasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/propostas/': {
       id: '/admin/propostas/'
       path: '/'
@@ -553,6 +573,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   PortalRoute: PortalRoute,
   AdminCategoriasRoute: AdminCategoriasRoute,
+  AdminPlanoContasRoute: AdminPlanoContasRoute,
   AdminClientesRoute: AdminClientesRouteWithChildren,
   AdminContratosRoute: AdminContratosRouteWithChildren,
   AdminDfcRoute: AdminDfcRoute,
