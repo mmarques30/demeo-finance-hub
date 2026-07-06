@@ -409,14 +409,33 @@ function ProfileModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const CROP_BOX = 176; // px — área quadrada de recorte (exibida como círculo)
+
   const [displayName, setDisplayName] = useState(name);
-  const [preview, setPreview] = useState(avatarUrl);
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null);   // nova foto sendo ajustada
+  const [rawUrl, setRawUrl] = useState<string | null>(null); // object URL da nova foto (fonte do crop)
+  const [removed, setRemoved] = useState(false);          // removeu a foto atual
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const imgElRef = useRef<HTMLImageElement | null>(null);
+  const dragRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
 
-  const initials = displayName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const initials = displayName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+  const currentAvatar = removed ? "" : avatarUrl;
+  const cropping = !!rawUrl;
+
+  // Métricas do recorte: escala mínima que cobre a caixa + dimensões exibidas
+  function metrics(img: HTMLImageElement, z: number) {
+    const base = Math.max(CROP_BOX / img.naturalWidth, CROP_BOX / img.naturalHeight);
+    const eff = base * z;
+    return { eff, w: img.naturalWidth * eff, h: img.naturalHeight * eff };
+  }
+  function clamp(x: number, y: number, w: number, h: number) {
+    return { x: Math.min(0, Math.max(CROP_BOX - w, x)), y: Math.min(0, Math.max(CROP_BOX - h, y)) };
+  }
 
   function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -424,8 +443,66 @@ function ProfileModal({
     if (!f.type.startsWith("image/")) { setErr("Selecione um arquivo de imagem."); return; }
     if (f.size > 2 * 1024 * 1024) { setErr("A imagem deve ter no máximo 2 MB."); return; }
     setErr(null);
+    setRemoved(false);
+    setZoom(1);
+    setOffset({ x: 0, y: 0 });
     setFile(f);
-    setPreview(URL.createObjectURL(f));
+    setRawUrl(URL.createObjectURL(f));
+  }
+
+  function onImgLoad() {
+    const img = imgElRef.current;
+    if (!img) return;
+    const { w, h } = metrics(img, 1);
+    setOffset({ x: (CROP_BOX - w) / 2, y: (CROP_BOX - h) / 2 }); // centraliza
+  }
+
+  function onZoomChange(z: number) {
+    const img = imgElRef.current;
+    if (!img) { setZoom(z); return; }
+    const cur = metrics(img, zoom);
+    const next = metrics(img, z);
+    // mantém o ponto central da caixa fixo ao dar zoom
+    const cx = (CROP_BOX / 2 - offset.x) / cur.eff;
+    const cy = (CROP_BOX / 2 - offset.y) / cur.eff;
+    const nx = CROP_BOX / 2 - cx * next.eff;
+    const ny = CROP_BOX / 2 - cy * next.eff;
+    setZoom(z);
+    setOffset(clamp(nx, ny, next.w, next.h));
+  }
+
+  function onPointerDown(e: React.PointerEvent) {
+    dragRef.current = { px: e.clientX, py: e.clientY, ox: offset.x, oy: offset.y };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    const d = dragRef.current;
+    const img = imgElRef.current;
+    if (!d || !img) return;
+    const m = metrics(img, zoom);
+    setOffset(clamp(d.ox + (e.clientX - d.px), d.oy + (e.clientY - d.py), m.w, m.h));
+  }
+  function onPointerUp() { dragRef.current = null; }
+
+  async function croppedBlob(): Promise<Blob | null> {
+    const img = imgElRef.current;
+    if (!img) return null;
+    const m = metrics(img, zoom);
+    const OUT = 256;
+    const s = OUT / CROP_BOX;
+    const canvas = document.createElement("canvas");
+    canvas.width = OUT; canvas.height = OUT;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, offset.x * s, offset.y * s, m.w * s, m.h * s);
+    return await new Promise((res) => canvas.toBlob((b) => res(b), "image/jpeg", 0.9));
+  }
+
+  function removePhoto() {
+    setFile(null);
+    setRawUrl(null);
+    setRemoved(true);
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -436,11 +513,12 @@ function ProfileModal({
 
     let nextAvatarUrl = avatarUrl;
     if (file) {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${userId}/avatar-${Date.now()}.${ext}`;
+      const blob = await croppedBlob();
+      if (!blob) { setSaving(false); setErr("Falha ao processar a imagem."); return; }
+      const path = `${userId}/avatar-${Date.now()}.jpg`;
       const { error: upErr } = await supabase()
         .storage.from("avatars")
-        .upload(path, file, { upsert: true, contentType: file.type });
+        .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
       if (upErr) { setSaving(false); setErr(`Falha no upload da foto: ${upErr.message}`); return; }
       // Bucket é privado — gera URL assinada de longa duração (1 ano).
       const { data: signed, error: sErr } = await supabase()
@@ -448,8 +526,9 @@ function ProfileModal({
         .createSignedUrl(path, 60 * 60 * 24 * 365);
       if (sErr || !signed?.signedUrl) { setSaving(false); setErr(`Falha ao gerar URL da foto: ${sErr?.message ?? "sem URL"}`); return; }
       nextAvatarUrl = signed.signedUrl;
+    } else if (removed) {
+      nextAvatarUrl = "";
     }
-
 
     const { error } = await supabase().auth.updateUser({
       data: { display_name: displayName.trim(), avatar_url: nextAvatarUrl },
@@ -476,26 +555,92 @@ function ProfileModal({
           <button onClick={onClose} className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100">×</button>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-5">
-          <div className="flex items-center gap-4">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-[16px] font-medium overflow-hidden shrink-0"
-              style={{ background: "linear-gradient(135deg, var(--green), var(--green2))", color: "#fff", letterSpacing: "1px" }}
-            >
-              {preview ? <img src={preview} alt={displayName} className="w-full h-full object-cover" /> : initials}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <input ref={fileRef} type="file" accept="image/*" onChange={pickFile} className="hidden" />
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="text-[10px] uppercase px-4 py-2.5 transition-opacity self-start"
-                style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+          <input ref={fileRef} type="file" accept="image/*" onChange={pickFile} className="hidden" />
+          {cropping ? (
+            /* Ajuste da nova foto: arrastar para posicionar + zoom */
+            <div className="flex flex-col items-center gap-3">
+              <div
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerCancel={onPointerUp}
+                className="relative rounded-full overflow-hidden shrink-0"
+                style={{ width: CROP_BOX, height: CROP_BOX, cursor: "grab", touchAction: "none", border: "1px solid var(--line)", background: "#F7F7F4" }}
               >
-                Trocar foto
-              </button>
-              <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>JPG ou PNG, até 2 MB</div>
+                <img
+                  ref={imgElRef}
+                  src={rawUrl!}
+                  alt="Ajustar foto"
+                  onLoad={onImgLoad}
+                  draggable={false}
+                  className="absolute select-none max-w-none"
+                  style={{
+                    left: offset.x,
+                    top: offset.y,
+                    width: (imgElRef.current ? metrics(imgElRef.current, zoom).w : CROP_BOX),
+                    height: "auto",
+                  }}
+                />
+                <div className="absolute inset-0 pointer-events-none rounded-full" style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.06)" }} />
+              </div>
+              <div className="flex items-center gap-2 w-full max-w-[240px]">
+                <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>−</span>
+                <input
+                  type="range" min={1} max={3} step={0.01} value={zoom}
+                  onChange={(e) => onZoomChange(Number(e.target.value))}
+                  className="flex-1"
+                />
+                <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>+</span>
+              </div>
+              <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>Arraste para posicionar · use o controle para ampliar</div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => fileRef.current?.click()}
+                  className="text-[10px] uppercase px-4 py-2 transition-opacity"
+                  style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}>
+                  Trocar
+                </button>
+                <button type="button" onClick={removePhoto}
+                  className="text-[10px] uppercase px-4 py-2 transition-opacity"
+                  style={{ border: "1px solid rgba(184,149,106,0.4)", color: "var(--tan)", letterSpacing: "2px", fontWeight: 500 }}>
+                  Remover foto
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center text-[16px] font-medium overflow-hidden shrink-0"
+                style={{ background: "linear-gradient(135deg, var(--green), var(--green2))", color: "#fff", letterSpacing: "1px" }}
+              >
+                {currentAvatar ? <img src={currentAvatar} alt={displayName} className="w-full h-full object-cover" /> : initials}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="text-[10px] uppercase px-4 py-2.5 transition-opacity self-start"
+                    style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+                  >
+                    {currentAvatar ? "Trocar foto" : "Adicionar foto"}
+                  </button>
+                  {currentAvatar && (
+                    <button
+                      type="button"
+                      onClick={removePhoto}
+                      className="text-[10px] uppercase px-4 py-2.5 transition-opacity self-start"
+                      style={{ border: "1px solid rgba(184,149,106,0.4)", color: "var(--tan)", letterSpacing: "2px", fontWeight: 500 }}
+                    >
+                      Remover foto
+                    </button>
+                  )}
+                </div>
+                <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+                  {removed ? "A foto será removida ao salvar." : "JPG ou PNG, até 2 MB"}
+                </div>
+              </div>
+            </div>
+          )}
 
           <label className="block">
             <div className="aurora-cap mb-2">Nome</div>
