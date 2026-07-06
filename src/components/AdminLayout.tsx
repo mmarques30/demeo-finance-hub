@@ -53,6 +53,7 @@ const GROUPS: SidebarGroup[] = [
     label: "Configuração",
     items: [
       { to: "/admin/categorias", label: "Categorias", icon: "⊞" },
+      { to: "/admin/plano-contas", label: "Plano de Contas", icon: "☰" },
       { to: "/admin/regras", label: "Regras de Classificação", icon: "⊟" },
       { to: "/admin/usuarios", label: "Usuários do Portal", icon: "◫" },
     ],
@@ -935,6 +936,7 @@ const MODULE_MAP: Record<string, ModuleIdentity> = {
   "/admin/servicos": { icon: "◇", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Comercial" },
   "/admin/insights/precificacao": { icon: "↗", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Comercial" },
   "/admin/categorias": { icon: "⊞", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
+  "/admin/plano-contas": { icon: "☰", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
   "/admin/regras": { icon: "⊟", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
   "/admin/usuarios": { icon: "◫", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
 };
