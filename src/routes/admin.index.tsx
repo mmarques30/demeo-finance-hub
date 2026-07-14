@@ -293,20 +293,19 @@ function AdminDashboard() {
         cap={`Fechamentos · ${periodoLabel}`}
         title="Visão geral"
         emphasis="da carteira"
-        description="Acompanhe o status do período, lançamentos pendentes e a evolução de cada cliente em um único lugar."
         right={
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to={"/admin/clientes" as never}
-              className="focus-ring inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
-              style={{ background: "transparent", color: "var(--green)", letterSpacing: "2.5px", fontWeight: 500, border: "1px solid var(--green)" }}
+              className="focus-ring inline-flex items-center gap-2 px-4 py-2.5 text-[10px] uppercase transition-opacity hover:opacity-80"
+              style={{ background: "transparent", color: "var(--green)", letterSpacing: "2px", fontWeight: 500, border: "1px solid var(--green)", borderRadius: 999 }}
             >
               + Cliente
             </Link>
             <Link
               to={"/admin/importar" as never}
-              className="focus-ring inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+              className="focus-ring inline-flex items-center gap-2 px-4 py-2.5 text-[10px] uppercase transition-opacity hover:opacity-80"
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500, borderRadius: 999 }}
             >
               + Importar extrato
             </Link>
