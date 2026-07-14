@@ -209,56 +209,37 @@ function DFCPage() {
         emphasis="de fluxo de caixa"
         description="Análise consolidada do período com comparativo, drill-down por categoria e projeção dos próximos 3 meses."
         right={
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-3 flex-wrap justify-end">
-              <select
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                className="bg-white px-3 py-2.5 text-[12px]"
-                style={{ border: "1px solid var(--line)" }}
+          <div className="flex items-center gap-2.5 flex-wrap justify-end">
+            <select
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="bg-white px-3 py-2 text-[12px]"
+              style={{ border: "1px solid var(--line)", borderRadius: 12, maxWidth: 280 }}
+            >
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              maxDate={todayISO()}
+              onStartChange={setStartDate}
+              onEndChange={setEndDate}
+            />
+            {activeTab === "contas" && (
+              <button
+                onClick={() => setContasTrigger((n) => n + 1)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-[10px] uppercase transition-opacity hover:opacity-80"
+                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500, borderRadius: 999 }}
               >
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <DateRangeFilter
-                startDate={startDate}
-                endDate={endDate}
-                maxDate={todayISO()}
-                onStartChange={setStartDate}
-                onEndChange={setEndDate}
-              />
-              {activeTab === "contas" && (
-                <button
-                  onClick={() => setContasTrigger((n) => n + 1)}
-                  className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
-                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
-                >
-                  + Novo
-                </button>
-              )}
-            </div>
-            {activeClient && (
-              <div className="flex items-center gap-2 justify-end">
-                <span className="aurora-cap">Fechamento mensal</span>
-                {activeClient.monthly_closing_day != null ? (
-                  <>
-                    <div style={{ width: 28, height: 28, border: "1px solid var(--green)", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(74,103,65,0.06)" }}>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--green)", fontFamily: "serif" }}>
-                        {activeClient.monthly_closing_day}
-                      </span>
-                    </div>
-                    <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>de cada mês</span>
-                  </>
-                ) : (
-                  <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>Não configurado</span>
-                )}
-              </div>
+                + Novo
+              </button>
             )}
           </div>
         }
       />
 
-      {/* Tab bar */}
-      <div className="flex gap-1 px-8 lg:px-12 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
+      {/* Abas — sem linha divisória; compactas sob o título */}
+      <div className="flex flex-wrap gap-1 px-6 lg:px-10 pb-4 -mt-1">
         {DFC_TABS.map((tab) => (
           <button
             key={tab.key}
@@ -271,6 +252,7 @@ function DFCPage() {
               background: activeTab === tab.key ? "var(--green)" : "transparent",
               color: activeTab === tab.key ? "#fff" : "var(--muted-foreground)",
               border: "none",
+              cursor: "pointer",
             }}
           >
             {tab.label}
@@ -279,8 +261,14 @@ function DFCPage() {
       </div>
 
       {clientId && (activeTab === "dfc" || activeTab === "dre") && (
-        <div className="px-8 lg:px-12 pt-6">
-          <HealthAlertCard health={health} margem={margem} segment={activeClient?.segment ?? null} period={periodoLabel} />
+        <div className="px-6 lg:px-10 pb-2">
+          <HealthAlertCard
+            health={health}
+            margem={margem}
+            segment={activeClient?.segment ?? null}
+            period={periodoLabel}
+            closingDay={activeClient?.monthly_closing_day ?? null}
+          />
         </div>
       )}
 

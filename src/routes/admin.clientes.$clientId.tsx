@@ -326,71 +326,54 @@ const receita = useMemo(
               <div className="text-[13px]">{client.segment}</div>
             </div>
           )}
-          <div className="flex-1 min-w-[150px]">
-            <div className="aurora-cap mb-2">Fechamento mensal</div>
-            {client.monthly_closing_day != null ? (
-              <div className="flex items-center gap-2.5">
-                <div style={{ width: 40, height: 40, borderRadius: 12, border: "1px solid var(--green)", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(74,103,65,0.06)" }}>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: "var(--green)", fontFamily: "serif" }}>
-                    {client.monthly_closing_day}
-                  </span>
-                </div>
-                <span className="text-[11px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.4 }}>
-                  de cada<br />mês
-                </span>
-              </div>
-            ) : (
-              <div className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Não configurado</div>
-            )}
-          </div>
         </div>
 
-        {/* Alerta de saúde financeira */}
-        <HealthAlertCard health={health} margem={margem} segment={client.segment} period={period} />
+        {/* Saúde financeira + ajustes (inclui fechamento mensal) */}
+        <HealthAlertCard
+          health={health}
+          margem={margem}
+          segment={client.segment}
+          period={period}
+          closingDay={client.monthly_closing_day}
+        />
 
-        {/* Abas */}
-        <div style={{ borderBottom: "2px solid var(--line)", marginBottom: -8 }}>
-          <div className="flex">
-            {(["lancamentos", "importacoes", "painel", "usuarios"] as const).map((tab) => {
-              const isActive = activeTab === tab;
-              const label = tab === "lancamentos" ? "Lançamentos" : tab === "importacoes" ? "Importações" : tab === "painel" ? "Painel DFC / DRE" : "Usuários do Portal";
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className="px-6 py-3 text-[11px] uppercase transition-colors relative"
-                  style={{
-                    letterSpacing: "2px",
-                    fontWeight: 600,
-                    color: isActive ? "var(--green)" : "var(--muted-foreground)",
-                    background: "transparent",
-                  }}
-                >
-                  {label}
-                  {tab === "importacoes" && uploads.length > 0 && (
-                    <span
-                      className="ml-2 text-[10px]"
-                      style={{ background: "rgba(74,103,65,0.12)", color: "var(--green)", padding: "1px 6px", borderRadius: 999 }}
-                    >
-                      {uploads.length}
-                    </span>
-                  )}
-                  {isActive && (
-                    <span
-                      style={{
-                        position: "absolute",
-                        bottom: -2,
-                        left: 0,
-                        right: 0,
-                        height: 2,
-                        background: "var(--green)",
-                      }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        {/* Abas — pills sem linha divisória */}
+        <div className="flex flex-wrap gap-1">
+          {(["lancamentos", "importacoes", "painel", "usuarios"] as const).map((tab) => {
+            const isActive = activeTab === tab;
+            const label = tab === "lancamentos" ? "Lançamentos" : tab === "importacoes" ? "Importações" : tab === "painel" ? "Painel DFC / DRE" : "Usuários do Portal";
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className="px-4 py-2 text-[11px] uppercase transition-all"
+                style={{
+                  letterSpacing: "2px",
+                  fontWeight: 600,
+                  borderRadius: 999,
+                  background: isActive ? "var(--green)" : "transparent",
+                  color: isActive ? "#fff" : "var(--muted-foreground)",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                {label}
+                {tab === "importacoes" && uploads.length > 0 && (
+                  <span
+                    className="ml-2 text-[10px]"
+                    style={{
+                      background: isActive ? "rgba(255,255,255,0.22)" : "rgba(74,103,65,0.12)",
+                      color: isActive ? "#fff" : "var(--green)",
+                      padding: "1px 6px",
+                      borderRadius: 999,
+                    }}
+                  >
+                    {uploads.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* ── Aba: Lançamentos ─────────────────────────────────────────────────── */}

@@ -6,15 +6,19 @@ export function HealthAlertCard({
   margem,
   segment,
   period,
+  closingDay,
 }: {
   health: HealthLevel;
   margem: number;
   segment: string | null;
   period: string;
+  /** Dia de fechamento mensal do cliente (null = não configurado). Omitir se não aplicável. */
+  closingDay?: number | null;
 }) {
   const [open, setOpen] = useState(false);
   const bench = SEGMENT_BENCHMARKS[segment ?? ""] ?? SEGMENT_BENCHMARKS["default"];
   const segLabel = segment ?? "geral";
+  const showClosing = closingDay !== undefined;
 
   const config = {
     saudavel: {
@@ -22,7 +26,7 @@ export function HealthAlertCard({
       bg: "rgba(74,103,65,0.04)",
       color: "var(--green)",
       icon: "◉",
-      label: "Saúde Financeira · Saudável",
+      status: "Saudável",
       badge: `${margem.toFixed(1)}%`,
       message: `Margem líquida de ${margem.toFixed(1)}% está acima do referencial para ${segLabel} (≥ ${bench.healthy}%). Boa performance no período.`,
     },
@@ -31,7 +35,7 @@ export function HealthAlertCard({
       bg: "rgba(109,146,166,0.06)",
       color: "var(--tan)",
       icon: "◎",
-      label: "Saúde Financeira · Atenção",
+      status: "Atenção",
       badge: `${margem.toFixed(1)}%`,
       message: `Margem líquida de ${margem.toFixed(1)}% está abaixo do referencial saudável para ${segLabel} (${bench.caution}%–${bench.healthy}%). Avalie redução de custos ou reajuste de preços.`,
     },
@@ -40,7 +44,7 @@ export function HealthAlertCard({
       bg: "rgba(192,57,43,0.04)",
       color: "#C0392B",
       icon: "◈",
-      label: "Saúde Financeira · Crítico",
+      status: "Crítico",
       badge: `${margem.toFixed(1)}%`,
       message: `Margem líquida de ${margem.toFixed(1)}% está abaixo do mínimo recomendado para ${segLabel} (≥ ${bench.caution}%). Ação imediata: revise despesas e receitas deste período.`,
     },
@@ -49,18 +53,23 @@ export function HealthAlertCard({
       bg: "#FAFBFA",
       color: "var(--muted-foreground)",
       icon: "◌",
-      label: "Saúde Financeira · Sem dados",
+      status: "Sem dados",
       badge: null,
       message: `Nenhuma movimentação aprovada em ${period}. Selecione um período com lançamentos para ver a análise de saúde financeira.`,
     },
   }[health];
+
+  const closingConfigured = closingDay != null;
+  const closingLabel = closingConfigured
+    ? `Fechamento mensal · dia ${closingDay}`
+    : "Fechamento mensal · não configurado";
 
   return (
     <div
       style={{
         border: `1px solid ${config.borderColor}`,
         borderLeft: `3px solid ${config.borderColor}`,
-        borderRadius: "var(--radius-lg, 8px)",
+        borderRadius: "var(--radius-lg)",
         overflow: "hidden",
       }}
     >
@@ -74,8 +83,24 @@ export function HealthAlertCard({
           className="text-[11px] uppercase flex-1"
           style={{ letterSpacing: "2px", fontWeight: 600, color: config.color }}
         >
-          {config.label}
+          Saúde financeira e ajustes · {config.status}
         </span>
+        {showClosing && (
+          <span
+            className="text-[10px] uppercase hidden sm:inline"
+            style={{
+              letterSpacing: "1.2px",
+              fontWeight: 600,
+              color: closingConfigured ? "var(--green)" : "var(--muted-foreground)",
+              background: closingConfigured ? "rgba(40,76,43,0.08)" : "rgba(28,45,69,0.05)",
+              padding: "4px 10px",
+              borderRadius: 999,
+              flexShrink: 0,
+            }}
+          >
+            {closingLabel}
+          </span>
+        )}
         {config.badge && (
           <span
             className="text-[11px] px-2 py-0.5"
@@ -108,15 +133,47 @@ export function HealthAlertCard({
 
       {open && (
         <div
-          className="px-4 py-3"
+          className="px-4 py-3 flex flex-col gap-3"
           style={{ borderTop: `1px solid ${config.borderColor}`, background: config.bg }}
         >
-          <p className="text-[12px]" style={{ color: "var(--foreground)", lineHeight: 1.6 }}>
-            {config.message}
-          </p>
-          <p className="mt-2 text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>
-            Período: {period} · Ref. {segLabel}: saudável ≥ {bench.healthy}% · atenção ≥ {bench.caution}%
-          </p>
+          <div>
+            <div
+              className="text-[10px] uppercase mb-1"
+              style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 600 }}
+            >
+              Saúde financeira
+            </div>
+            <p className="text-[12px]" style={{ color: "var(--foreground)", lineHeight: 1.6 }}>
+              {config.message}
+            </p>
+            <p className="mt-2 text-[10px] uppercase" style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)" }}>
+              Período: {period} · Ref. {segLabel}: saudável ≥ {bench.healthy}% · atenção ≥ {bench.caution}%
+            </p>
+          </div>
+
+          {showClosing && (
+            <div
+              className="pt-3"
+              style={{ borderTop: "1px solid rgba(28,45,69,0.08)" }}
+            >
+              <div
+                className="text-[10px] uppercase mb-1"
+                style={{ letterSpacing: "1.5px", color: "var(--muted-foreground)", fontWeight: 600 }}
+              >
+                Ajustes · fechamento mensal
+              </div>
+              {closingConfigured ? (
+                <p className="text-[12px]" style={{ color: "var(--foreground)", lineHeight: 1.6 }}>
+                  Fechamento configurado para o dia{" "}
+                  <span style={{ fontWeight: 600, color: "var(--green)" }}>{closingDay}</span> de cada mês.
+                </p>
+              ) : (
+                <p className="text-[12px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.6 }}>
+                  Fechamento mensal não configurado. Defina o dia de fechamento no cadastro do cliente para acompanhar prazos e alertas.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

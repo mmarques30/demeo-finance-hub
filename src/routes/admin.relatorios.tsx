@@ -826,8 +826,8 @@ function RelatoriosPage() {
         }
       />
 
-      {/* Tab bar */}
-      <div className="flex gap-1 px-8 lg:px-12 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
+      {/* Abas — sem linha divisória */}
+      <div className="flex flex-wrap gap-1 px-6 lg:px-10 pb-4 -mt-1">
         {([{ key: "exportar", label: "Exportar" }, { key: "historico", label: "Histórico" }] as { key: RelTab; label: string }[]).map((tab) => (
           <button
             key={tab.key}
@@ -848,7 +848,7 @@ function RelatoriosPage() {
         ))}
       </div>
 
-      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-6 pt-6">
+      <div className="px-6 lg:px-10 pb-12 flex flex-col gap-6">
 
         {/* ── Aba: Exportar ─────────────────────────────────────────────────────── */}
         {activeTab === "exportar" && (
