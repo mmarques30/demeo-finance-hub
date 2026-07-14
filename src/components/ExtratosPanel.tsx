@@ -48,48 +48,59 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
 
   useEffect(() => {
     if (!clientId) return;
+    let cancelled = false;
     setLoading(true);
     setTxMap({});
     setErr(null);
-    Promise.all([
-      // Mostra extratos já processados (mesmo com itens aguardando revisão), não só os 100% aprovados.
-      // Assim o extrato aparece no histórico do cliente e os classificados não ficam órfãos.
-      supabase()
-        .from("uploads")
-        .select("id, bank_name, filename, period, status, tx_total, tx_classified, tx_pending, created_at")
-        .eq("client_id", clientId)
-        .in("status", ["done", "approved"])
-        .order("created_at", { ascending: false }),
-      supabase()
-        .from("transactions")
-        .select("id, date, description, amount, category, status, installment_number, installment_total")
-        .eq("client_id", clientId)
-        .is("upload_id", null)
-        .eq("status", "approved")
-        .order("date", { ascending: false }),
-      // Contagem real de lançamentos aguardando revisão (classified) e sem categoria (pending) por upload
-      supabase()
-        .from("transactions")
-        .select("upload_id, status")
-        .eq("client_id", clientId)
-        .in("status", ["classified", "pending"])
-        .not("upload_id", "is", null)
-        .limit(10000), // evita o corte silencioso de 1000 do PostgREST (contagem por upload)
-    ]).then(([{ data: uploadsData }, { data: manualData }, { data: awaitingData }]) => {
-      setUploads((uploadsData ?? []) as UploadRecord[]);
+    (async () => {
+      const [{ data: uploadsData }, { data: manualData }] = await Promise.all([
+        // Mostra extratos já processados (mesmo com itens aguardando revisão), não só os 100% aprovados.
+        supabase()
+          .from("uploads")
+          .select("id, bank_name, filename, period, status, tx_total, tx_classified, tx_pending, created_at")
+          .eq("client_id", clientId)
+          .in("status", ["done", "approved"])
+          .order("created_at", { ascending: false }),
+        supabase()
+          .from("transactions")
+          .select("id, date, description, amount, category, status, installment_number, installment_total")
+          .eq("client_id", clientId)
+          .is("upload_id", null)
+          .eq("status", "approved")
+          .order("date", { ascending: false })
+          .limit(500),
+      ]);
+      if (cancelled) return;
+
+      const uploadsList = (uploadsData ?? []) as UploadRecord[];
+      setUploads(uploadsList);
       const manual = (manualData ?? []) as TxRecord[];
       if (manual.length > 0) {
         setTxMap((prev) => ({ ...prev, [MANUAL_KEY]: manual }));
       }
+
+      // Contagens waiting: RPC agregada (leve). Fallback nos campos do upload.
       const awaitingMap: Record<string, { classified: number; pending: number }> = {};
-      for (const row of (awaitingData ?? []) as { upload_id: string; status: string }[]) {
-        const entry = (awaitingMap[row.upload_id] ||= { classified: 0, pending: 0 });
-        if (row.status === "classified") entry.classified++;
-        else if (row.status === "pending") entry.pending++;
+      for (const u of uploadsList) {
+        awaitingMap[u.id] = { classified: 0, pending: u.tx_pending ?? 0 };
       }
-      setAwaiting(awaitingMap);
-      setLoading(false);
-    });
+      const { data: awaitingRows, error: awaitingErr } = await supabase().rpc("tx_awaiting_by_upload", {
+        p_client_id: clientId,
+      });
+      if (!awaitingErr && awaitingRows) {
+        for (const row of awaitingRows as { upload_id: string; classified: number; pending: number }[]) {
+          awaitingMap[row.upload_id] = {
+            classified: Number(row.classified) || 0,
+            pending: Number(row.pending) || 0,
+          };
+        }
+      }
+      if (!cancelled) {
+        setAwaiting(awaitingMap);
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [clientId]);
 
   async function toggleExpand(uploadId: string) {
