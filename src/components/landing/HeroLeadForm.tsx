@@ -1,13 +1,12 @@
 // Form do hero — Nome + Telefone + E-mail + 2 perguntas qualificação.
-// Fundo sólido do azul intermediário da marca (sem transparência / sem caixa atrás).
+// Fundo: azul noite da marca (#1C2D45) — o mesmo da dobra de números.
 import { useState } from "react";
 import { FUNCTIONS_URL } from "@/lib/supabase";
 
 const INK = "#1C2D45";
-/** Azul intermediário mais fechado — contraste sólido no hero */
-const STEEL_SOLID = "#4A7088";
 const OFFWHITE = "#FAFBFA";
 const FOREST = "#284C2B";
+const SAGE = "#99A989";
 
 const FATURAMENTO = [
   { v: "ate_50k", l: "Até R$ 50 mil" },
@@ -32,10 +31,10 @@ function maskPhone(v: string) {
 }
 
 const formShell: React.CSSProperties = {
-  background: STEEL_SOLID,
-  border: "1px solid rgba(28,45,69,0.2)",
+  background: INK,
+  border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: 22,
-  boxShadow: "0 28px 56px -24px rgba(28,45,69,0.4)",
+  boxShadow: "0 28px 56px -24px rgba(28,45,69,0.55)",
   padding: 30,
 };
 
@@ -109,7 +108,7 @@ export function HeroLeadForm() {
           }}
         >
           Obrigada, {name.split(" ")[0]}.{" "}
-          <em className="italic" style={{ color: OFFWHITE }}>
+          <em className="italic" style={{ color: SAGE }}>
             A Claudia te chama em até 1 dia útil.
           </em>
         </h3>
@@ -147,7 +146,7 @@ export function HeroLeadForm() {
         }}
       >
         Conta um pouco da sua{" "}
-        <em className="italic" style={{ color: OFFWHITE }}>
+        <em className="italic" style={{ color: SAGE }}>
           empresa
         </em>
         .
@@ -236,7 +235,7 @@ export function HeroLeadForm() {
         disabled={status === "loading"}
         className="focus-ring mt-4 w-full inline-flex items-center justify-center gap-2"
         style={{
-          background: status === "loading" ? INK : FOREST,
+          background: status === "loading" ? "rgba(255,255,255,0.18)" : FOREST,
           color: "#fff",
           fontSize: 14,
           fontWeight: 600,
