@@ -55,7 +55,7 @@ export function MetricsRow() {
 
 function Metric({ label, value, tone }: { label: string; value: string; tone: "green" | "tan" | "navy" }) {
   const color = tone === "green" ? "var(--green)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
-  const bg    = tone === "green" ? "rgba(40,76,43,0.08)" : tone === "tan" ? "rgba(184,149,106,0.10)" : "rgba(28,45,69,0.08)";
+  const bg    = tone === "green" ? "rgba(40,76,43,0.08)" : tone === "tan" ? "rgba(109,146,166,0.10)" : "rgba(28,45,69,0.08)";
   return (
     <div
       className="aurora-card"

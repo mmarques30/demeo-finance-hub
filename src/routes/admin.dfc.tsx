@@ -340,14 +340,14 @@ function DFCPage() {
                           </td>
                         </tr>
                       ))}
-                      <tr style={{ borderTop: "1px solid var(--line)", background: "#FAFAF8" }}>
+                      <tr style={{ borderTop: "1px solid var(--line)", background: "#FAFBFA" }}>
                         <td className="px-6 py-2.5 text-[12px]" style={{ fontWeight: 600 }}>Subtotal {g.name}</td>
                         <td className="px-6 py-2.5 text-right aurora-value text-[13px]" style={{ fontWeight: 700, color: g.isExpense ? "var(--expense)" : "var(--green)" }}>
                           {g.isExpense ? `(${brl(g.subtotal)})` : brl(g.subtotal)}
                         </td>
                       </tr>
                       {g.name === DRE_EBITDA_PIVOT && (
-                        <tr style={{ background: "#E8F0E4", borderTop: "2px solid var(--green)" }}>
+                        <tr style={{ background: "#E0E4D6", borderTop: "2px solid var(--green)" }}>
                           <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 700 }}>= Resultado Operacional (EBITDA)</td>
                           <td className="px-6 py-3 text-right aurora-value text-[15px]" style={{ fontWeight: 700, color: dre.ebitda >= 0 ? "var(--green)" : "var(--expense)" }}>
                             {brl(dre.ebitda)}

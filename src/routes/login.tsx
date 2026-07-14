@@ -157,7 +157,7 @@ function LoginPage() {
                     />
                   </label>
                   {error && (
-                    <div className="text-[12px] px-3 py-2" style={{ background: "rgba(184,149,106,0.12)", color: "var(--tan)", border: "1px solid var(--tan)" }}>{error}</div>
+                    <div className="text-[12px] px-3 py-2" style={{ background: "rgba(109,146,166,0.12)", color: "var(--tan)", border: "1px solid var(--tan)" }}>{error}</div>
                   )}
                   <button
                     type="submit"
@@ -221,7 +221,7 @@ function LoginPage() {
               </label>
 
               {error && (
-                <div className="text-[12px] px-3 py-2" style={{ background: "rgba(184,149,106,0.12)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
+                <div className="text-[12px] px-3 py-2" style={{ background: "rgba(109,146,166,0.12)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
                   {error}
                 </div>
               )}

@@ -1,10 +1,11 @@
 // Form do hero — Nome + Telefone + E-mail + 2 perguntas qualificação.
+// Fundo: azul intermediário da marca (#6D92A6).
 import { useState } from "react";
 import { FUNCTIONS_URL } from "@/lib/supabase";
 
 const INK = "#1C2D45";
 const STEEL = "#6D92A6";
-const SAGE = "#99A989";
+const SURFACE = "#E0E4D6";
 const FOREST = "#284C2B";
 
 const FATURAMENTO = [
@@ -73,12 +74,13 @@ export function HeroLeadForm() {
       <div
         className="relative overflow-hidden"
         style={{
-          background: "#EBF4FB",
-          border: "1px solid rgba(109,146,166,0.22)",
-          borderRadius: 20,
+          background: `linear-gradient(160deg, ${STEEL} 0%, #5A7F94 100%)`,
+          border: "1px solid rgba(28,45,69,0.12)",
+          borderRadius: 24,
           boxShadow:
-            "0 40px 80px -30px rgba(28,45,69,0.22), 0 24px 40px -20px rgba(40,76,43,0.10), inset 0 1px 0 rgba(255,255,255,0.7)",
+            "0 40px 80px -28px rgba(28,45,69,0.35), 0 16px 32px -16px rgba(40,76,43,0.18)",
           padding: 36,
+          color: "#fff",
         }}
       >
         <div
@@ -87,14 +89,14 @@ export function HeroLeadForm() {
             width: 56,
             height: 56,
             borderRadius: 999,
-            background: `linear-gradient(135deg, ${FOREST}, #1f3a22)`,
+            background: FOREST,
             color: "#fff",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 28,
             marginBottom: 16,
-            boxShadow: "0 12px 24px -6px rgba(40,76,43,0.5)",
+            boxShadow: "0 12px 24px -6px rgba(40,76,43,0.45)",
           }}
         >
           ✓
@@ -104,17 +106,17 @@ export function HeroLeadForm() {
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: 28,
             fontWeight: 400,
-            color: INK,
+            color: "#fff",
             letterSpacing: "-0.6px",
             lineHeight: 1.2,
           }}
         >
           Obrigada, {name.split(" ")[0]}.{" "}
-          <em className="italic" style={{ color: FOREST }}>
+          <em className="italic" style={{ color: SURFACE }}>
             A Claudia te chama em até 1 dia útil.
           </em>
         </h3>
-        <p className="mt-4" style={{ fontSize: 14, color: "rgba(28,45,69,0.7)", lineHeight: 1.6 }}>
+        <p className="mt-4" style={{ fontSize: 14, color: "rgba(255,255,255,0.82)", lineHeight: 1.6 }}>
           Sem pressão, sem cobrança no primeiro papo.
         </p>
       </div>
@@ -126,25 +128,38 @@ export function HeroLeadForm() {
       onSubmit={submit}
       className="relative overflow-hidden"
       style={{
-        background: "#EBF4FB",
-        border: "1px solid rgba(109,146,166,0.22)",
-        borderRadius: 20,
+        background: `linear-gradient(165deg, ${STEEL} 0%, #5C8296 55%, #547A8E 100%)`,
+        border: "1px solid rgba(28,45,69,0.14)",
+        borderRadius: 24,
         boxShadow:
-          "0 40px 80px -30px rgba(28,45,69,0.22), 0 24px 40px -20px rgba(40,76,43,0.10), inset 0 1px 0 rgba(255,255,255,0.7)",
+          "0 40px 80px -28px rgba(28,45,69,0.32), 0 18px 36px -18px rgba(40,76,43,0.16), inset 0 1px 0 rgba(255,255,255,0.22)",
         padding: 30,
       }}
     >
-      {/* Brilho decorativo */}
       <div
         aria-hidden
         className="absolute"
         style={{
-          right: -60,
-          top: -60,
+          right: -50,
+          top: -50,
+          width: 200,
+          height: 200,
+          background: "radial-gradient(circle, rgba(224,228,214,0.35) 0%, transparent 70%)",
+          filter: "blur(28px)",
+          borderRadius: "50%",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        aria-hidden
+        className="absolute"
+        style={{
+          left: -40,
+          bottom: -60,
           width: 180,
           height: 180,
-          background: "radial-gradient(circle, rgba(40,76,43,0.18) 0%, transparent 70%)",
-          filter: "blur(40px)",
+          background: "radial-gradient(circle, rgba(40,76,43,0.28) 0%, transparent 70%)",
+          filter: "blur(36px)",
           borderRadius: "50%",
           pointerEvents: "none",
         }}
@@ -154,7 +169,7 @@ export function HeroLeadForm() {
         <div
           className="inline-flex items-center gap-2 mb-3"
           style={{
-            background: "rgba(40,76,43,0.08)",
+            background: SURFACE,
             color: FOREST,
             padding: "5px 12px",
             borderRadius: 999,
@@ -170,13 +185,13 @@ export function HeroLeadForm() {
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: 26,
             fontWeight: 400,
-            color: INK,
+            color: "#FFFFFF",
             letterSpacing: "-0.6px",
             lineHeight: 1.15,
           }}
         >
           Conta um pouco da sua{" "}
-          <em className="italic" style={{ color: FOREST }}>
+          <em className="italic" style={{ color: SURFACE }}>
             empresa
           </em>
           .
@@ -267,7 +282,7 @@ export function HeroLeadForm() {
           style={{
             background:
               status === "loading"
-                ? STEEL
+                ? "rgba(28,45,69,0.55)"
                 : `linear-gradient(135deg, ${FOREST} 0%, #1f3a22 100%)`,
             color: "#fff",
             fontSize: 14,
@@ -275,7 +290,7 @@ export function HeroLeadForm() {
             padding: "16px 24px",
             border: "none",
             borderRadius: 999,
-            boxShadow: "0 10px 28px -10px rgba(40,76,43,0.5)",
+            boxShadow: "0 12px 28px -10px rgba(40,76,43,0.55)",
             cursor: status === "loading" ? "wait" : "pointer",
             letterSpacing: "0.2px",
             transition: "transform 0.2s, box-shadow 0.2s",
@@ -283,12 +298,12 @@ export function HeroLeadForm() {
           onMouseEnter={(e) => {
             if (status === "idle") {
               e.currentTarget.style.transform = "translateY(-1px) scale(1.01)";
-              e.currentTarget.style.boxShadow = "0 14px 32px -10px rgba(40,76,43,0.6)";
+              e.currentTarget.style.boxShadow = "0 16px 32px -10px rgba(40,76,43,0.65)";
             }
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "";
-            e.currentTarget.style.boxShadow = "0 10px 28px -10px rgba(40,76,43,0.5)";
+            e.currentTarget.style.boxShadow = "0 12px 28px -10px rgba(40,76,43,0.55)";
           }}
         >
           <span
@@ -307,11 +322,11 @@ export function HeroLeadForm() {
         </button>
 
         {status === "error" && errMsg && (
-          <p className="mt-2 text-center" style={{ fontSize: 11, color: "#c0392b", lineHeight: 1.5 }}>
+          <p className="mt-2 text-center" style={{ fontSize: 11, color: SURFACE, lineHeight: 1.5 }}>
             {errMsg}
           </p>
         )}
-        <p className="mt-3 text-center" style={{ fontSize: 11, color: "rgba(28,45,69,0.6)", lineHeight: 1.5 }}>
+        <p className="mt-3 text-center" style={{ fontSize: 11, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
           Resposta em até 1 dia útil. Sem pressão, sem cobrança.
         </p>
       </div>
@@ -327,7 +342,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
           fontSize: 10,
           fontWeight: 700,
           letterSpacing: "1.2px",
-          color: STEEL,
+          color: SURFACE,
           marginBottom: 5,
         }}
       >
@@ -342,11 +357,12 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "11px 14px",
   fontSize: 13.5,
-  background: "#FFFFFF",
-  border: "1px solid rgba(28,45,69,0.14)",
-  borderRadius: 8,
+  background: "#FAFBFA",
+  border: "1px solid rgba(255,255,255,0.35)",
+  borderRadius: 10,
   outline: "none",
   fontFamily: "inherit",
   color: INK,
   transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
 };

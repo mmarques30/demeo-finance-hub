@@ -218,8 +218,8 @@ function PrecificacaoPage() {
             <ResponsiveContainer>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2D8CC" />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#7A7260" }} />
-                <YAxis tickFormatter={(v) => brl(v)} tick={{ fontSize: 10, fill: "#7A7260" }} width={80} />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#5C6B78" }} />
+                <YAxis tickFormatter={(v) => brl(v)} tick={{ fontSize: 10, fill: "#5C6B78" }} width={80} />
                 <Tooltip formatter={(v) => brl(Number(v))} />
                 <Line type="monotone" dataKey="avg" stroke="#4A6741" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
@@ -247,7 +247,7 @@ function PrecificacaoPage() {
             </thead>
             <tbody>
               {winRate.map((b, i) => (
-                <tr key={b.label} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                <tr key={b.label} style={{ background: i % 2 === 0 ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}>
                   <td className="px-5 py-3 text-[13px]">{b.label}</td>
                   <td className="px-5 py-3 text-[12px]">{b.total}</td>
                   <td className="px-5 py-3 text-[12px]" style={{ color: "var(--green)" }}>

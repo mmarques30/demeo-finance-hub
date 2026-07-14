@@ -7,7 +7,7 @@ const INK = "#1C2D45";
 const STEEL = "#6D92A6";
 const SAGE = "#99A989";
 const FOREST = "#284C2B";
-const TAN = "#B8956A";
+const TAN = "#99A989";
 
 type FeatureVariant = "import" | "dfc" | "projection" | "portal";
 

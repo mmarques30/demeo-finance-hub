@@ -211,7 +211,7 @@ function PlanoContasPage() {
         {error && (
           <div
             className="text-[12px] px-4 py-3 whitespace-pre-line"
-            style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}
+            style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}
           >
             {error}
           </div>

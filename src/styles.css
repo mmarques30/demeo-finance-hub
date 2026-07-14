@@ -5,9 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /* Aurora · Gestão Financeira — Design System
- * Paleta linho/verde/sage/navy/tan, tipografia Cormorant Garamond + Jost.
- * Estética boutique-moderna: cantos orgânicos, sombras suaves multi-layer,
- * gradients sutis, micro-motion. Sem dark mode.
+ * Paleta: navy #1C2D45 · steel #6D92A6 · surface #E0E4D6 · sage #99A989 · forest #284C2B.
+ * Sem bege: superfícies internas usam off-white (#FAFBFA). Tipografia Cormorant + Space Grotesk.
  */
 
 @theme inline {
@@ -63,10 +62,13 @@
   /* Aurora brand tokens */
   --color-linen: var(--linen);
   --color-linen2: var(--linen2);
+  --color-offwhite: var(--offwhite);
+  --color-surface: var(--surface);
   --color-green: var(--green);
   --color-green2: var(--green2);
   --color-sage: var(--sage);
   --color-navy: var(--navy);
+  --color-steel: var(--steel);
   --color-tan: var(--tan);
   --color-tan2: var(--tan2);
   --color-expense: var(--expense);
@@ -76,26 +78,27 @@
 :root {
   --radius: 14px;
 
-  /* Brand palette v2 — nova paleta De Meo (jun 2026) */
-  --linen:   #E0E4D6;   /* Areia Fria — section backgrounds */
-  --linen2:  #FDF9F4;   /* mantido — near-white de card */
-  --green:   #284C2B;   /* Verde Floresta — primary brand */
-  --green2:  #1E3B21;   /* Verde Floresta escuro — hover / gradient */
-  --sage:    #99A989;   /* Sálvia Média — charts, tags, ícones */
-  --navy:    #1C2D45;   /* Azul Noite — sidebar, headers, dados */
-  --tan:     #B8956A;   /* mantido — alertas, pendências, âmbar */
-  --tan2:    #D4B896;   /* mantido — bordas cálidas, biscoito */
-  --expense: #C0392B;   /* vermelho despesas — saídas, valores negativos */
-  --line:    #E8DFD2;   /* mantido — linha divisora cálida */
-  --line-soft: rgba(40,76,43,0.08);
+  /* Brand palette — De Meo / Aurora */
+  --offwhite:#FAFBFA;   /* superfícies internas — nunca bege */
+  --surface: #E0E4D6;   /* superfície fria da marca (landing / bands) */
+  --linen:   #FAFBFA;   /* alias legado → off-white */
+  --linen2:  #FFFFFF;   /* cards / painéis */
+  --green:   #284C2B;   /* Verde Floresta — primary */
+  --green2:  #1E3B21;   /* Verde Floresta escuro */
+  --sage:    #99A989;   /* Sálvia — charts, tags */
+  --navy:    #1C2D45;   /* Azul Noite — sidebar / texto */
+  --steel:   #6D92A6;   /* Azul intermediário — forms, links, alertas */
+  --tan:     #6D92A6;   /* alias legado → steel (sem âmbar/bege) */
+  --tan2:    #99A989;   /* alias legado → sage */
+  --expense: #C0392B;   /* saídas / negativos */
+  --line:    #E5E8E2;   /* divisores frios */
+  --line-soft: rgba(28,45,69,0.08);
 
-  /* ==== Aurora v3 — alinhado à nova paleta De Meo ==== */
-  --ink:     #1C2D45;   /* = --navy */
-  --steel:   #6D92A6;   /* Azul Ardósia: links, charts, interações */
+  --ink:     #1C2D45;
   --mist:    #FFFFFF;
-  --sage-v3: #99A989;   /* = --sage */
-  --forest:  #284C2B;   /* = --green */
-  --cream:   #FFFFFF;
+  --sage-v3: #99A989;
+  --forest:  #284C2B;
+  --cream:   #FAFBFA;   /* alias → off-white */
   --ink-2:   rgba(28,45,69,0.08);
   --ink-6:   rgba(28,45,69,0.6);
 
@@ -114,22 +117,22 @@
   --popover-foreground: #1C1C19;
   --primary: #284C2B;
   --primary-foreground: #FFFFFF;
-  --secondary: #F4F6F2;
-  --secondary-foreground: #1C1C19;
-  --muted: #F4F6F2;
-  --muted-foreground: #7A7260;
-  --accent: #F4F6F2;
-  --accent-foreground: #1C1C19;
+  --secondary: #FAFBFA;
+  --secondary-foreground: #1C2D45;
+  --muted: #FAFBFA;
+  --muted-foreground: #5C6B78;
+  --accent: #E0E4D6;
+  --accent-foreground: #1C2D45;
   --destructive: #C0392B;
   --destructive-foreground: #FFFFFF;
-  --border: #E5E7E2;
-  --input: #E5E7E2;
+  --border: #E5E8E2;
+  --input: #E5E8E2;
   --ring: #284C2B;
   --chart-1: #284C2B;
   --chart-2: #99A989;
   --chart-3: #1C2D45;
-  --chart-4: #B8956A;
-  --chart-5: #D4B896;
+  --chart-4: #6D92A6;
+  --chart-5: #E0E4D6;
   --sidebar: #1C2D45;
   --sidebar-foreground: #FFFFFF;
   --sidebar-primary: #99A989;
@@ -242,9 +245,9 @@
     border-radius: 999px;
   }
   .aurora-badge--ok   { background: rgba(40,76,43,0.12); color: var(--green); }
-  .aurora-badge--pnd  { background: rgba(184,149,106,0.15); color: var(--tan); }
+  .aurora-badge--pnd  { background: rgba(109,146,166,0.16); color: var(--steel); }
   .aurora-badge--prog { background: rgba(28,45,69,0.10); color: var(--navy); }
-  .aurora-badge--mute { background: rgba(122,114,96,0.10); color: var(--muted-foreground); }
+  .aurora-badge--mute { background: rgba(92,107,120,0.10); color: var(--muted-foreground); }
 
   .aurora-link {
     font-size: 11px;
@@ -366,8 +369,9 @@
   }
   .aurora-blob--sage  { background: radial-gradient(circle, rgba(153,169,137,0.55), transparent 60%); }
   .aurora-blob--green { background: radial-gradient(circle, rgba(40,76,43,0.45), transparent 60%); }
-  .aurora-blob--tan   { background: radial-gradient(circle, rgba(212,184,150,0.5),  transparent 60%); }
-  .aurora-blob--linen { background: radial-gradient(circle, rgba(247,241,232,0.9),  transparent 65%); }
+  .aurora-blob--tan   { background: radial-gradient(circle, rgba(109,146,166,0.45), transparent 60%); }
+  .aurora-blob--steel { background: radial-gradient(circle, rgba(109,146,166,0.45), transparent 60%); }
+  .aurora-blob--linen { background: radial-gradient(circle, rgba(224,228,214,0.85), transparent 65%); }
 
   /* Grão de papel sutil — adiciona textura quente sem peso */
   .aurora-grain::after {
@@ -392,7 +396,7 @@
     inset: -40px;
     background:
       radial-gradient(60% 50% at 50% 50%, rgba(153,169,137,0.35), transparent 70%),
-      radial-gradient(40% 40% at 30% 30%, rgba(212,184,150,0.25), transparent 70%);
+      radial-gradient(40% 40% at 30% 30%, rgba(109,146,166,0.28), transparent 70%);
     z-index: -1;
     pointer-events: none;
     filter: blur(20px);

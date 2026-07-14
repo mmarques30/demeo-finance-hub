@@ -234,7 +234,7 @@ function PortalPage() {
     <div className="min-h-screen" style={{ background: "var(--linen)" }}>
       <header
         className="sticky top-0 z-40 flex items-center justify-between px-8 lg:px-14 py-5"
-        style={{ background: "rgba(247,241,232,0.92)", backdropFilter: "blur(14px)", borderBottom: "1px solid var(--line)" }}
+        style={{ background: "rgba(250,251,250,0.92)", backdropFilter: "blur(14px)", borderBottom: "1px solid var(--line)" }}
       >
         <span className="inline-flex items-center gap-2.5" style={{ color: "var(--green)" }}>
           <LogoMark size={22} />

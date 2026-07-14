@@ -280,7 +280,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 style={{
                   border: "1px solid #EFEFEF",
                   borderRadius: 999,
-                  background: userOpen ? "#F7F7F4" : "transparent",
+                  background: userOpen ? "#FAFBFA" : "transparent",
                 }}
               >
                 <div className="hidden md:block text-right">
@@ -331,7 +331,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                   }}
                 >
                   <style>{`@keyframes aurora-pop { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }`}</style>
-                  <div className="px-4 py-3.5" style={{ borderBottom: "1px solid #F4F4F2" }}>
+                  <div className="px-4 py-3.5" style={{ borderBottom: "1px solid #EEEFEA" }}>
                     <div className="aurora-cap mb-0.5" style={{ color: "var(--sage)" }}>
                       Conta
                     </div>
@@ -348,7 +348,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                     to="/login"
                     onClick={() => setUserOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 text-[12px] transition-colors"
-                    style={{ borderTop: "1px solid #F4F4F2", color: "var(--tan)" }}
+                    style={{ borderTop: "1px solid #EEEFEA", color: "var(--tan)" }}
                   >
                     <span style={{ fontSize: 14 }}>↪</span>
                     Sair
@@ -571,7 +571,7 @@ function ProfileModal({
                 onPointerUp={onPointerUp}
                 onPointerCancel={onPointerUp}
                 className="relative rounded-full overflow-hidden shrink-0"
-                style={{ width: CROP_BOX, height: CROP_BOX, cursor: "grab", touchAction: "none", border: "1px solid var(--line)", background: "#F7F7F4" }}
+                style={{ width: CROP_BOX, height: CROP_BOX, cursor: "grab", touchAction: "none", border: "1px solid var(--line)", background: "#FAFBFA" }}
               >
                 <img
                   ref={imgElRef}
@@ -607,7 +607,7 @@ function ProfileModal({
                 </button>
                 <button type="button" onClick={removePhoto}
                   className="text-[10px] uppercase px-4 py-2 transition-opacity"
-                  style={{ border: "1px solid rgba(184,149,106,0.4)", color: "var(--tan)", letterSpacing: "2px", fontWeight: 500 }}>
+                  style={{ border: "1px solid rgba(109,146,166,0.4)", color: "var(--tan)", letterSpacing: "2px", fontWeight: 500 }}>
                   Remover foto
                 </button>
               </div>
@@ -635,7 +635,7 @@ function ProfileModal({
                       type="button"
                       onClick={removePhoto}
                       className="text-[10px] uppercase px-4 py-2.5 transition-opacity self-start"
-                      style={{ border: "1px solid rgba(184,149,106,0.4)", color: "var(--tan)", letterSpacing: "2px", fontWeight: 500 }}
+                      style={{ border: "1px solid rgba(109,146,166,0.4)", color: "var(--tan)", letterSpacing: "2px", fontWeight: 500 }}
                     >
                       Remover foto
                     </button>
@@ -663,16 +663,16 @@ function ProfileModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="aurora-cap mb-2">E-mail</div>
-              <div className="text-[13px] px-3 py-2.5" style={{ background: "#F7F7F4", color: "var(--muted-foreground)" }}>{email || "—"}</div>
+              <div className="text-[13px] px-3 py-2.5" style={{ background: "#FAFBFA", color: "var(--muted-foreground)" }}>{email || "—"}</div>
             </div>
             <div>
               <div className="aurora-cap mb-2">Cargo</div>
-              <div className="text-[13px] px-3 py-2.5" style={{ background: "#F7F7F4", color: "var(--muted-foreground)" }}>{role}</div>
+              <div className="text-[13px] px-3 py-2.5" style={{ background: "#FAFBFA", color: "var(--muted-foreground)" }}>{role}</div>
             </div>
           </div>
 
           {err && (
-            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
+            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
               {err}
             </div>
           )}
@@ -946,12 +946,12 @@ function SidebarContent({
                         <span
                           className="text-[9px] px-2 py-0.5"
                           style={{
-                            background: "linear-gradient(135deg, var(--tan), #9F7E59)",
+                            background: "linear-gradient(135deg, var(--tan), #4A6B55)",
                             color: "#fff",
                             letterSpacing: "0.5px",
                             fontWeight: 600,
                             borderRadius: 999,
-                            boxShadow: "0 2px 6px -2px rgba(184,149,106,0.55)",
+                            boxShadow: "0 2px 6px -2px rgba(109,146,166,0.55)",
                             lineHeight: 1.4,
                           }}
                         >
@@ -1079,13 +1079,13 @@ const MODULE_MAP: Record<string, ModuleIdentity> = {
   "/admin/clientes/": { icon: "◷", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Visão" },
   "/admin/dfc": { icon: "◈", accent: "var(--navy)", accentSoft: "rgba(28,45,69,0.10)", group: "Visão" },
   "/admin/relatorios": { icon: "≡", accent: "var(--navy)", accentSoft: "rgba(28,45,69,0.10)", group: "Visão" },
-  "/admin/importar": { icon: "↓", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Operação" },
-  "/admin/pendentes": { icon: "⊙", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Operação" },
+  "/admin/importar": { icon: "↓", accent: "var(--tan)", accentSoft: "rgba(109,146,166,0.14)", group: "Operação" },
+  "/admin/pendentes": { icon: "⊙", accent: "var(--tan)", accentSoft: "rgba(109,146,166,0.14)", group: "Operação" },
   "/admin/pipeline": { icon: "⋯", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
   "/admin/propostas": { icon: "✎", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
   "/admin/contratos": { icon: "❍", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
-  "/admin/servicos": { icon: "◇", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Comercial" },
-  "/admin/insights/precificacao": { icon: "↗", accent: "var(--tan)", accentSoft: "rgba(184,149,106,0.14)", group: "Comercial" },
+  "/admin/servicos": { icon: "◇", accent: "var(--tan)", accentSoft: "rgba(109,146,166,0.14)", group: "Comercial" },
+  "/admin/insights/precificacao": { icon: "↗", accent: "var(--tan)", accentSoft: "rgba(109,146,166,0.14)", group: "Comercial" },
   "/admin/categorias": { icon: "⊞", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
   "/admin/plano-contas": { icon: "☰", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
   "/admin/regras": { icon: "⊟", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },

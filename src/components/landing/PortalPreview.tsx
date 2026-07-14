@@ -139,7 +139,7 @@ export function PortalPreview() {
                 <span
                   className="text-[8px] px-1.5 py-0.5 rounded-full"
                   style={{
-                    background: "rgba(184,149,106,0.12)",
+                    background: "rgba(109,146,166,0.12)",
                     color: "var(--tan)",
                     letterSpacing: "0.5px",
                     fontWeight: 500,

@@ -191,7 +191,7 @@ function CategoriasPage() {
         {error && (
           <div
             className="text-[12px] px-4 py-3"
-            style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}
+            style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}
           >
             {error}
           </div>
@@ -357,7 +357,7 @@ function CategoriasPage() {
                                   <button
                                     onClick={() => deleteCategory(cat.id)}
                                     className="text-[10px] uppercase px-3 py-1"
-                                    style={{ border: "1px solid rgba(184,149,106,0.4)", color: "var(--tan)", letterSpacing: "1.5px" }}
+                                    style={{ border: "1px solid rgba(109,146,166,0.4)", color: "var(--tan)", letterSpacing: "1.5px" }}
                                   >
                                     Excluir
                                   </button>

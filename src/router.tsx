@@ -90,7 +90,7 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
   return (
     <div
       className="flex min-h-screen items-center justify-center px-6"
-      style={{ background: "var(--linen, #F7F1E8)" }}
+      style={{ background: "var(--linen, #FAFBFA)" }}
     >
       <div className="max-w-[460px] w-full text-center">
         <div className="flex justify-center mb-7" style={{ color: "var(--green, #4A6741)" }}>
@@ -125,7 +125,7 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
               className="mt-5"
               style={{
                 fontSize: 14,
-                color: "var(--muted-foreground, #7A7260)",
+                color: "var(--muted-foreground, #5C6B78)",
                 lineHeight: 1.7,
               }}
             >
@@ -173,7 +173,7 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
           <>
             <div
               className="text-[10px] uppercase mb-3"
-              style={{ letterSpacing: "3px", color: "var(--tan, #B8956A)", fontWeight: 600 }}
+              style={{ letterSpacing: "3px", color: "var(--tan, #6D92A6)", fontWeight: 600 }}
             >
               Algo deu errado
             </div>
@@ -197,7 +197,7 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
               className="mt-5"
               style={{
                 fontSize: 14,
-                color: "var(--muted-foreground, #7A7260)",
+                color: "var(--muted-foreground, #5C6B78)",
                 lineHeight: 1.7,
               }}
             >

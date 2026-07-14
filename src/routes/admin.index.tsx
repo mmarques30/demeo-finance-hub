@@ -407,7 +407,7 @@ function AdminDashboard() {
                           fontWeight: 600,
                           padding: "3px 10px",
                           borderRadius: 999,
-                          background: a.completed ? "rgba(74,103,65,0.10)" : "rgba(184,149,106,0.12)",
+                          background: a.completed ? "rgba(74,103,65,0.10)" : "rgba(109,146,166,0.12)",
                           color: a.completed ? "var(--green)" : "var(--tan)",
                         }}
                       >
@@ -613,7 +613,7 @@ function AdminDashboard() {
           {carteiraExpanded && (
             <table className="w-full">
               <thead>
-                <tr style={{ background: "#FAFAF8" }}>
+                <tr style={{ background: "#FAFBFA" }}>
                   {["Cliente", "Bancos", "Saldo de Caixa", "Pendentes", "Fechamento", "Saúde", "Status"].map((h) => (
                     <th key={h} className="text-left px-7 lg:px-9 py-4 text-[11px] uppercase" style={{ fontWeight: 600, letterSpacing: "2px", color: "var(--muted-foreground)" }}>
                       {h}
@@ -645,7 +645,7 @@ function AdminDashboard() {
                     </td>
                     <td className="px-7 lg:px-9 py-5">
                       {c.pendentes > 0 ? (
-                        <Link to={"/admin/pendentes" as never} className="text-[11px] uppercase px-3 py-1" style={{ background: "rgba(184,149,106,0.12)", color: "var(--tan)", letterSpacing: "1.5px", fontWeight: 600 }}>
+                        <Link to={"/admin/pendentes" as never} className="text-[11px] uppercase px-3 py-1" style={{ background: "rgba(109,146,166,0.12)", color: "var(--tan)", letterSpacing: "1.5px", fontWeight: 600 }}>
                           {c.pendentes} pendente{c.pendentes !== 1 ? "s" : ""}
                         </Link>
                       ) : (
@@ -676,7 +676,7 @@ function KpiCard({ icon, label, value, sub, tone, footer }: {
   icon: string; label: string; value: string; sub: string; tone: "sage" | "tan" | "navy"; footer?: string;
 }) {
   const color = tone === "sage" ? "var(--green)" : tone === "tan" ? "var(--tan)" : "var(--navy)";
-  const bg = tone === "sage" ? "rgba(143,166,136,0.10)" : tone === "tan" ? "rgba(184,149,106,0.12)" : "rgba(27,57,77,0.10)";
+  const bg = tone === "sage" ? "rgba(143,166,136,0.10)" : tone === "tan" ? "rgba(109,146,166,0.12)" : "rgba(27,57,77,0.10)";
   return (
     <article
       className="p-7 flex flex-col gap-4"
@@ -784,7 +784,7 @@ export function ClosingBadge({ closing, isClosed, onClose }: {
   }
   if (closing.tx_pending > 0) {
     return (
-      <Link to={"/admin/pendentes" as never} className="inline-flex items-center gap-1.5 text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: "rgba(184,149,106,0.12)", color: "var(--tan)", padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>
+      <Link to={"/admin/pendentes" as never} className="inline-flex items-center gap-1.5 text-[10px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: "rgba(109,146,166,0.12)", color: "var(--tan)", padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>
         <span style={{ width: 5, height: 5, borderRadius: 999, background: "var(--tan)" }} />
         {closing.tx_pending} pendente{closing.tx_pending !== 1 ? "s" : ""}
       </Link>
@@ -815,7 +815,7 @@ function HealthBadge({ health, margem, segment }: { health: HealthLevel; margem:
   }
   const config = {
     saudavel: { label: "Saudável", bg: "rgba(74,103,65,0.10)",    color: "var(--green)" },
-    atencao:  { label: "Atenção",  bg: "rgba(184,149,106,0.12)", color: "var(--tan)"   },
+    atencao:  { label: "Atenção",  bg: "rgba(109,146,166,0.12)", color: "var(--tan)"   },
     critico:  { label: "Crítico",  bg: "rgba(192,57,43,0.10)",   color: "#C0392B"      },
   }[health];
   const bench = SEGMENT_BENCHMARKS[segment ?? ""] ?? SEGMENT_BENCHMARKS["default"];
@@ -834,7 +834,7 @@ function HealthBadge({ health, margem, segment }: { health: HealthLevel; margem:
 export function StatusBadge({ status }: { status: string }) {
   const cfg =
     status === "Fechado"    ? { bg: "rgba(40,76,43,0.12)",    color: "#284C2B" }
-    : status === "Pendente" ? { bg: "rgba(184,149,106,0.15)", color: "#8C6A40" }
+    : status === "Pendente" ? { bg: "rgba(109,146,166,0.15)", color: "#8C6A40" }
     : /* Em andamento */      { bg: "rgba(28,45,69,0.12)",    color: "#1C2D45" };
   return (
     <span className="inline-flex items-center text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 600, background: cfg.bg, color: cfg.color, padding: "4px 12px", borderRadius: "999px", whiteSpace: "nowrap" }}>

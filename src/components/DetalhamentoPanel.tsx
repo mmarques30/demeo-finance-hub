@@ -144,7 +144,7 @@ export function DetalhamentoPanel({ clientId, startDate, endDate }: Props) {
                   return (
                     <tr
                       key={r.id}
-                      style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}
+                      style={{ background: i % 2 === 0 ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}
                     >
                       <td className="px-5 py-2.5 text-[12px]">
                         {new Date(r.entry_date + "T12:00:00").toLocaleDateString("pt-BR")}
@@ -237,7 +237,7 @@ export function DetalhamentoPanel({ clientId, startDate, endDate }: Props) {
                 {filteredTxs.map((t, i) => (
                   <tr
                     key={t.id}
-                    style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}
+                    style={{ background: i % 2 === 0 ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}
                   >
                     <td className="px-5 py-2.5 text-[12px]">
                       {new Date(t.date + "T12:00:00").toLocaleDateString("pt-BR")}

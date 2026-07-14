@@ -17,6 +17,21 @@ export function HeroPC() {
       className="relative"
       style={{ minHeight: "100vh", paddingTop: 96 }}
     >
+      {/* Faixa de personalidade — surface #E0E4D6 sob o form */}
+      <div
+        aria-hidden
+        className="absolute pointer-events-none hidden lg:block"
+        style={{
+          top: "12%",
+          right: 0,
+          width: "42%",
+          bottom: "8%",
+          background:
+            "linear-gradient(135deg, rgba(224,228,214,0.55) 0%, rgba(109,146,166,0.18) 55%, transparent 100%)",
+          borderRadius: "48px 0 0 48px",
+          zIndex: 0,
+        }}
+      />
       {/* Dobra de transição abaixo do nav flutuante */}
       <div
         aria-hidden
@@ -105,7 +120,7 @@ export function HeroPC() {
               style={{ fontSize: 14, color: "rgba(28,45,69,0.7)" }}
             >
               <div className="flex -space-x-2">
-                {[FOREST, STEEL, SAGE, "#B8956A"].map((c, i) => (
+                {[FOREST, STEEL, SAGE, INK].map((c, i) => (
                   <span
                     key={i}
                     style={{
@@ -113,7 +128,7 @@ export function HeroPC() {
                       height: 30,
                       borderRadius: 999,
                       background: c,
-                      border: "3px solid #FFF",
+                      border: "3px solid #FAFBFA",
                       boxShadow: "0 3px 8px rgba(28,45,69,0.18)",
                     }}
                     aria-hidden

@@ -16,8 +16,8 @@ export function GreenRefraction({ className }: { className?: string }) {
             <stop offset="100%" stopColor="#4A6741" stopOpacity="0.45" />
           </linearGradient>
           <linearGradient id="aurora-refr-3" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#D4B896" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#B8956A" stopOpacity="0.25" />
+            <stop offset="0%" stopColor="#99A989" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#6D92A6" stopOpacity="0.25" />
           </linearGradient>
           <filter id="aurora-refr-blur">
             <feGaussianBlur stdDeviation="14" />

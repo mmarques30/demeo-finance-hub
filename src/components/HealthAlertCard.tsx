@@ -28,7 +28,7 @@ export function HealthAlertCard({
     },
     atencao: {
       borderColor: "var(--tan)",
-      bg: "rgba(184,149,106,0.06)",
+      bg: "rgba(109,146,166,0.06)",
       color: "var(--tan)",
       icon: "◎",
       label: "Saúde Financeira · Atenção",
@@ -46,7 +46,7 @@ export function HealthAlertCard({
     },
     sem_dados: {
       borderColor: "var(--line)",
-      bg: "#FAFAF8",
+      bg: "#FAFBFA",
       color: "var(--muted-foreground)",
       icon: "◌",
       label: "Saúde Financeira · Sem dados",

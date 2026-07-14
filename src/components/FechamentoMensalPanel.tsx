@@ -867,7 +867,7 @@ function DFCRow({
   const color = tone === "green" ? "var(--green)" : tone === "expense" ? "var(--expense)" : "var(--navy)";
   const isExpense = tone === "expense";
   return (
-    <tr style={{ borderTop: "1px solid var(--line)", background: subtotal ? "#FAFAF8" : "#fff" }}>
+    <tr style={{ borderTop: "1px solid var(--line)", background: subtotal ? "#FAFBFA" : "#fff" }}>
       <td className="px-6 py-2.5 text-[12px]" style={{ fontWeight: bold ? 700 : 400 }}>{label}</td>
       <td className="px-6 py-2.5 text-right aurora-value" style={{ fontSize: bold ? 14 : 13, fontWeight: bold ? 700 : 400, color }}>
         {isExpense && value > 0 ? `(${brl(value)})` : value < 0 ? `(${brl(Math.abs(value))})` : brl(value)}

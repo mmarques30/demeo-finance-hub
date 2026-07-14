@@ -97,7 +97,7 @@ export function DFCPreview() {
                   className="flex-1 rounded-t"
                   style={{
                     height: `${(s.d / max) * 100}%`,
-                    background: "linear-gradient(180deg, var(--tan), #9F7E59)",
+                    background: "linear-gradient(180deg, var(--tan), #4A6B55)",
                     opacity: 0.85,
                   }}
                 />
@@ -139,7 +139,7 @@ export function DFCPreview() {
                 <tr
                   key={row.cat}
                   style={{
-                    background: i % 2 === 0 ? "#fff" : "#FAFAF8",
+                    background: i % 2 === 0 ? "#fff" : "#FAFBFA",
                     borderTop: "1px solid rgba(74,103,65,0.04)",
                   }}
                 >

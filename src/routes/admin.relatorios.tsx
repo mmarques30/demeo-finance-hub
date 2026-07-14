@@ -177,10 +177,10 @@ function openPrintReport(
   const level = computeHealthLevel(d.receitas, d.despesas, segment);
   const bench = SEGMENT_BENCHMARKS[segment ?? ""] ?? SEGMENT_BENCHMARKS["default"];
   const HEALTH = {
-    saudavel: { color: "#8FA688", label: "Saudável" },
-    atencao: { color: "#B8956A", label: "Atenção" },
-    critico: { color: "#A15C4A", label: "Crítico" },
-    sem_dados: { color: "#8C8676", label: "Sem dados" },
+    saudavel: { color: "#99A989", label: "Saudável" },
+    atencao: { color: "#6D92A6", label: "Atenção" },
+    critico: { color: "#C0392B", label: "Crítico" },
+    sem_dados: { color: "#5C6B78", label: "Sem dados" },
   } as const;
   const h = HEALTH[level];
   const gaugeMax = Math.max(bench.healthy * 1.4, 1);
@@ -195,11 +195,11 @@ function openPrintReport(
   const dDes = cur && prev ? pctDelta(cur.sai, prev.sai) : null;
   const dRes = cur && prev ? pctDelta(cur.ent - cur.sai, prev.ent - prev.sai) : null;
   const deltaHtml = (dv: number | null, goodWhenUp = true): string => {
-    if (dv === null || !isFinite(dv)) return `<div class="delta" style="color:#8C8676">—</div>`;
+    if (dv === null || !isFinite(dv)) return `<div class="delta" style="color:#5C6B78">—</div>`;
     const good = goodWhenUp ? dv > 0 : dv < 0;
     const arrow = dv > 0 ? "▲" : dv < 0 ? "▼" : "—";
-    const col = dv === 0 ? "#8C8676" : good ? "#4A6741" : "#A15C4A";
-    return `<div class="delta" style="color:${col}">${arrow} ${Math.abs(dv).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% <span style="color:#8C8676">vs mês ant.</span></div>`;
+    const col = dv === 0 ? "#5C6B78" : good ? "#284C2B" : "#C0392B";
+    return `<div class="delta" style="color:${col}">${arrow} ${Math.abs(dv).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% <span style="color:#5C6B78">vs mês ant.</span></div>`;
   };
 
   // ── composição de despesas ──
@@ -221,23 +221,23 @@ function openPrintReport(
     let grid = "", bars = "";
     for (let g = 0; g <= 4; g++) {
       const gv = (yMax / 4) * g, gy = y(gv);
-      grid += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="#EFE9DC" stroke-width="1"/>`;
+      grid += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="#E5E8E2" stroke-width="1"/>`;
       grid += `<text x="${padL}" y="${gy - 4}" font-size="8.5" fill="#B7B0A0">${brlK(gv)}</text>`;
     }
     const pts: [number, number, number][] = [];
     monthly.forEach((m, i) => {
       const cx = padL + gW * i + gW / 2;
       const ye = y(m.ent), ys = y(m.sai);
-      bars += `<rect x="${cx - barW - gap / 2}" y="${ye}" width="${barW}" height="${Math.max(0, base - ye)}" rx="4" fill="#4A6741"/>`;
-      bars += `<rect x="${cx + gap / 2}" y="${ys}" width="${barW}" height="${Math.max(0, base - ys)}" rx="4" fill="#B8956A"/>`;
-      bars += `<text x="${cx}" y="${H - padB + 15}" font-size="9.5" fill="#8C8676" text-anchor="middle">${m.label}</text>`;
+      bars += `<rect x="${cx - barW - gap / 2}" y="${ye}" width="${barW}" height="${Math.max(0, base - ye)}" rx="4" fill="#284C2B"/>`;
+      bars += `<rect x="${cx + gap / 2}" y="${ys}" width="${barW}" height="${Math.max(0, base - ys)}" rx="4" fill="#6D92A6"/>`;
+      bars += `<text x="${cx}" y="${H - padB + 15}" font-size="9.5" fill="#5C6B78" text-anchor="middle">${m.label}</text>`;
       pts.push([cx, y(m.ent - m.sai), m.ent - m.sai]);
     });
-    const line = `<polyline points="${pts.map((p) => p[0] + "," + p[1]).join(" ")}" fill="none" stroke="#1B394D" stroke-width="2" stroke-linejoin="round"/>`;
+    const line = `<polyline points="${pts.map((p) => p[0] + "," + p[1]).join(" ")}" fill="none" stroke="#1C2D45" stroke-width="2" stroke-linejoin="round"/>`;
     let dots = "";
     pts.forEach((p, i) => {
-      dots += `<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="#fff" stroke="#1B394D" stroke-width="2"/>`;
-      if (i === pts.length - 1) dots += `<text x="${p[0]}" y="${p[1] - 8}" font-size="10" font-weight="600" fill="#1B394D" text-anchor="middle">${brl(p[2])}</text>`;
+      dots += `<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="#fff" stroke="#1C2D45" stroke-width="2"/>`;
+      if (i === pts.length - 1) dots += `<text x="${p[0]}" y="${p[1] - 8}" font-size="10" font-weight="600" fill="#1C2D45" text-anchor="middle">${brl(p[2])}</text>`;
     });
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Entradas, saídas e resultado nos últimos meses">${grid}${bars}${line}${dots}</svg>`;
   })();
@@ -247,11 +247,11 @@ function openPrintReport(
     const r = 50, cx = 66, cy = 66, sw = 19, circ = 2 * Math.PI * r;
     const fLen = (d.fixos / compTotal) * circ, vLen = (d.variaveis / compTotal) * circ;
     return `<svg viewBox="0 0 132 132" width="132" height="132" role="img" aria-label="Composição das despesas">
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#EFE9DC" stroke-width="${sw}"/>
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1B394D" stroke-width="${sw}" stroke-dasharray="${fLen} ${circ - fLen}" transform="rotate(-90 ${cx} ${cy})"/>
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#B8956A" stroke-width="${sw}" stroke-dasharray="${vLen} ${circ - vLen}" stroke-dashoffset="${-fLen}" transform="rotate(-90 ${cx} ${cy})"/>
-      <text x="${cx}" y="${cy - 3}" font-size="8" fill="#8C8676" text-anchor="middle" letter-spacing="1">DESPESAS</text>
-      <text x="${cx}" y="${cy + 13}" font-size="14" fill="#1B394D" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif">${brl(compTotal)}</text>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#E5E8E2" stroke-width="${sw}"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1C2D45" stroke-width="${sw}" stroke-dasharray="${fLen} ${circ - fLen}" transform="rotate(-90 ${cx} ${cy})"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#6D92A6" stroke-width="${sw}" stroke-dasharray="${vLen} ${circ - vLen}" stroke-dashoffset="${-fLen}" transform="rotate(-90 ${cx} ${cy})"/>
+      <text x="${cx}" y="${cy - 3}" font-size="8" fill="#5C6B78" text-anchor="middle" letter-spacing="1">DESPESAS</text>
+      <text x="${cx}" y="${cy + 13}" font-size="14" fill="#1C2D45" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif">${brl(compTotal)}</text>
     </svg>`;
   })();
 
@@ -259,7 +259,7 @@ function openPrintReport(
     const r = p.rec - p.des;
     return `<div class="proj">
       <div class="proj-m">${p.mes}</div>
-      <div class="proj-r" style="color:${r >= 0 ? "#4A6741" : "#A15C4A"}">${brl(r)}</div>
+      <div class="proj-r" style="color:${r >= 0 ? "#284C2B" : "#C0392B"}">${brl(r)}</div>
       <div class="proj-sub">+${brl(p.rec)} · −${brl(p.des)}</div>
     </div>`;
   }).join("");
@@ -272,7 +272,7 @@ function openPrintReport(
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{--verde:#4A6741;--prussian:#1B394D;--salvia:#8FA688;--ambar:#B8956A;--biscoito:#D4B896;--linho:#F7F1E8;--ink:#1B394D;--muted:#8C8676;--line:#E8E1D3;--clay:#A15C4A;
+  :root{--verde:#284C2B;--prussian:#1C2D45;--salvia:#99A989;--ambar:#6D92A6;--biscoito:#99A989;--linho:#FAFBFA;--ink:#1C2D45;--muted:#5C6B78;--line:#E5E8E2;--clay:#C0392B;
     --serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost',system-ui,Helvetica,Arial,sans-serif}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:var(--sans);color:var(--ink);background:#fff;padding:12mm 12mm 8mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -333,9 +333,9 @@ function openPrintReport(
   <div class="head">
     <div class="brand">
       <svg width="40" height="44" viewBox="0 0 46 66" aria-hidden="true">
-        <rect x="0" y="26" width="12" height="40" rx="6" fill="#4A6741"/>
-        <rect x="17" y="14" width="12" height="52" rx="6" fill="#4A6741" opacity=".65"/>
-        <rect x="34" y="4" width="12" height="62" rx="6" fill="#4A6741" opacity=".38"/>
+        <rect x="0" y="26" width="12" height="40" rx="6" fill="#284C2B"/>
+        <rect x="17" y="14" width="12" height="52" rx="6" fill="#284C2B" opacity=".65"/>
+        <rect x="34" y="4" width="12" height="62" rx="6" fill="#284C2B" opacity=".38"/>
       </svg>
       <div class="wm"><div class="n">Aurora</div><div class="s">GESTÃO FINANCEIRA</div></div>
     </div>
@@ -347,10 +347,10 @@ function openPrintReport(
   </div>
 
   <div class="kpis">
-    <div class="kpi"><div class="lbl">Receitas</div><div class="val" style="color:#4A6741">${brl(d.receitas)}</div>${deltaHtml(dRec)}</div>
-    <div class="kpi"><div class="lbl">Despesas</div><div class="val" style="color:#B8956A">${brl(d.despesas)}</div>${deltaHtml(dDes, false)}</div>
-    <div class="kpi"><div class="lbl">Resultado</div><div class="val" style="color:${d.resultado >= 0 ? "#1B394D" : "#A15C4A"}">${brl(d.resultado)}</div>${deltaHtml(dRes)}</div>
-    <div class="kpi"><div class="lbl">Margem</div><div class="val" style="color:#1B394D">${margem.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</div><div class="delta" style="color:${h.color}">meta setor: ${bench.healthy}%</div></div>
+    <div class="kpi"><div class="lbl">Receitas</div><div class="val" style="color:#284C2B">${brl(d.receitas)}</div>${deltaHtml(dRec)}</div>
+    <div class="kpi"><div class="lbl">Despesas</div><div class="val" style="color:#6D92A6">${brl(d.despesas)}</div>${deltaHtml(dDes, false)}</div>
+    <div class="kpi"><div class="lbl">Resultado</div><div class="val" style="color:${d.resultado >= 0 ? "#1C2D45" : "#C0392B"}">${brl(d.resultado)}</div>${deltaHtml(dRes)}</div>
+    <div class="kpi"><div class="lbl">Margem</div><div class="val" style="color:#1C2D45">${margem.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</div><div class="delta" style="color:${h.color}">meta setor: ${bench.healthy}%</div></div>
   </div>
 
   <div class="health">
@@ -367,9 +367,9 @@ function openPrintReport(
     <div class="sec-head">
       <div class="sec-title">Entradas × Saídas — últimos meses</div>
       <div class="legend">
-        <span class="li"><span class="sw" style="background:#4A6741"></span>Entradas</span>
-        <span class="li"><span class="sw" style="background:#B8956A"></span>Saídas</span>
-        <span class="li"><span class="sw" style="background:#1B394D;border-radius:50%"></span>Resultado</span>
+        <span class="li"><span class="sw" style="background:#284C2B"></span>Entradas</span>
+        <span class="li"><span class="sw" style="background:#6D92A6"></span>Saídas</span>
+        <span class="li"><span class="sw" style="background:#1C2D45;border-radius:50%"></span>Resultado</span>
       </div>
     </div>
     <div class="panel" style="padding:10px 12px 4px">${barChart}</div>
@@ -381,8 +381,8 @@ function openPrintReport(
       <div class="panel donut-wrap">
         ${donut}
         <div class="dl">
-          <div class="row"><span class="k"><span class="sw" style="background:#1B394D"></span>Fixas</span><span class="v"><b>${brl(d.fixos)}</b> · ${fixosPct}%</span></div>
-          <div class="row"><span class="k"><span class="sw" style="background:#B8956A"></span>Variáveis</span><span class="v"><b>${brl(d.variaveis)}</b> · ${varPct}%</span></div>
+          <div class="row"><span class="k"><span class="sw" style="background:#1C2D45"></span>Fixas</span><span class="v"><b>${brl(d.fixos)}</b> · ${fixosPct}%</span></div>
+          <div class="row"><span class="k"><span class="sw" style="background:#6D92A6"></span>Variáveis</span><span class="v"><b>${brl(d.variaveis)}</b> · ${varPct}%</span></div>
           <div class="row" style="border-top:1px solid var(--line);padding-top:8px"><span class="k" style="color:var(--ink)">Total</span><span class="v"><b>${brl(compTotal)}</b></span></div>
         </div>
       </div>
@@ -855,7 +855,7 @@ function RelatoriosPage() {
                   const hasData = !!c.last_upload_at;
                   const isExp = exporting[c.id];
                   return (
-                    <tr key={c.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                    <tr key={c.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}>
                       <td className="px-6 py-4 text-[13px]" style={{ fontWeight: 500 }}>{c.name}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -944,7 +944,7 @@ function RelatoriosPage() {
                   <tr><td colSpan={6} className="px-6 py-10 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Nenhum relatório exportado ainda.</td></tr>
                 )}
                 {!histLoading && filteredHistory.map((r, i) => (
-                  <tr key={r.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                  <tr key={r.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}>
                     <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 500 }}>{r.client_name}</td>
                     <td className="px-6 py-3 text-[12px]">{r.period_label}</td>
                     <td className="px-6 py-3">
