@@ -895,7 +895,7 @@ function ImportarPage() {
                 {/* Tipo + Valor */}
                 <label className="block lg:col-span-1">
                   <div className="aurora-cap mb-2">Tipo</div>
-                  <div className="grid grid-cols-2" style={{ border: "1px solid var(--line)" }}>
+                  <div className="grid grid-cols-2" style={{ border: "1px solid var(--line)", borderRadius: 12, overflow: "hidden" }}>
                     {(["despesa", "receita"] as const).map((t) => (
                       <button
                         key={t}

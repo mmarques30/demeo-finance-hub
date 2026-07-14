@@ -65,7 +65,7 @@ export function EditTransactionModal({ tx, categories, cap = "Lançamento", onCl
             </label>
             <label className="block">
               <div className="aurora-cap mb-2">Tipo</div>
-              <div className="grid grid-cols-2 h-[42px]" style={{ border: "1px solid var(--line)" }}>
+              <div className="grid grid-cols-2 h-[42px]" style={{ border: "1px solid var(--line)", borderRadius: 12, overflow: "hidden" }}>
                 {(["despesa", "receita"] as const).map((t) => (
                   <button key={t} type="button" onClick={() => setTipo(t)}
                     className="text-[10px] uppercase transition-colors"

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
+import { FilterMenu, FilterMenuOption } from "@/components/FilterMenu";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/regras")({
@@ -128,31 +129,38 @@ function RegrasPage() {
             ))}
           </select>
 
-          <div className="flex gap-2 ml-auto">
-            {(["all", "active", "pending"] as FilterMode[]).map((f) => {
-              const labels: Record<FilterMode, string> = {
-                all: `Todas (${rules.length})`,
-                active: `Ativas (${activeCount})`,
-                pending: `Pendentes (${pendingCount})`,
-              };
-              return (
-                <button
+          <FilterMenu
+            label="Status"
+            valueLabel={
+              filter === "all"
+                ? `Todas (${rules.length})`
+                : filter === "active"
+                ? `Ativas (${activeCount})`
+                : `Pendentes (${pendingCount})`
+            }
+            minWidth={200}
+          >
+            {(close) =>
+              (
+                [
+                  ["all", `Todas (${rules.length})`],
+                  ["active", `Ativas (${activeCount})`],
+                  ["pending", `Pendentes (${pendingCount})`],
+                ] as [FilterMode, string][]
+              ).map(([f, label]) => (
+                <FilterMenuOption
                   key={f}
-                  onClick={() => setFilter(f)}
-                  className="text-[10px] uppercase px-4 py-2"
-                  style={{
-                    letterSpacing: "1.5px",
-                    fontWeight: 500,
-                    background: filter === f ? "var(--navy)" : "transparent",
-                    color: filter === f ? "#fff" : "var(--foreground)",
-                    border: "1px solid var(--line)",
-                  , borderRadius: 12 }}
+                  active={filter === f}
+                  onClick={() => {
+                    setFilter(f);
+                    close();
+                  }}
                 >
-                  {labels[f]}
-                </button>
-              );
-            })}
-          </div>
+                  {label}
+                </FilterMenuOption>
+              ))
+            }
+          </FilterMenu>
         </div>
 
         {activeCount >= 400 && (
