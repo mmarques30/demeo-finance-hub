@@ -180,7 +180,7 @@ function CategoriasPage() {
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
             className="px-3 py-2 text-[13px]"
-            style={{ border: "1px solid var(--line)", background: "#fff", minWidth: 220 }}
+            style={{ border: "1px solid var(--line)", background: "#fff", minWidth: 220 , borderRadius: 12 }}
           >
             {clients.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -201,7 +201,7 @@ function CategoriasPage() {
         <form
           onSubmit={addCategory}
           className="flex flex-wrap items-end gap-3 p-5"
-          style={{ background: "var(--linen)", border: "1px solid var(--line)" }}
+          style={{ background: "var(--surface)", border: "1px solid rgba(153,169,137,0.35)", borderRadius: 22 }}
         >
           <div className="flex flex-col gap-1.5">
             <label className="aurora-cap">Nome</label>
@@ -211,7 +211,7 @@ function CategoriasPage() {
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Ex: Receita · Honorários"
               required
-              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid var(--line)", background: "#fff", minWidth: 220 }}
+              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid var(--line)", background: "#fff", minWidth: 220 , borderRadius: 12 }}
             />
           </div>
 
@@ -220,7 +220,7 @@ function CategoriasPage() {
             <select
               value={newGroup}
               onChange={(e) => setNewGroup(e.target.value)}
-              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid var(--line)", background: "#fff" }}
+              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid var(--line)", background: "#fff" , borderRadius: 12 }}
             >
               {GRUPOS.map((g) => <option key={g}>{g}</option>)}
             </select>
@@ -231,7 +231,7 @@ function CategoriasPage() {
             <select
               value={newType}
               onChange={(e) => setNewType(e.target.value as typeof newType)}
-              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid var(--line)", background: "#fff" }}
+              style={{ padding: "8px 12px", fontSize: 13, border: "1px solid var(--line)", background: "#fff" , borderRadius: 12 }}
             >
               {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
@@ -285,7 +285,7 @@ function CategoriasPage() {
                                 value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
                                 className="text-[13px] px-2 py-1"
-                                style={{ border: "1px solid var(--line)", minWidth: 180 }}
+                                style={{ border: "1px solid var(--line)", minWidth: 180 , borderRadius: 12 }}
                               />
                             ) : (
                               <span className="text-[13px]" style={{ fontWeight: 500 }}>{cat.name}</span>
@@ -298,7 +298,7 @@ function CategoriasPage() {
                                   value={editGroup}
                                   onChange={(e) => setEditGroup(e.target.value)}
                                   className="text-[12px] px-2 py-1"
-                                  style={{ border: "1px solid var(--line)" }}
+                                  style={{ border: "1px solid var(--line)" , borderRadius: 12 }}
                                 >
                                   {GRUPOS.map((g) => <option key={g}>{g}</option>)}
                                 </select>
@@ -306,7 +306,7 @@ function CategoriasPage() {
                                   value={editType}
                                   onChange={(e) => setEditType(e.target.value as typeof editType)}
                                   className="text-[12px] px-2 py-1"
-                                  style={{ border: "1px solid var(--line)" }}
+                                  style={{ border: "1px solid var(--line)" , borderRadius: 12 }}
                                 >
                                   {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                                 </select>
@@ -329,7 +329,7 @@ function CategoriasPage() {
                                   <button
                                     onClick={() => setEditingId(null)}
                                     className="text-[10px] uppercase px-3 py-1"
-                                    style={{ border: "1px solid var(--line)", letterSpacing: "1.5px" }}
+                                    style={{ border: "1px solid var(--line)", letterSpacing: "1.5px" , borderRadius: 12 }}
                                   >
                                     Cancelar
                                   </button>
@@ -350,7 +350,7 @@ function CategoriasPage() {
                                       border: "1px solid var(--line)",
                                       color: cat.is_active ? "var(--green)" : "var(--muted-foreground)",
                                       letterSpacing: "1.5px",
-                                    }}
+                                    , borderRadius: 12 }}
                                   >
                                     {cat.is_active ? "Ativa" : "Inativa"}
                                   </button>

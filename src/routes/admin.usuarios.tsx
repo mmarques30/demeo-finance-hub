@@ -222,10 +222,10 @@ function UsuariosPage() {
 
         {/* ── Administradores do sistema ── */}
         {isAdmin && (
-          <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
+          <section className="aurora-panel--tint">
             <header
               className="flex items-center justify-between px-6 py-4"
-              style={{ borderBottom: adminSectionOpen ? "1px solid var(--line)" : "none", background: "#FAFBFA" }}
+              style={{ borderBottom: adminSectionOpen ? "1px solid rgba(153,169,137,0.35)" : "none", background: "rgba(255,255,255,0.55)" }}
             >
               <div>
                 <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--navy)", fontWeight: 600 }}>Painel Aurora</div>
@@ -248,7 +248,7 @@ function UsuariosPage() {
                   onClick={() => setAdminSectionOpen((v) => !v)}
                   aria-label={adminSectionOpen ? "Colapsar" : "Expandir"}
                   style={{
-                    width: 30, height: 30, borderRadius: 6,
+                    width: 30, height: 30, borderRadius: 12,
                     border: "1px solid var(--line)", background: "transparent",
                     color: "var(--muted-foreground)", fontSize: 10,
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -265,7 +265,7 @@ function UsuariosPage() {
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr style={{ background: "#FAFBFA" }}>
+                    <tr style={{ background: "rgba(255,255,255,0.72)" }}>
                       {["Nome", "E-mail", "Papel", "Ações"].map((h) => (
                         <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500, fontSize: 9, borderBottom: "1px solid var(--line)", letterSpacing: "2px" }}>{h}</th>
                       ))}
@@ -280,7 +280,7 @@ function UsuariosPage() {
                           <span
                             className="text-[9px] uppercase px-2.5 py-1"
                             style={{
-                              letterSpacing: "1px", fontWeight: 600,
+                              letterSpacing: "1px", fontWeight: 600, borderRadius: 999,
                               background: u.role === "owner" ? "rgba(27,57,77,0.10)" : "rgba(74,103,65,0.10)",
                               color: u.role === "owner" ? "var(--navy)" : "var(--green)",
                             }}
@@ -335,10 +335,10 @@ function UsuariosPage() {
         )}
 
         {/* ── Usuários do Portal ── */}
-        <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
+        <section className="aurora-panel--tint">
           <header
             className="flex items-center justify-between px-6 py-4"
-            style={{ borderBottom: usersSectionOpen ? "1px solid var(--line)" : "none", background: "#FAFBFA" }}
+            style={{ borderBottom: usersSectionOpen ? "1px solid rgba(153,169,137,0.35)" : "none", background: "rgba(255,255,255,0.55)" }}
           >
             <div>
               <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--green)", fontWeight: 600 }}>Portal do cliente</div>
@@ -361,7 +361,7 @@ function UsuariosPage() {
                 onClick={() => setUsersSectionOpen((v) => !v)}
                 aria-label={usersSectionOpen ? "Colapsar" : "Expandir"}
                 style={{
-                  width: 30, height: 30, borderRadius: 6,
+                  width: 30, height: 30, borderRadius: 12,
                   border: "1px solid var(--line)", background: "transparent",
                   color: "var(--muted-foreground)", fontSize: 10,
                   display: "flex", alignItems: "center", justifyContent: "center",
@@ -414,7 +414,7 @@ function UsuariosPage() {
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr style={{ background: "#FAFBFA" }}>
+                    <tr style={{ background: "rgba(255,255,255,0.72)" }}>
                       {["Nome", "E-mail", "Cliente", "Perfil", "Ações"].map((h) => (
                         <th key={h} className="text-left px-5 py-3 aurora-cap"
                           style={{ fontWeight: 500, fontSize: 9, borderBottom: "1px solid var(--line)", letterSpacing: "2px" }}>
@@ -600,8 +600,8 @@ function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[440px] bg-white p-8"
-        style={{ border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }}
+        className="aurora-modal w-full max-w-[440px] bg-white p-8"
+        style={{ borderRadius: 24, overflow: "hidden", border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="aurora-cap mb-1" style={{ color: "var(--navy)" }}>Painel Aurora</div>
@@ -795,8 +795,8 @@ function EditAdminModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[440px] bg-white p-8"
-        style={{ border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }}
+        className="aurora-modal w-full max-w-[440px] bg-white p-8"
+        style={{ borderRadius: 24, overflow: "hidden", border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="aurora-cap mb-1" style={{ color: "var(--navy)" }}>
@@ -918,8 +918,8 @@ function InvitePortalModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[480px] bg-white p-8"
-        style={{ border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }}
+        className="aurora-modal w-full max-w-[480px] bg-white p-8"
+        style={{ borderRadius: 24, overflow: "hidden", border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="aurora-cap mb-1">Portal do cliente</div>

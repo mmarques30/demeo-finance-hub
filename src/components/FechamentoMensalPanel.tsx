@@ -372,7 +372,7 @@ export function FechamentoMensalPanel({
                     width: 22,
                     height: 22,
                     border: `2px solid ${done ? "var(--green)" : "var(--line)"}`,
-                    borderRadius: 4,
+                    borderRadius: 12,
                     background: done ? "var(--green)" : "transparent",
                     transition: "all 0.15s",
                   }}
@@ -398,7 +398,7 @@ export function FechamentoMensalPanel({
             );
           })}
         </div>
-        <div className="px-6 py-4 flex items-center justify-between" style={{ borderTop: "1px solid var(--line)", background: "var(--linen)" }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ borderTop: "1px solid var(--line)", background: "var(--offwhite)" }}>
           <div className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
             {isCompleted
               ? "Fechamento concluído para este período."
@@ -435,7 +435,7 @@ export function FechamentoMensalPanel({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px]">
             <thead>
-              <tr style={{ background: "var(--linen)" }}>
+              <tr style={{ background: "var(--offwhite)" }}>
                 <th className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>Demonstrativo</th>
                 <th className="text-right px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>R$</th>
                 <th className="text-right px-6 py-3 aurora-cap" style={{ fontWeight: 500, width: 70 }}>AV%</th>
@@ -566,7 +566,7 @@ export function FechamentoMensalPanel({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px]">
               <thead>
-                <tr style={{ background: "var(--linen)" }}>
+                <tr style={{ background: "var(--offwhite)" }}>
                   {["Data", "Cliente / Nota Fiscal", "Canal de Venda", "Valor Bruto", "Impostos Retidos", "Valor Líquido", ""].map((h) => (
                     <th
                       key={h}
@@ -672,7 +672,7 @@ export function FechamentoMensalPanel({
         ) : (
           <table className="w-full">
             <thead>
-              <tr style={{ background: "var(--linen)" }}>
+              <tr style={{ background: "var(--offwhite)" }}>
                 {["Data de exportação", "Formato", "Período coberto", "Tipo", ""].map((h) => (
                   <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>
                     {h}
@@ -815,7 +815,7 @@ export function FechamentoMensalPanel({
               </div>
               <div
                 className="flex items-center justify-between px-4 py-3"
-                style={{ background: "var(--linen)", border: "1px solid var(--line)" }}
+                style={{ background: "var(--offwhite)", border: "1px solid var(--line)" }}
               >
                 <span className="aurora-cap">Valor Líquido</span>
                 <span className="aurora-value text-[18px]" style={{ fontWeight: 700, color: netPreview >= 0 ? "var(--navy)" : "var(--expense)" }}>
@@ -892,7 +892,7 @@ function DFCGroupRow({
   return (
     <>
       <tr
-        style={{ borderTop: "1px solid var(--line)", background: "var(--linen)", cursor: hasLines ? "pointer" : "default" }}
+        style={{ borderTop: "1px solid var(--line)", background: "var(--offwhite)", cursor: hasLines ? "pointer" : "default" }}
         onClick={() => hasLines && onToggle(groupKey)}
       >
         <td className="px-6 py-2.5 text-[11px] uppercase flex items-center gap-2" style={{ letterSpacing: "1.5px", fontWeight: 700, color }}>

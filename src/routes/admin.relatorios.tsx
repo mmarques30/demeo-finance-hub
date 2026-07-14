@@ -827,7 +827,7 @@ function RelatoriosPage() {
           <div className="aurora-card p-0 overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr style={{ background: "var(--linen)" }}>
+                <tr style={{ background: "var(--offwhite)" }}>
                   {["Cliente", "Período", "Último extrato", "Formato", "Exportar"].map((h) => (
                     <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
                       {h}
@@ -928,7 +928,7 @@ function RelatoriosPage() {
           <div className="aurora-card p-0 overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr style={{ background: "var(--linen)" }}>
+                <tr style={{ background: "var(--offwhite)" }}>
                   {["Cliente", "Período", "Tipo", "Formato", "Exportado em", ""].map((h) => (
                     <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
                       {h}

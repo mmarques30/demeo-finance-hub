@@ -421,7 +421,7 @@ const receita = useMemo(
 
             {/* Tabela de lançamentos */}
             <div className="aurora-card p-0 overflow-hidden">
-              <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
+              <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--offwhite)" }}>
                 <div className="aurora-cap mb-0.5">Lançamentos</div>
                 <div className="aurora-serif text-[20px]">
                   {period}{" "}
@@ -565,7 +565,7 @@ const receita = useMemo(
         {/* ── Aba: Importações ─────────────────────────────────────────────────── */}
         {activeTab === "importacoes" && (
           <div className="aurora-card p-0 overflow-hidden">
-            <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
+            <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--offwhite)" }}>
               <div className="aurora-cap mb-0.5">Histórico de importações</div>
               <div className="aurora-serif text-[20px]">
                 Histórico{" "}
@@ -654,7 +654,7 @@ const receita = useMemo(
 
             {/* Lista de usuários */}
             <div className="aurora-card p-0 overflow-hidden">
-              <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--linen)" }}>
+              <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--line)", background: "var(--offwhite)" }}>
                 <div className="aurora-cap mb-0.5">Usuários do portal</div>
                 <div className="aurora-serif text-[20px]">
                   Acesso ao <em className="italic" style={{ color: "var(--green)" }}>Portal do Cliente</em>
@@ -718,7 +718,7 @@ const receita = useMemo(
                       placeholder="Maria Silva"
                       required
                       className="w-full px-4 py-2.5 text-[13px]"
-                      style={{ border: "1px solid var(--line)", background: "var(--linen)" }}
+                      style={{ border: "1px solid var(--line)", background: "var(--offwhite)" }}
                     />
                   </div>
                   <div>
@@ -730,7 +730,7 @@ const receita = useMemo(
                       placeholder="maria@empresa.com"
                       required
                       className="w-full px-4 py-2.5 text-[13px]"
-                      style={{ border: "1px solid var(--line)", background: "var(--linen)" }}
+                      style={{ border: "1px solid var(--line)", background: "var(--offwhite)" }}
                     />
                   </div>
                 </div>
@@ -788,7 +788,7 @@ const receita = useMemo(
           style={{ background: "rgba(0,0,0,0.45)" }}
           onClick={(e) => { if (e.target === e.currentTarget && !deletingUpload) { setDeleteUpload(null); setDeleteUploadErr(null); } }}
         >
-          <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+          <div className="aurora-modal w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
             <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(109,146,166,0.12)", borderBottom: "1px solid var(--line)" }}>
               <div>
                 <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>

@@ -373,7 +373,7 @@ function PendentesPage() {
             <div key={cid} className="aurora-card p-0 overflow-hidden">
               <div
                 className="px-6 py-4 flex items-center justify-between cursor-pointer"
-                style={{ background: "var(--linen)", borderBottom: isExpanded ? "1px solid var(--line)" : "none" }}
+                style={{ background: "var(--offwhite)", borderBottom: isExpanded ? "1px solid var(--line)" : "none" }}
                 onClick={() => toggleExpanded(cid)}
               >
                 <div className="flex items-center gap-3">
@@ -634,7 +634,7 @@ function DeletePendingTxModal({
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+      <div className="aurora-modal w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
         <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(109,146,166,0.12)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>

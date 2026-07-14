@@ -82,7 +82,7 @@ export function DealDrawer({ dealId, onClose }: { dealId: string | null; onClose
       <aside
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-[520px] h-full overflow-y-auto p-8"
-        style={{ background: "var(--linen2)", borderLeft: "1px solid var(--line)" }}
+        style={{ background: "var(--linen2)", borderLeft: "1px solid var(--line)", borderTopLeftRadius: 22, borderBottomLeftRadius: 22 }}
       >
         <button onClick={onClose} className="aurora-link mb-6">
           ← Fechar

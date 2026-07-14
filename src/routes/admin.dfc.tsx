@@ -318,7 +318,7 @@ function DFCPage() {
               </div>
               <table className="w-full">
                 <thead>
-                  <tr style={{ background: "var(--linen)" }}>
+                  <tr style={{ background: "var(--offwhite)" }}>
                     <th className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>Conta</th>
                     <th className="text-right px-6 py-3 aurora-cap" style={{ fontWeight: 500 }}>Valor</th>
                   </tr>
@@ -326,7 +326,7 @@ function DFCPage() {
                 <tbody>
                   {dre.groups.map((g) => (
                     <React.Fragment key={g.name}>
-                      <tr style={{ background: "var(--linen)", borderTop: "1px solid var(--line)" }}>
+                      <tr style={{ background: "var(--offwhite)", borderTop: "1px solid var(--line)" }}>
                         <td className="px-6 py-2 aurora-cap" style={{ fontWeight: 600, fontSize: 10 }}>
                           {g.isExpense ? "(−) " : ""}{g.name.toUpperCase()}
                         </td>
@@ -439,7 +439,7 @@ function DFCPage() {
                 </tr>
 
                 {/* ── Resultado + Saldo ── */}
-                <tr style={{ background: "var(--linen)", borderTop: "2px solid var(--line)" }}>
+                <tr style={{ background: "var(--offwhite)", borderTop: "2px solid var(--line)" }}>
                   <td className="px-6 py-3 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 700 }}>Resultado do Período</td>
                   <td className="px-6 py-3 aurora-value text-right" style={{ fontSize: 16, fontWeight: 700, color: resultado >= 0 ? "var(--green)" : "var(--expense)" }}>{brl(resultado)}</td>
                 </tr>
@@ -447,7 +447,7 @@ function DFCPage() {
                   <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>Saldo Inicial</td>
                   <td className="px-6 py-3 aurora-value text-right" style={{ fontSize: 14, color: "var(--navy)" }}>{brl(saldoInicial)}</td>
                 </tr>
-                <tr style={{ background: "var(--linen)", borderTop: "2px solid var(--line)" }}>
+                <tr style={{ background: "var(--offwhite)", borderTop: "2px solid var(--line)" }}>
                   <td className="px-6 py-3 text-[11px] uppercase" style={{ letterSpacing: "1.5px", fontWeight: 700 }}>Saldo Final</td>
                   <td className="px-6 py-3 aurora-value text-right" style={{ fontSize: 18, fontWeight: 700, color: saldoFinal >= 0 ? "var(--green)" : "var(--expense)" }}>{brl(saldoFinal)}</td>
                 </tr>
@@ -468,7 +468,7 @@ function DFCPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
                 <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                 <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={48} />
-                <Tooltip formatter={(v: number) => brl(v)} contentStyle={{ fontSize: 12, border: "1px solid var(--line)", borderRadius: 6 }} />
+                <Tooltip formatter={(v: number) => brl(v)} contentStyle={{ fontSize: 12, border: "1px solid var(--line)", borderRadius: 12 }} />
                 <Line type="monotone" dataKey="Receitas" stroke="var(--green)" strokeWidth={2} dot={{ r: 4 }} />
                 <Line type="monotone" dataKey="Despesas" stroke="var(--expense)" strokeWidth={2} dot={{ r: 4 }} />
                 <Line type="monotone" dataKey="Resultado" stroke="var(--navy)" strokeWidth={2} strokeDasharray="4 2" dot={{ r: 3 }} />

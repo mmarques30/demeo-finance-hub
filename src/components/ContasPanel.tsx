@@ -76,7 +76,7 @@ function PayableSection({
     <div className="aurora-card p-0 overflow-hidden">
       <div
         className="px-6 py-4 flex items-center justify-between"
-        style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}
+        style={{ background: "var(--offwhite)", borderBottom: "1px solid var(--line)" }}
       >
         <div>
           <div className="aurora-cap mb-1">{title}</div>
@@ -250,7 +250,7 @@ function NovoLancamentoModal({
     onSaved(data as Payable);
   }
 
-  const inputStyle = { border: "1px solid var(--line)", background: "#fff", padding: "6px 10px", fontSize: 13, width: "100%" };
+  const inputStyle = { border: "1px solid var(--line)", background: "#fff", padding: "6px 10px", fontSize: 13, width: "100%", borderRadius: 12 };
 
   return (
     <div
@@ -259,7 +259,7 @@ function NovoLancamentoModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="bg-white flex flex-col"
+        className="aurora-modal bg-white flex flex-col"
         style={{ width: 480, maxHeight: "90vh", overflowY: "auto", borderTop: "3px solid var(--green)" }}
       >
         <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
@@ -556,7 +556,7 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
           style={{ background: "rgba(0,0,0,0.35)" }}
           onClick={(e) => { if (e.target === e.currentTarget) setConfirmDeleteId(null); }}
         >
-          <div className="bg-white flex flex-col" style={{ width: 400, borderTop: "3px solid #B06040" }}>
+          <div className="aurora-modal bg-white flex flex-col" style={{ width: 400, borderTop: "3px solid #B06040" }}>
             <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--line)" }}>
               <div className="aurora-cap mb-0.5" style={{ color: "#B06040" }}>Excluir lançamento</div>
               <div className="aurora-serif text-[18px]">Tem certeza que deseja excluir?</div>

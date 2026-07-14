@@ -222,7 +222,7 @@ function PortalPage() {
   // Enquanto verifica sessão, não renderiza nada (o useEffect vai redirecionar se necessário)
   if (sessionLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--linen)" }}>
+      <div className="min-h-screen app-shell flex items-center justify-center" style={{ background: "var(--offwhite)" }}>
         <div className="aurora-cap">Carregando…</div>
       </div>
     );
@@ -231,7 +231,7 @@ function PortalPage() {
   if (!session) return null; // redirect em andamento
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--linen)" }}>
+    <div className="min-h-screen app-shell" style={{ background: "var(--offwhite)" }}>
       <header
         className="sticky top-0 z-40 flex items-center justify-between px-8 lg:px-14 py-5"
         style={{ background: "rgba(250,251,250,0.92)", backdropFilter: "blur(14px)", borderBottom: "1px solid var(--line)" }}
@@ -291,7 +291,7 @@ function PortalPage() {
                 style={{
                   background: "white",
                   border: "1px solid var(--line)",
-                  borderRadius: 8,
+                  borderRadius: 12,
                   padding: "5px 12px",
                   color: "var(--foreground)",
                   fontSize: 11,

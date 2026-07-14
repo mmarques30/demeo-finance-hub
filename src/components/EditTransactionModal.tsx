@@ -47,8 +47,8 @@ export function EditTransactionModal({ tx, categories, cap = "Lançamento", onCl
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-lg bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+      <div className="aurora-modal w-full max-w-lg bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--offwhite)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5">{cap}</div>
             <div className="aurora-serif text-[20px]">Editar registro</div>

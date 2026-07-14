@@ -237,7 +237,7 @@ function PrecificacaoPage() {
           </div>
           <table className="w-full">
             <thead>
-              <tr style={{ background: "var(--linen)" }}>
+              <tr style={{ background: "var(--offwhite)" }}>
                 {["Faixa", "Propostas", "Ganhas", "Win-rate"].map((h) => (
                   <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>
                     {h}

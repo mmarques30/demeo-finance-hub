@@ -129,10 +129,10 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
       )}
 
       {!isLoading && recorrencias.length > 0 && (
-        <div style={{ border: "1px solid var(--line)" }}>
+        <div className="aurora-panel--tint">
           <div
             className="px-7 py-4"
-            style={{ borderBottom: "1px solid var(--line)", background: "#FAFBFA" }}
+            style={{ borderBottom: "1px solid rgba(153,169,137,0.35)", background: "rgba(255,255,255,0.55)" }}
           >
             <div
               className="text-[11px] uppercase mb-1"
@@ -148,7 +148,7 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
 
           <table className="w-full">
             <thead>
-              <tr style={{ background: "#FAFBFA", borderBottom: "1px solid var(--line)" }}>
+              <tr style={{ background: "rgba(255,255,255,0.72)", borderBottom: "1px solid var(--line)" }}>
                 {["Padrão detectado", "Categoria sugerida", "Ocorrências", "Última vez", "Ação"].map((h) => (
                   <th
                     key={h}

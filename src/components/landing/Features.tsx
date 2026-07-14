@@ -184,7 +184,7 @@ function FeatureMock({ variant, accent }: { variant: FeatureVariant; accent: str
                 background: "#F7F8F6",
                 border: "1px solid rgba(28,45,69,0.06)",
                 borderLeft: `3px solid ${l.pos ? FOREST : "#D8484E"}`,
-                borderRadius: 6,
+                borderRadius: 12,
                 fontSize: 12,
               }}
             >
@@ -561,7 +561,7 @@ function FeatureMock({ variant, accent }: { variant: FeatureVariant; accent: str
                   fontSize: 11,
                   padding: "9px 12px",
                   background: "#F7F8F6",
-                  borderRadius: 6,
+                  borderRadius: 12,
                   borderLeft: `2px solid ${l.pos ? FOREST : "#D8484E"}`,
                   color: INK,
                 }}

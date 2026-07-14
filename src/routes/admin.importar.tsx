@@ -631,7 +631,7 @@ function ImportarPage() {
             </div>
             <table className="w-full">
               <thead>
-                <tr style={{ background: "var(--linen)" }}>
+                <tr style={{ background: "var(--offwhite)" }}>
                   <th className="px-4 py-3">
                     <input type="checkbox" checked={selected.size === transactions.length && transactions.length > 0} onChange={toggleAll} />
                   </th>
@@ -693,7 +693,7 @@ function ImportarPage() {
                               value={opts.includes(tx.bank ?? "") ? (tx.bank as string) : "Outro"}
                               onChange={(e) => changeBank(tx.id, e.target.value)}
                               className="text-[11px] px-1.5 py-1 bg-white outline-none"
-                              style={{ border: "1px solid var(--line)", borderRadius: 4, cursor: "pointer" }}
+                              style={{ border: "1px solid var(--line)", borderRadius: 12, cursor: "pointer" }}
                               title="Banco detectado — ajuste se necessário"
                             >
                               {opts.map((b) => <option key={b}>{b}</option>)}
@@ -833,7 +833,7 @@ function ImportarPage() {
             type="button"
             onClick={() => { setManualOpen((v) => !v); setManualSuccess(false); setManualError(null); }}
             className="w-full flex items-center justify-between px-6 py-4 text-left"
-            style={{ background: "var(--linen)", borderBottom: manualOpen ? "1px solid var(--line)" : "none" }}
+            style={{ background: "var(--offwhite)", borderBottom: manualOpen ? "1px solid var(--line)" : "none" }}
           >
             <div>
               <div className="aurora-cap mb-0.5">Lançamento manual</div>
@@ -1086,8 +1086,8 @@ function CancelUploadModal({
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget && !deleting) onCancel(); }}
     >
-      <div className="w-full max-w-md bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+      <div className="aurora-modal w-full max-w-md bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--offwhite)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5">Cancelar envio</div>
             <div className="aurora-serif text-[20px]">Descartar lançamentos</div>
@@ -1140,8 +1140,8 @@ function ConfirmUploadModal({
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div className="w-full bg-white overflow-hidden" style={{ maxWidth: 480, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+      <div className="aurora-modal w-full bg-white overflow-hidden" style={{ maxWidth: 480, boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--offwhite)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5">Confirmar</div>
             <div className="aurora-serif text-[20px]">{multi ? "Importar extratos" : "Importar extrato"}</div>
@@ -1164,7 +1164,7 @@ function ConfirmUploadModal({
                   key={i}
                   className="text-[12px] truncate px-3 py-2"
                   title={f.name}
-                  style={{ background: "#FAFBFA", border: "1px solid var(--line)", borderRadius: 4 }}
+                  style={{ background: "#FAFBFA", border: "1px solid var(--line)", borderRadius: 12 }}
                 >
                   {f.name}
                 </div>
@@ -1175,7 +1175,7 @@ function ConfirmUploadModal({
           {/* Banco detectado automaticamente pela IA */}
           <div
             className="flex items-start gap-3 px-4 py-3"
-            style={{ background: "rgba(74,103,65,0.08)", border: "1px solid rgba(74,103,65,0.25)", borderRadius: 6 }}
+            style={{ background: "rgba(74,103,65,0.08)", border: "1px solid rgba(74,103,65,0.25)", borderRadius: 12 }}
           >
             <span style={{ fontSize: 16, lineHeight: 1.2 }}>🏦</span>
             <div className="text-[12px]" style={{ color: "var(--foreground)", lineHeight: 1.6 }}>
