@@ -320,20 +320,22 @@ function PortalPage() {
               </div>
             </div>
 
-            {/* Abas DFC / DRE */}
+            {/* Abas DFC / DRE — pills sem linha */}
             <div className="aurora-card p-0 overflow-hidden">
-              <div className="flex" style={{ borderBottom: "1px solid var(--line)" }}>
+              <div className="flex flex-wrap gap-1 px-4 pt-4 pb-2">
                 {(["dfc", "dre", ...(features.projecao ? ["projecao" as const] : [])] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setTab(t as "dfc" | "dre" | "projecao")}
-                    className="px-8 py-4 text-[10px] uppercase transition-colors"
+                    className="px-4 py-2 text-[10px] uppercase transition-colors"
                     style={{
                       letterSpacing: "2px",
                       fontWeight: 600,
-                      color: tab === t ? "var(--green)" : "var(--muted-foreground)",
-                      borderBottom: tab === t ? "2px solid var(--green)" : "2px solid transparent",
-                      background: "transparent",
+                      borderRadius: 999,
+                      color: tab === t ? "#fff" : "var(--muted-foreground)",
+                      background: tab === t ? "var(--green)" : "transparent",
+                      border: "none",
+                      cursor: "pointer",
                     }}
                   >
                     {t === "dfc" ? "Fluxo de Caixa" : t === "dre" ? "Resultado (DRE)" : "Projeção"}
@@ -341,7 +343,7 @@ function PortalPage() {
                 ))}
               </div>
 
-              <div className="p-8">
+              <div className="p-8 pt-4">
                 {tab === "dfc" && (
                   <>
                     <div className="aurora-cap mb-1">Evolução das receitas</div>

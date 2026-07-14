@@ -268,7 +268,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             background: "rgba(255,255,255,0.82)",
             backdropFilter: "blur(20px) saturate(1.2)",
             WebkitBackdropFilter: "blur(20px) saturate(1.2)",
-            borderBottom: "1px solid #EFEFEF",
+            borderBottom: "1px solid rgba(28,45,69,0.06)",
           }}
         >
           <div className="flex items-center gap-3">
@@ -1282,7 +1282,7 @@ export function PageHeader({
 }) {
   return (
     <div
-      className="px-6 lg:px-10 py-6 flex items-center justify-between gap-4 flex-wrap"
+      className="px-6 lg:px-10 py-4 flex items-center justify-between gap-4 flex-wrap"
       style={{
         background: "var(--offwhite)",
       }}
