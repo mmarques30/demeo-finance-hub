@@ -55,7 +55,7 @@ const GROUPS: SidebarGroup[] = [
       { to: "/admin/categorias", label: "Categorias", icon: "⊞" },
       { to: "/admin/plano-contas", label: "Plano de Contas", icon: "☰" },
       { to: "/admin/regras", label: "Regras de Classificação", icon: "⊟" },
-      { to: "/admin/usuarios", label: "Usuários do Portal", icon: "◫" },
+      { to: "/admin/usuarios", label: "Usuários", icon: "◫" },
     ],
   },
 ];
