@@ -164,9 +164,14 @@ export function computeForecastMonths(
   });
 }
 
-export function useDFCForecast(clientId: string, currentPeriod: string): ForecastMonth[] {
+export function useDFCForecast(
+  clientId: string,
+  currentPeriod: string,
+  enabled = true,
+): ForecastMonth[] {
   const [mm, yyyy] = currentPeriod.split("/").map(Number);
   const periodValid = !isNaN(mm) && !isNaN(yyyy) && mm >= 1 && mm <= 12 && yyyy >= 2000;
+  const active = enabled && !!clientId && periodValid;
 
   const histStart = periodValid ? new Date(yyyy, mm - 1 - 5, 1) : new Date();
   const startDate = `${histStart.getFullYear()}-${String(histStart.getMonth() + 1).padStart(2, "0")}-01`;
@@ -176,7 +181,7 @@ export function useDFCForecast(clientId: string, currentPeriod: string): Forecas
 
   const { data: txs = [] } = useQuery<HistTx[]>({
     queryKey: ["dfc-forecast-history", clientId, currentPeriod],
-    enabled: !!clientId,
+    enabled: active,
     staleTime: 5 * 60_000,
     queryFn: async () => {
       const { data } = await supabase()
@@ -193,7 +198,7 @@ export function useDFCForecast(clientId: string, currentPeriod: string): Forecas
   // Deduplica por installment_group_id mantendo apenas a parcela mais recente de cada grupo.
   const { data: installments = [] } = useQuery<Omit<InstallmentRow, "installment_group_id">[]>({
     queryKey: ["dfc-installments", clientId],
-    enabled: !!clientId,
+    enabled: active,
     staleTime: 5 * 60_000,
     queryFn: async () => {
       const { data } = await supabase()
@@ -220,7 +225,7 @@ export function useDFCForecast(clientId: string, currentPeriod: string): Forecas
   // apenas os meses projetados via lookup por chave YYYY-MM.
   const { data: payables = [] } = useQuery<PayableProjection[]>({
     queryKey: ["dfc-payables", clientId],
-    enabled: !!clientId,
+    enabled: active,
     staleTime: 5 * 60_000,
     queryFn: async () => {
       const { data } = await supabase()
@@ -235,7 +240,7 @@ export function useDFCForecast(clientId: string, currentPeriod: string): Forecas
   // E3 · Âncora de custo fixo por padrão: média mensal real por padrão identificado.
   const { data: recurringPatterns = [] } = useQuery<RecurringPattern[]>({
     queryKey: ["dfc-recurrence-patterns", clientId],
-    enabled: !!clientId,
+    enabled: active,
     staleTime: 15 * 60_000,
     queryFn: async () => {
       const { data } = await supabase().rpc("recurrence_monthly_avg", {
@@ -253,3 +258,4 @@ export function useDFCForecast(clientId: string, currentPeriod: string): Forecas
     [txs, installments, mm, yyyy, payables, recurringPatterns, periodValid]
   );
 }
+

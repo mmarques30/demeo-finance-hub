@@ -24,12 +24,13 @@ export async function userFromAuthHeader(req: Request) {
 
 export async function isAdmin(userId: string): Promise<boolean> {
   const sb = serviceClient();
-  // 'owner' é superconjunto de 'admin' — ambos podem executar ações de administrador
+  // 'owner' é superconjunto de 'admin' — ambos podem executar ações de administrador.
+  // limit(1) em vez de maybeSingle: usuário pode ter múltiplas rows em user_roles.
   const { data } = await sb
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
     .in("role", ["admin", "owner"])
-    .maybeSingle();
-  return !!data;
+    .limit(1);
+  return (data?.length ?? 0) > 0;
 }

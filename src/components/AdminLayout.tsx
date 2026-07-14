@@ -82,14 +82,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const { data: session, isLoading: sessionLoading } = useSession();
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
 
-  // Guard: sem sessão → login; sessão mas não admin → portal
-  // sessionLoading protege contra redirect prematuro no primeiro render (antes de ler localStorage)
+  // Guard: sem sessão → login; sessão mas não admin → portal.
+  // Espera session + role resolverem antes de decidir — evita bounce
+  // admin ↔ portal enquanto o query de roles ainda carrega.
   useEffect(() => {
-    console.log("[AdminLayout guard]", { sessionLoading, adminLoading, userId: session?.user?.id, isAdmin });
-    if (sessionLoading) return;
+    if (sessionLoading || adminLoading) return;
     if (!session) { navigate({ to: "/login" }); return; }
-    if (!adminLoading && isAdmin === false) {
-      console.warn("[AdminLayout] isAdmin=false → redirect /portal. role provavelmente é 'owner', não 'admin'.");
+    if (isAdmin === false) {
       navigate({ to: "/portal" });
     }
   }, [session, sessionLoading, isAdmin, adminLoading, navigate]);
@@ -361,7 +360,14 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         </header>
 
         <main className="flex-1 min-w-0" style={{ background: "#FFFFFF" }}>
-          {children}
+          {sessionLoading || adminLoading || !session || isAdmin !== true ? (
+            <div className="px-8 py-16 flex items-center gap-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+              <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
+              Verificando acesso…
+            </div>
+          ) : (
+            children
+          )}
         </main>
 
         <footer

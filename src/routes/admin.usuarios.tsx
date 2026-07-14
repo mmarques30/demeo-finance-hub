@@ -48,6 +48,7 @@ function UsuariosPage() {
   const [filterClient, setFilterClient] = useState("");
   const [filterRole, setFilterRole] = useState<FilterRole>("todos");
   const [inviteKind, setInviteKind] = useState<InviteKind | null>(null);
+  const [editAdmin, setEditAdmin] = useState<AdminUser | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [savingFeature, setSavingFeature] = useState<string | null>(null);
 
@@ -63,13 +64,38 @@ function UsuariosPage() {
         .select("user_id, role, display_name, email")
         .in("role", ["admin", "owner"]);
       if (!roles?.length) return [] as AdminUser[];
+
+      const ids = roles.map((r) => r.user_id);
+      const { data: profiles } = await supabase()
+        .from("profiles")
+        .select("user_id, display_name")
+        .in("user_id", ids);
+      const profileById = new Map(
+        (profiles ?? []).map((p: { user_id: string; display_name: string | null }) => [p.user_id, p.display_name])
+      );
+
       return (roles as { user_id: string; role: string; display_name?: string | null; email?: string | null }[]).map((r) => ({
         user_id: r.user_id,
         role: r.role as "admin" | "owner",
         email: r.email ?? null,
-        display_name: r.display_name ?? null,
+        display_name: r.display_name || profileById.get(r.user_id) || null,
       }));
     },
+  });
+
+  const removeAdmin = useMutation({
+    mutationFn: async (userId: string) => {
+      const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+      const res = await fetch(`${FUNCTIONS_URL}/manage-admin-user`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ action: "delete", user_id: userId }),
+      });
+      let json: Record<string, unknown> = {};
+      try { json = await res.json(); } catch { /* vazio */ }
+      if (!res.ok) throw new Error((json.error as string) ?? `Erro ${res.status}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "adminUsers"] }),
   });
 
   const { data: users = [], isLoading } = useQuery({
@@ -223,7 +249,7 @@ function UsuariosPage() {
                 <table className="w-full">
                   <thead>
                     <tr style={{ background: "#FAFAF8" }}>
-                      {["Nome", "E-mail", "Papel"].map((h) => (
+                      {["Nome", "E-mail", "Papel", "Ações"].map((h) => (
                         <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500, fontSize: 9, borderBottom: "1px solid var(--line)", letterSpacing: "2px" }}>{h}</th>
                       ))}
                     </tr>
@@ -245,11 +271,41 @@ function UsuariosPage() {
                             {u.role === "owner" ? "Owner" : "Admin"}
                           </span>
                         </td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditAdmin(u)}
+                              className="text-[9px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70"
+                              style={{ border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px" }}
+                            >
+                              Editar
+                            </button>
+                            {u.role !== "owner" && (
+                              <button
+                                type="button"
+                                disabled={removeAdmin.isPending}
+                                onClick={() => {
+                                  const label = u.display_name ?? u.email ?? "este admin";
+                                  if (confirm(`Remover o acesso admin de ${label}? A pessoa deixa de entrar no painel Aurora.`)) {
+                                    removeAdmin.mutate(u.user_id, {
+                                      onError: (err) => alert(err instanceof Error ? err.message : "Erro ao remover"),
+                                    });
+                                  }
+                                }}
+                                className="text-[9px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70 disabled:opacity-40"
+                                style={{ border: "1px solid var(--line)", color: "var(--tan)", letterSpacing: "1.5px" }}
+                              >
+                                Remover
+                              </button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                     {adminUsers.length === 0 && (
                       <tr>
-                        <td colSpan={3} className="px-5 py-6 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                        <td colSpan={4} className="px-5 py-6 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                           Nenhum administrador ainda. Use “+ Admin Aurora” para convidar.
                         </td>
                       </tr>
@@ -474,6 +530,17 @@ function UsuariosPage() {
           }}
         />
       )}
+
+      {editAdmin && (
+        <EditAdminModal
+          user={editAdmin}
+          onClose={() => setEditAdmin(null)}
+          onSuccess={() => {
+            setEditAdmin(null);
+            qc.invalidateQueries({ queryKey: ["admin", "adminUsers"] });
+          }}
+        />
+      )}
     </AdminLayout>
   );
 }
@@ -552,6 +619,106 @@ function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
               className="flex-1 text-[10px] uppercase py-3 disabled:opacity-50"
               style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
               {loading ? "Criando…" : "Criar admin →"}
+            </button>
+            <button type="button" onClick={onClose}
+              className="px-5 py-3 text-[10px] uppercase"
+              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px" }}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function EditAdminModal({
+  user, onClose, onSuccess,
+}: {
+  user: AdminUser;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [email, setEmail] = useState(user.email ?? "");
+  const [name, setName] = useState(user.display_name ?? "");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) { setError("Informe o nome."); return; }
+    if (!email.trim()) { setError("Informe o e-mail."); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+      const body: Record<string, string> = {
+        action: "update",
+        user_id: user.user_id,
+        display_name: name.trim(),
+        email: email.trim(),
+      };
+      if (password.length >= 8) body.password = password;
+      const res = await fetch(`${FUNCTIONS_URL}/manage-admin-user`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+      let json: Record<string, unknown> = {};
+      try { json = await res.json(); } catch { /* vazio */ }
+      if (!res.ok) { setError((json.error as string) ?? `Erro ${res.status}`); return; }
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro de conexão.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgba(28,45,69,0.45)", backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-[440px] bg-white p-8"
+        style={{ border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="aurora-cap mb-1" style={{ color: "var(--navy)" }}>
+          {user.role === "owner" ? "Owner · Painel Aurora" : "Admin · Painel Aurora"}
+        </div>
+        <h2 className="aurora-serif text-[22px] mb-6">
+          Editar <em className="italic" style={{ color: "var(--navy)" }}>usuário</em>
+        </h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label className="block">
+            <div className="aurora-cap mb-1.5">Nome completo</div>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required
+              className="w-full px-4 py-2.5 text-[13px]" style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }} />
+          </label>
+          <label className="block">
+            <div className="aurora-cap mb-1.5">E-mail</div>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+              className="w-full px-4 py-2.5 text-[13px]" style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }} />
+          </label>
+          <label className="block">
+            <div className="aurora-cap mb-1.5">Nova senha (opcional)</div>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} placeholder="Deixe em branco para não alterar"
+              className="w-full px-4 py-2.5 text-[13px]" style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }} />
+          </label>
+          {error && (
+            <div className="text-[12px] px-3 py-2.5" style={{ background: "rgba(184,149,106,0.10)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
+              {error}
+            </div>
+          )}
+          <div className="flex gap-3 pt-2">
+            <button type="submit" disabled={loading || !name.trim() || !email.trim() || (password.length > 0 && password.length < 8)}
+              className="flex-1 text-[10px] uppercase py-3 disabled:opacity-50"
+              style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              {loading ? "Salvando…" : "Salvar →"}
             </button>
             <button type="button" onClick={onClose}
               className="px-5 py-3 text-[10px] uppercase"

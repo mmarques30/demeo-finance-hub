@@ -79,7 +79,11 @@ function DFCPage() {
       if (data && data.length > 0) {
         setClients(data as ClientOption[]);
         const exists = preselectedId && data.some((c: ClientOption) => c.id === preselectedId);
-        if (!exists) setClientId(data[0].id);
+        if (preselectedId && exists) {
+          setClientId(preselectedId);
+        } else if (!preselectedId || !exists) {
+          setClientId((prev) => prev || data[0].id);
+        }
       }
     });
   }, [preselectedId]);
@@ -99,18 +103,33 @@ function DFCPage() {
       });
   }, [clientId]);
 
-  // Carrega saldo acumulado antes do período (saldo inicial da DFC)
+  // Carrega saldo acumulado antes do período (soma no banco — sem baixar milhares de linhas)
   useEffect(() => {
     if (!clientId || !startDate) return;
-    supabase()
-      .from("transactions")
-      .select("amount")
-      .eq("client_id", clientId)
-      .eq("status", "approved")
-      .lt("date", startDate)
-      .then(({ data }) => {
-        setSaldoInicial((data ?? []).reduce((s: number, t: { amount: number }) => s + t.amount, 0));
+    let cancelled = false;
+    (async () => {
+      const { data: rpcSum, error: rpcErr } = await supabase().rpc("sum_approved_before", {
+        p_client_id: clientId,
+        p_before: startDate,
       });
+      if (!rpcErr && rpcSum != null && !cancelled) {
+        setSaldoInicial(Number(rpcSum) || 0);
+        return;
+      }
+      // Fallback se a RPC ainda não foi aplicada: agregação PostgREST
+      const { data } = await supabase()
+        .from("transactions")
+        .select("amount.sum()")
+        .eq("client_id", clientId)
+        .eq("status", "approved")
+        .lt("date", startDate)
+        .maybeSingle();
+      if (!cancelled) {
+        const raw = data as { sum?: number; amount?: number } | null;
+        setSaldoInicial(Number(raw?.sum ?? raw?.amount ?? 0) || 0);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [clientId, startDate]);
 
   // Recarrega transações do período atual e anterior em paralelo
@@ -170,7 +189,7 @@ function DFCPage() {
   const dre = useMemo(() => computeDRE(tx, catMap), [tx, catMap]);
 
   const periodForForecast = `${endDate.split("-")[1]}/${endDate.split("-")[0]}`;
-  const projecao = useDFCForecast(clientId, periodForForecast);
+  const projecao = useDFCForecast(clientId, periodForForecast, activeTab === "dfc");
   const activeClient = clients.find((c) => c.id === clientId);
   const clienteName = activeClient?.name ?? "Cliente";
   const health = useMemo(
