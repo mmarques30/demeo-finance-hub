@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { brl, formatDatePtBR } from "@/lib/utils";
 import { todayISO } from "@/lib/dateUtils";
 import { supabase } from "@/lib/supabase";
+import { FilterMenu, FilterMenuOption } from "@/components/FilterMenu";
 
 interface Payable {
   id: string;
@@ -279,7 +280,7 @@ function NovoLancamentoModal({
 
           <div>
             <div className="aurora-cap mb-2">Tipo</div>
-            <div className="flex">
+            <div className="flex" style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--line)" }}>
               {(["pagar", "receber"] as const).map((t) => (
                 <button
                   key={t}
@@ -291,7 +292,7 @@ function NovoLancamentoModal({
                     fontWeight: 600,
                     background: form.type === t ? (t === "pagar" ? "var(--navy)" : "var(--green)") : "var(--linen)",
                     color: form.type === t ? "#fff" : "var(--muted-foreground)",
-                    border: "1px solid var(--line)",
+                    border: "none",
                   }}
                 >
                   {t === "pagar" ? "A Pagar" : "A Receber"}
@@ -462,24 +463,29 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
         </div>
       )}
 
-      {/* View toggle */}
-      <div className="flex items-center gap-1">
-        {(["pendentes", "pagos", "todos"] as FilterView[]).map((v) => (
-          <button
-            key={v}
-            onClick={() => { setView(v); setPage(0); }}
-            className="text-[10px] uppercase px-3 py-1.5 transition-colors"
-            style={{
-              letterSpacing: "1.5px",
-              background: view === v ? "var(--navy)" : "transparent",
-              color: view === v ? "#fff" : "var(--muted-foreground)",
-              border: "1px solid",
-              borderColor: view === v ? "var(--navy)" : "var(--line)",
-            }}
-          >
-            {v}
-          </button>
-        ))}
+      {/* View filter — dropdown no padrão Dashboard */}
+      <div className="flex items-center gap-2">
+        <FilterMenu
+          label="Exibir"
+          valueLabel={view === "pendentes" ? "Pendentes" : view === "pagos" ? "Pagos" : "Todos"}
+          minWidth={160}
+        >
+          {(close) =>
+            (["pendentes", "pagos", "todos"] as FilterView[]).map((v) => (
+              <FilterMenuOption
+                key={v}
+                active={view === v}
+                onClick={() => {
+                  setView(v);
+                  setPage(0);
+                  close();
+                }}
+              >
+                {v.charAt(0).toUpperCase() + v.slice(1)}
+              </FilterMenuOption>
+            ))
+          }
+        </FilterMenu>
       </div>
 
       {loading && (

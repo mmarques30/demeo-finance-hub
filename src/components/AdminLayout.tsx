@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LogoMark } from "./Logo";
@@ -9,14 +9,22 @@ import { useClickOutside, useLocalStorage } from "@/hooks/useClickOutside";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { motion } from "framer-motion";
 
-type SidebarItem = {
+type SidebarLeaf = {
   to: string;
   label: string;
   icon: string;
-  subLabel?: string;   // header do sub-grupo (renderizado como botão toggle)
-  subGroupId?: string; // id do sub-grupo ao qual este item pertence
-  indent?: boolean;
 };
+
+/** Item de 1º nível do grupo — pode ser link simples ou pasta com filhos */
+type SidebarItem = {
+  id: string;
+  label: string;
+  icon: string;
+  /** Link próprio (ex.: Pipeline, Categorias). Em pastas, opcional. */
+  to?: string;
+  children?: SidebarLeaf[];
+};
+
 type SidebarGroup = { id: string; label: string; items: SidebarItem[] };
 
 const GROUPS: SidebarGroup[] = [
@@ -24,54 +32,97 @@ const GROUPS: SidebarGroup[] = [
     id: "visao",
     label: "Visão",
     items: [
-      { to: "/admin/", label: "Dashboard", icon: "▦" },
-      { to: "/admin/clientes", label: "Clientes", icon: "◷" },
-      { to: "/admin/dfc", label: "DFC / DRE", icon: "◈" },
-      { to: "/admin/relatorios", label: "Relatórios", icon: "≡" },
+      { id: "dashboard", to: "/admin/", label: "Dashboard", icon: "▦" },
+      { id: "clientes", to: "/admin/clientes", label: "Clientes", icon: "◷" },
+      { id: "dfc", to: "/admin/dfc", label: "DFC / DRE", icon: "◈" },
+      { id: "relatorios", to: "/admin/relatorios", label: "Relatórios", icon: "≡" },
     ],
   },
   {
     id: "operacao",
     label: "Operação",
     items: [
-      { to: "/admin/importar", label: "Importar Extratos", icon: "↓" },
-      { to: "/admin/pendentes", label: "Pendentes", icon: "⊙" },
+      { id: "importar", to: "/admin/importar", label: "Importar Extratos", icon: "↓" },
+      { id: "pendentes", to: "/admin/pendentes", label: "Pendentes", icon: "⊙" },
     ],
   },
   {
     id: "comercial",
     label: "Comercial",
     items: [
-      { to: "/admin/pipeline", label: "Pipeline", icon: "⋯" },
-      { to: "/admin/propostas", label: "Propostas", icon: "✎", subLabel: "Documentos", subGroupId: "documentos", indent: true },
-      { to: "/admin/contratos", label: "Contratos", icon: "❍", subGroupId: "documentos", indent: true },
-      { to: "/admin/insights/precificacao", label: "Precificação", icon: "↗", subLabel: "Serviços", subGroupId: "servicos", indent: true },
+      { id: "pipeline", to: "/admin/pipeline", label: "Pipeline", icon: "⋯" },
+      {
+        id: "documentos",
+        label: "Documentos",
+        icon: "▤",
+        children: [
+          { to: "/admin/propostas", label: "Propostas", icon: "✎" },
+          { to: "/admin/contratos", label: "Contratos", icon: "❍" },
+        ],
+      },
+      {
+        id: "servicos",
+        label: "Serviços",
+        icon: "◇",
+        children: [
+          { to: "/admin/servicos", label: "Catálogo", icon: "◇" },
+          { to: "/admin/insights/precificacao", label: "Precificação", icon: "↗" },
+        ],
+      },
     ],
   },
   {
     id: "configuracao",
     label: "Configuração",
     items: [
-      { to: "/admin/categorias", label: "Categorias", icon: "⊞" },
-      { to: "/admin/plano-contas", label: "Plano de Contas", icon: "☰" },
-      { to: "/admin/regras", label: "Regras de Classificação", icon: "⊟" },
-      { to: "/admin/usuarios", label: "Usuários", icon: "◫" },
+      { id: "categorias", to: "/admin/categorias", label: "Categorias", icon: "◎" },
+      {
+        id: "plano-contas",
+        to: "/admin/plano-contas",
+        label: "Plano de Contas",
+        icon: "⬡",
+        children: [
+          { to: "/admin/regras", label: "Regras de Classificação", icon: "⟳" },
+        ],
+      },
+      { id: "usuarios", to: "/admin/usuarios", label: "Usuários", icon: "◉" },
     ],
   },
 ];
 
-const ALL_ITEMS = GROUPS.flatMap((g) => g.items);
+function itemRoutes(item: SidebarItem): string[] {
+  const routes: string[] = [];
+  if (item.to) routes.push(item.to);
+  for (const child of item.children ?? []) routes.push(child.to);
+  return routes;
+}
 
 function isActive(pathname: string, to: string) {
   if (to === "/admin/") return pathname === "/admin/" || pathname === "/admin";
   return pathname.startsWith(to);
 }
 
+function itemIsActive(pathname: string, item: SidebarItem) {
+  return itemRoutes(item).some((to) => isActive(pathname, to));
+}
+
 function activeGroupId(pathname: string): string {
   for (const g of GROUPS) {
-    if (g.items.some((it) => isActive(pathname, it.to))) return g.id;
+    if (g.items.some((it) => itemIsActive(pathname, it))) return g.id;
   }
   return GROUPS[0].id;
+}
+
+function breadcrumbLabel(pathname: string): string {
+  for (const g of GROUPS) {
+    for (const it of g.items) {
+      for (const child of it.children ?? []) {
+        if (isActive(pathname, child.to)) return child.label;
+      }
+      if (it.to && isActive(pathname, it.to)) return it.label;
+    }
+  }
+  return "Painel";
 }
 
 export function AdminLayout({ children }: { children: ReactNode }) {
@@ -232,7 +283,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               </Link>
               <span className="hidden sm:inline" style={{ color: "rgba(0,0,0,0.2)" }}>/</span>
               <span style={{ color: "var(--foreground)", fontWeight: 500 }}>
-                {ALL_ITEMS.find((i) => isActive(path, i.to))?.label ?? "Painel"}
+                {breadcrumbLabel(path)}
               </span>
             </div>
           </div>
@@ -694,6 +745,70 @@ function ProfileModal({
   );
 }
 
+function navRowStyle(active: boolean, collapsed: boolean, indent = false): CSSProperties {
+  return {
+    padding: collapsed ? "12px" : "11px 14px",
+    paddingLeft: !collapsed && indent ? 28 : undefined,
+    justifyContent: collapsed ? "center" : undefined,
+    color: active ? "#fff" : "rgba(255,255,255,.78)",
+    background: active
+      ? "linear-gradient(135deg, rgba(153,169,137,0.28), rgba(153,169,137,0.10))"
+      : "transparent",
+    borderRadius: 12,
+    fontWeight: active ? 500 : 400,
+    fontSize: 14,
+    lineHeight: 1.2,
+    width: "100%",
+    border: "none",
+    cursor: "pointer",
+    textAlign: "left" as const,
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    textDecoration: "none",
+    position: "relative" as const,
+  };
+}
+
+function NavActiveBar() {
+  return (
+    <span
+      aria-hidden
+      style={{
+        position: "absolute",
+        left: -2,
+        top: "50%",
+        transform: "translateY(-50%)",
+        width: 3,
+        height: 22,
+        background: "var(--sage)",
+        borderRadius: 999,
+        boxShadow: "0 0 12px rgba(153,169,137,0.6)",
+      }}
+    />
+  );
+}
+
+function NavIcon({ icon, active }: { icon: string; active: boolean }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 20,
+        height: 20,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: active ? "var(--sage)" : "rgba(255,255,255,0.6)",
+        fontSize: 15,
+        flexShrink: 0,
+      }}
+    >
+      {icon}
+    </span>
+  );
+}
+
 function SidebarContent({
   path,
   collapsed,
@@ -712,39 +827,51 @@ function SidebarContent({
   mobile?: boolean;
 }) {
   const [subExpanded, setSubExpanded] = useState<Record<string, boolean>>({});
+
+  // Abre pastas cujo filho está ativo
+  useEffect(() => {
+    const next: Record<string, boolean> = {};
+    for (const g of GROUPS) {
+      for (const it of g.items) {
+        if (it.children?.some((c) => isActive(path, c.to))) {
+          next[it.id] = true;
+        }
+      }
+    }
+    if (Object.keys(next).length) {
+      setSubExpanded((prev) => ({ ...prev, ...next }));
+    }
+  }, [path]);
+
   function toggleSubGroup(id: string) {
-    setSubExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+    setSubExpanded((prev) => ({ ...prev, [id]: !(prev[id] ?? false) }));
+  }
+
+  function isFolderOpen(item: SidebarItem) {
+    if (!item.children?.length) return false;
+    return subExpanded[item.id] ?? itemIsActive(path, item);
   }
 
   return (
     <>
-      {/* Header */}
       <div
         className="px-4 pt-6 pb-5 flex items-center justify-between"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
       >
-        {/* Só o ícone da logo — sem texto "Aurora" nem "Gestão financeira" */}
-        <Link
-          to={"/admin/" as string}
-          aria-label="Aurora · ir para Dashboard"
-          className={`inline-flex items-center text-white ${collapsed ? "justify-center w-full" : ""}`}
-        >
-          <span style={{ color: "var(--sage)" }}>
-            <LogoMark size={28} />
-          </span>
+        <Link to="/admin" className="flex items-center" style={{ color: "#fff", textDecoration: "none" }}>
+          <LogoMark size={collapsed && !mobile ? 22 : 26} />
         </Link>
         {!mobile && !collapsed && (
           <button
             onClick={onToggleCollapsed}
             aria-label="Recolher menu"
-            className="opacity-60 hover:opacity-100 transition-opacity"
             style={{
-              width: 26,
-              height: 26,
-              borderRadius: 7,
-              background: "rgba(255,255,255,0.10)",
+              width: 28,
+              height: 28,
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.08)",
               border: "1px solid rgba(255,255,255,0.10)",
-              color: "rgba(255,255,255,0.85)",
+              color: "rgba(255,255,255,0.70)",
               fontSize: 11,
               display: "flex",
               alignItems: "center",
@@ -780,7 +907,6 @@ function SidebarContent({
         )}
       </div>
 
-      {/* Toggle collapsed (quando colapsado, fica visível como botão central) */}
       {!mobile && collapsed && (
         <button
           onClick={onToggleCollapsed}
@@ -804,17 +930,16 @@ function SidebarContent({
         </button>
       )}
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-2 pt-2 pb-4 flex flex-col gap-1">
         {GROUPS.map((group) => {
           const isOpen = expanded[group.id] ?? false;
-          const hasActive = group.items.some((it) => isActive(path, it.to));
+          const hasActive = group.items.some((it) => itemIsActive(path, it));
           return (
             <div key={group.id} className="flex flex-col">
               {!collapsed && (
                 <button
                   onClick={() => onToggleGroup(group.id)}
-                  className={`flex items-center justify-between w-full px-3 py-2.5 text-[11px] uppercase transition-all rounded-[10px] mb-1 ${
+                  className={`flex items-center justify-between w-full px-3 py-2.5 text-[11px] uppercase transition-all rounded-[12px] mb-1 ${
                     hasActive ? "bg-[rgba(153,169,137,0.16)]" : "bg-white/[0.06] hover:bg-white/[0.10]"
                   }`}
                   style={{
@@ -836,144 +961,179 @@ function SidebarContent({
                 </button>
               )}
               {collapsed && (
-                <div
-                  className="mx-3 my-2"
-                  style={{
-                    height: 1,
-                    background: "rgba(255,255,255,0.06)",
-                  }}
-                />
+                <div className="mx-3 my-2" style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
               )}
               <div
                 style={{
-                  maxHeight: collapsed ? "none" : isOpen ? 400 : 0,
+                  maxHeight: collapsed ? "none" : isOpen ? 640 : 0,
                   overflow: "hidden",
                   transition: "max-height 0.32s cubic-bezier(.22,.61,.36,1)",
                 }}
               >
                 {group.items.map((item) => {
-                  const active = isActive(path, item.to);
-                  const badge =
-                    item.to === "/admin/pendentes"
-                      ? pendentesCount
-                      : 0;
-                  const subOpen = item.subGroupId ? (subExpanded[item.subGroupId] ?? false) : true;
-                  return (
-                    <div key={item.to}>
-                      {!collapsed && item.subLabel && (
-                        <button
-                          onClick={() => item.subGroupId && toggleSubGroup(item.subGroupId)}
-                          className="flex items-center justify-between w-full px-3 pt-3 pb-1 text-[9px] uppercase transition-colors hover:opacity-80"
-                          style={{
-                            letterSpacing: "2px",
-                            color: "rgba(255,255,255,0.45)",
-                            fontWeight: 600,
-                            background: "transparent",
-                            border: "none",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <span>{item.subLabel}</span>
-                          <span
-                            style={{
-                              fontSize: 8,
-                              transition: "transform 0.22s",
-                              transform: subOpen ? "rotate(90deg)" : "rotate(0)",
-                              opacity: 0.7,
-                            }}
-                          >
-                            ▶
-                          </span>
-                        </button>
-                      )}
-                    {subOpen && <motion.div
-                      className="mx-1.5 my-0.5"
-                      style={{ borderRadius: 10, overflow: "hidden" }}
-                      whileHover={!active ? { backgroundColor: "rgba(255,255,255,0.08)" } : {}}
-                      whileTap={{ scale: 0.985 }}
-                      transition={{ duration: 0.15 }}
-                    ><Link
-                      to={item.to as string}
-                      title={collapsed ? item.label : undefined}
-                      className="group relative flex items-center gap-3 transition-all"
-                      style={{
-                        padding: collapsed ? "12px" : "11px 14px",
-                        paddingLeft: !collapsed && item.indent ? "22px" : undefined,
-                        justifyContent: collapsed ? "center" : undefined,
-                        color: active ? "#fff" : "rgba(255,255,255,.78)",
-                        background: active
-                          ? "linear-gradient(135deg, rgba(153,169,137,0.28), rgba(153,169,137,0.10))"
-                          : "transparent",
-                        borderRadius: 10,
-                        fontWeight: active ? 500 : 400,
-                        fontSize: 14,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {active && (
-                        <span
-                          aria-hidden
-                          style={{
-                            position: "absolute",
-                            left: -2,
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            width: 3,
-                            height: 22,
-                            background: "var(--sage)",
-                            borderRadius: 999,
-                            boxShadow: "0 0 12px rgba(153,169,137,0.6)",
-                          }}
-                        />
-                      )}
-                      <span
-                        aria-hidden
-                        style={{
-                          width: 20,
-                          height: 20,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: active ? "var(--sage)" : "rgba(255,255,255,0.6)",
-                          fontSize: 15,
-                          flexShrink: 0,
-                        }}
+                  const hasChildren = !!item.children?.length;
+                  const folderOpen = isFolderOpen(item);
+                  const parentActive = item.to
+                    ? isActive(path, item.to) && !item.children?.some((c) => isActive(path, c.to))
+                    : false;
+                  const childActive = item.children?.some((c) => isActive(path, c.to)) ?? false;
+                  const rowActive = parentActive || (!hasChildren && item.to ? isActive(path, item.to) : false);
+                  const badge = item.to === "/admin/pendentes" ? pendentesCount : 0;
+
+                  if (collapsed) {
+                    const target = item.to ?? item.children?.[0]?.to;
+                    if (!target) return null;
+                    const active = isActive(path, target) || childActive;
+                    return (
+                      <motion.div
+                        key={item.id}
+                        className="mx-1.5 my-0.5"
+                        style={{ borderRadius: 12, overflow: "hidden" }}
+                        whileHover={!active ? { backgroundColor: "rgba(255,255,255,0.08)" } : {}}
+                        whileTap={{ scale: 0.985 }}
                       >
-                        {item.icon}
-                      </span>
-                      {!collapsed && <span className="flex-1 whitespace-nowrap">{item.label}</span>}
-                      {!collapsed && badge > 0 && (
-                        <span
-                          className="text-[9px] px-2 py-0.5"
-                          style={{
-                            background: "linear-gradient(135deg, var(--tan), #4A6B55)",
-                            color: "#fff",
-                            letterSpacing: "0.5px",
-                            fontWeight: 600,
-                            borderRadius: 999,
-                            boxShadow: "0 2px 6px -2px rgba(109,146,166,0.55)",
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {badge}
-                        </span>
+                        <Link to={target as string} title={item.label} style={navRowStyle(active, true)}>
+                          {active && <NavActiveBar />}
+                          <NavIcon icon={item.icon} active={active} />
+                          {badge > 0 && (
+                            <span
+                              aria-hidden
+                              style={{
+                                position: "absolute",
+                                top: 4,
+                                right: 4,
+                                width: 8,
+                                height: 8,
+                                background: "var(--tan)",
+                                borderRadius: 999,
+                                border: "1px solid var(--navy)",
+                              }}
+                            />
+                          )}
+                        </Link>
+                      </motion.div>
+                    );
+                  }
+
+                  return (
+                    <div key={item.id} className="flex flex-col">
+                      <motion.div
+                        className="mx-1.5 my-0.5"
+                        style={{ borderRadius: 12, overflow: "hidden" }}
+                        whileHover={!rowActive && !childActive ? { backgroundColor: "rgba(255,255,255,0.08)" } : {}}
+                        whileTap={{ scale: 0.985 }}
+                      >
+                        {hasChildren && !item.to ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleSubGroup(item.id)}
+                            style={navRowStyle(childActive, false)}
+                            aria-expanded={folderOpen}
+                          >
+                            {childActive && <NavActiveBar />}
+                            <NavIcon icon={item.icon} active={childActive} />
+                            <span className="flex-1 whitespace-nowrap">{item.label}</span>
+                            <span
+                              style={{
+                                fontSize: 10,
+                                opacity: 0.65,
+                                transition: "transform 0.22s",
+                                transform: folderOpen ? "rotate(90deg)" : "rotate(0)",
+                              }}
+                            >
+                              ▶
+                            </span>
+                          </button>
+                        ) : hasChildren && item.to ? (
+                          <div className="flex items-stretch" style={navRowStyle(rowActive || childActive, false)}>
+                            {(rowActive || childActive) && <NavActiveBar />}
+                            <Link
+                              to={item.to as string}
+                              className="flex items-center gap-3 flex-1 min-w-0"
+                              style={{ color: "inherit", textDecoration: "none" }}
+                            >
+                              <NavIcon icon={item.icon} active={rowActive || childActive} />
+                              <span className="flex-1 whitespace-nowrap">{item.label}</span>
+                            </Link>
+                            <button
+                              type="button"
+                              aria-label={folderOpen ? "Recolher" : "Expandir"}
+                              aria-expanded={folderOpen}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleSubGroup(item.id);
+                              }}
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                color: "inherit",
+                                cursor: "pointer",
+                                padding: "0 4px",
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  opacity: 0.65,
+                                  transition: "transform 0.22s",
+                                  transform: folderOpen ? "rotate(90deg)" : "rotate(0)",
+                                  display: "inline-block",
+                                }}
+                              >
+                                ▶
+                              </span>
+                            </button>
+                          </div>
+                        ) : (
+                          <Link to={(item.to ?? "/") as string} style={navRowStyle(rowActive, false)}>
+                            {rowActive && <NavActiveBar />}
+                            <NavIcon icon={item.icon} active={rowActive} />
+                            <span className="flex-1 whitespace-nowrap">{item.label}</span>
+                            {badge > 0 && (
+                              <span
+                                className="text-[9px] px-2 py-0.5"
+                                style={{
+                                  background: "linear-gradient(135deg, var(--tan), #4A6B55)",
+                                  color: "#fff",
+                                  letterSpacing: "0.5px",
+                                  fontWeight: 600,
+                                  borderRadius: 999,
+                                  boxShadow: "0 2px 6px -2px rgba(109,146,166,0.55)",
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {badge}
+                              </span>
+                            )}
+                          </Link>
+                        )}
+                      </motion.div>
+
+                      {hasChildren && folderOpen && (
+                        <div className="flex flex-col pb-1">
+                          {item.children!.map((child) => {
+                            const active = isActive(path, child.to);
+                            return (
+                              <motion.div
+                                key={child.to}
+                                className="mx-1.5 my-0.5"
+                                style={{ borderRadius: 12, overflow: "hidden" }}
+                                whileHover={!active ? { backgroundColor: "rgba(255,255,255,0.08)" } : {}}
+                                whileTap={{ scale: 0.985 }}
+                              >
+                                <Link to={child.to as string} style={navRowStyle(active, false, true)}>
+                                  {active && <NavActiveBar />}
+                                  <NavIcon icon={child.icon} active={active} />
+                                  <span className="flex-1 whitespace-nowrap">{child.label}</span>
+                                </Link>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
                       )}
-                      {collapsed && badge > 0 && (
-                        <span
-                          aria-hidden
-                          style={{
-                            position: "absolute",
-                            top: 4,
-                            right: 4,
-                            width: 8,
-                            height: 8,
-                            background: "var(--tan)",
-                            borderRadius: 999,
-                            border: "1px solid var(--navy)",
-                          }}
-                        />
-                      )}
-                    </Link></motion.div>}
                     </div>
                   );
                 })}
@@ -983,7 +1143,6 @@ function SidebarContent({
         })}
       </nav>
 
-      {/* Footer sidebar */}
       <div
         className="px-4 py-3 flex items-center justify-between text-[8px] uppercase"
         style={{
@@ -1086,10 +1245,10 @@ const MODULE_MAP: Record<string, ModuleIdentity> = {
   "/admin/contratos": { icon: "❍", accent: "var(--green)", accentSoft: "rgba(40,76,43,0.12)", group: "Comercial" },
   "/admin/servicos": { icon: "◇", accent: "var(--tan)", accentSoft: "rgba(109,146,166,0.14)", group: "Comercial" },
   "/admin/insights/precificacao": { icon: "↗", accent: "var(--tan)", accentSoft: "rgba(109,146,166,0.14)", group: "Comercial" },
-  "/admin/categorias": { icon: "⊞", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
-  "/admin/plano-contas": { icon: "☰", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
-  "/admin/regras": { icon: "⊟", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
-  "/admin/usuarios": { icon: "◫", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
+  "/admin/categorias": { icon: "◎", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
+  "/admin/plano-contas": { icon: "⬡", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
+  "/admin/regras": { icon: "⟳", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
+  "/admin/usuarios": { icon: "◉", accent: "var(--sage)", accentSoft: "rgba(153,169,137,0.12)", group: "Configuração" },
 };
 
 function resolveModule(pathname: string): ModuleIdentity {

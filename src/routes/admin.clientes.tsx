@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
+import { FilterMenu, FilterMenuOption } from "@/components/FilterMenu";
 import { StatusBadge, ClosingBadge, UploadRow } from "./admin.index";
 import { formatDatePtBR } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -143,25 +144,24 @@ function ClientesPage() {
       />
 
       <div className="px-8 lg:px-12 pb-12 pt-8">
-        {/* Filtros */}
+        {/* Filtro de carteira — suspensa no padrão Dashboard */}
         <div className="flex gap-2 mb-6 flex-wrap items-center">
-          {FILTROS.map((f) => (
-            <button
-              key={f}
-              onClick={() => setFiltro(f)}
-              className="text-[10px] uppercase px-4 py-2 transition-colors"
-              style={{
-                letterSpacing: "2px",
-                fontWeight: 500,
-                background: filtro === f ? "var(--green)" : "transparent",
-                color: filtro === f ? "#fff" : "var(--muted-foreground)",
-                border: "1px solid " + (filtro === f ? "var(--green)" : "var(--line)"),
-                borderRadius: "999px",
-              }}
-            >
-              {f}
-            </button>
-          ))}
+          <FilterMenu label="Carteira" valueLabel={filtro} minWidth={180}>
+            {(close) =>
+              FILTROS.map((f) => (
+                <FilterMenuOption
+                  key={f}
+                  active={filtro === f}
+                  onClick={() => {
+                    setFiltro(f);
+                    close();
+                  }}
+                >
+                  {f}
+                </FilterMenuOption>
+              ))
+            }
+          </FilterMenu>
         </div>
 
         {/* Tabela */}
