@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
-import { authHeaders, useIsOwner } from "@/lib/auth";
+import { authHeaders, useIsAdmin } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: UsuariosPage,
-  head: () => ({ meta: [{ title: "Usuários do Portal · Aurora" }] }),
+  head: () => ({ meta: [{ title: "Usuários · Aurora" }] }),
 });
 
 interface AdminUser {
@@ -32,6 +33,7 @@ const DEFAULT_FEATURES: PortalFeatures = { dfc: true, projecao: false, download:
 interface ClientFeatureRow { id: string; name: string; portal_features: PortalFeatures | null; }
 
 type FilterRole = "todos" | "owner" | "financeiro";
+type InviteKind = "admin" | "portal";
 
 const FEATURE_LABELS: { key: keyof PortalFeatures; label: string }[] = [
   { key: "dfc",      label: "DFC / DRE" },
@@ -42,20 +44,19 @@ const FEATURE_LABELS: { key: keyof PortalFeatures; label: string }[] = [
 function UsuariosPage() {
   const qc = useQueryClient();
 
-  const { data: isOwner = false } = useIsOwner();
+  const { data: isAdmin = false } = useIsAdmin();
   const [filterClient, setFilterClient] = useState("");
   const [filterRole, setFilterRole] = useState<FilterRole>("todos");
-  const [showInvite, setShowInvite] = useState(false);
-  const [showInviteAdmin, setShowInviteAdmin] = useState(false);
+  const [inviteKind, setInviteKind] = useState<InviteKind | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [savingFeature, setSavingFeature] = useState<string | null>(null);
 
-  const [adminSectionOpen, setAdminSectionOpen] = useState(false);
-  const [usersSectionOpen, setUsersSectionOpen] = useState(false);
+  const [adminSectionOpen, setAdminSectionOpen] = useState(true);
+  const [usersSectionOpen, setUsersSectionOpen] = useState(true);
 
   const { data: adminUsers = [], isLoading: loadingAdmins } = useQuery({
     queryKey: ["admin", "adminUsers"],
-    enabled: isOwner,
+    enabled: isAdmin,
     queryFn: async () => {
       const { data: roles } = await supabase()
         .from("user_roles")
@@ -139,49 +140,61 @@ function UsuariosPage() {
   return (
     <AdminLayout>
       <PageHeader
-        title="Usuários do Portal"
+        title="Usuários"
         right={
-          <button
-            onClick={() => setShowInvite(true)}
-            className="text-[10px] uppercase px-5 py-2.5"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
-          >
-            + Convidar usuário
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setInviteKind("admin")}
+              className="text-[10px] uppercase px-5 py-2.5"
+              style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+            >
+              + Admin Aurora
+            </button>
+            <button
+              onClick={() => setInviteKind("portal")}
+              className="text-[10px] uppercase px-5 py-2.5"
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+            >
+              + Usuário do portal
+            </button>
+          </div>
         }
       />
 
       <div className="px-6 lg:px-10 pb-10 flex flex-col gap-6">
 
-        {/* KPIs — topo */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Total de usuários", value: users.length },
-            { label: "Proprietários", value: ownerCount },
-            { label: "Acesso Financeiro", value: financeiroCount },
-          ].map(({ label, value }) => (
+            { label: "Admins Aurora", value: adminUsers.length, tone: "var(--navy)" },
+            { label: "Usuários portal", value: users.length, tone: "var(--green)" },
+            { label: "Portal · Proprietários", value: ownerCount, tone: "var(--navy)" },
+            { label: "Portal · Financeiro", value: financeiroCount, tone: "var(--tan)" },
+          ].map(({ label, value, tone }) => (
             <div key={label} className="aurora-card">
               <div className="aurora-cap mb-2">{label}</div>
-              <div className="aurora-value" style={{ fontSize: 36, color: "var(--navy)" }}>{value}</div>
+              <div className="aurora-value" style={{ fontSize: 36, color: tone }}>{value}</div>
             </div>
           ))}
         </div>
 
-        {/* ── Administradores do sistema — accordion (owner-only) ── */}
-        {isOwner && (
+        {/* ── Administradores do sistema ── */}
+        {isAdmin && (
           <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
             <header
               className="flex items-center justify-between px-6 py-4"
               style={{ borderBottom: adminSectionOpen ? "1px solid var(--line)" : "none", background: "#FAFAF8" }}
             >
               <div>
-                <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--navy)", fontWeight: 600 }}>Sistema</div>
+                <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--navy)", fontWeight: 600 }}>Painel Aurora</div>
                 <div className="text-[15px]" style={{ fontWeight: 500, marginTop: 2 }}>Administradores</div>
+                <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
+                  Acesso completo ao admin: importação, clientes, DFC, regras e configuração.
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {adminSectionOpen && (
                   <button
-                    onClick={() => setShowInviteAdmin(true)}
+                    onClick={() => setInviteKind("admin")}
                     className="text-[9px] uppercase px-4 py-2"
                     style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
                   >
@@ -237,7 +250,7 @@ function UsuariosPage() {
                     {adminUsers.length === 0 && (
                       <tr>
                         <td colSpan={3} className="px-5 py-6 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                          Nenhum administrador encontrado. Execute a migration SQL primeiro.
+                          Nenhum administrador ainda. Use “+ Admin Aurora” para convidar.
                         </td>
                       </tr>
                     )}
@@ -248,34 +261,47 @@ function UsuariosPage() {
           </section>
         )}
 
-        {/* ── Usuários do Portal — accordion ── */}
+        {/* ── Usuários do Portal ── */}
         <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
           <header
             className="flex items-center justify-between px-6 py-4"
             style={{ borderBottom: usersSectionOpen ? "1px solid var(--line)" : "none", background: "#FAFAF8" }}
           >
             <div>
-              <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--green)", fontWeight: 600 }}>Portal</div>
+              <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--green)", fontWeight: 600 }}>Portal do cliente</div>
               <div className="text-[15px]" style={{ fontWeight: 500, marginTop: 2 }}>Usuários do Portal</div>
+              <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
+                Acesso só ao portal da empresa vinculada — Proprietário (completo) ou Financeiro (restrito).
+              </div>
             </div>
-            <button
-              onClick={() => setUsersSectionOpen((v) => !v)}
-              aria-label={usersSectionOpen ? "Colapsar" : "Expandir"}
-              style={{
-                width: 30, height: 30, borderRadius: 6,
-                border: "1px solid var(--line)", background: "transparent",
-                color: "var(--muted-foreground)", fontSize: 10,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", flexShrink: 0,
-              }}
-            >
-              {usersSectionOpen ? "▲" : "▼"}
-            </button>
+            <div className="flex items-center gap-2">
+              {usersSectionOpen && (
+                <button
+                  onClick={() => setInviteKind("portal")}
+                  className="text-[9px] uppercase px-4 py-2"
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                >
+                  + Convidar portal
+                </button>
+              )}
+              <button
+                onClick={() => setUsersSectionOpen((v) => !v)}
+                aria-label={usersSectionOpen ? "Colapsar" : "Expandir"}
+                style={{
+                  width: 30, height: 30, borderRadius: 6,
+                  border: "1px solid var(--line)", background: "transparent",
+                  color: "var(--muted-foreground)", fontSize: 10,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", flexShrink: 0,
+                }}
+              >
+                {usersSectionOpen ? "▲" : "▼"}
+              </button>
+            </div>
           </header>
 
           {usersSectionOpen && (
             <>
-              {/* Filtros */}
               <div className="flex flex-col md:flex-row gap-3 px-6 py-4" style={{ borderBottom: "1px solid var(--line)" }}>
                 <input
                   type="text"
@@ -306,7 +332,6 @@ function UsuariosPage() {
                 </div>
               </div>
 
-              {/* Tabela */}
               {isLoading ? (
                 <div className="px-6 py-12 text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>Carregando…</div>
               ) : filtered.length === 0 ? (
@@ -331,8 +356,8 @@ function UsuariosPage() {
                       const clientData = clients.find((c) => c.id === u.client_id);
                       const f: PortalFeatures = (clientData?.portal_features as PortalFeatures | null) ?? DEFAULT_FEATURES;
                       return (
-                        <>
-                          <tr key={`${u.user_id}-${u.client_id}`} style={{ borderTop: "1px solid var(--line)" }}>
+                        <Fragment key={`${u.user_id}-${u.client_id}`}>
+                          <tr style={{ borderTop: "1px solid var(--line)" }}>
                             <td className="px-5 py-3 text-[13px]" style={{ fontWeight: 500 }}>{u.display_name ?? "—"}</td>
                             <td className="px-5 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{u.email ?? "—"}</td>
                             <td className="px-5 py-3 text-[12px]">{u.clients?.name ?? "—"}</td>
@@ -386,7 +411,7 @@ function UsuariosPage() {
                           </tr>
 
                           {isExpanded && (
-                            <tr key={`${u.user_id}-features`}>
+                            <tr>
                               <td colSpan={5} style={{ background: "rgba(74,103,65,0.03)", borderTop: "1px solid var(--line)", padding: "16px 20px" }}>
                                 <div className="aurora-cap mb-3" style={{ color: "var(--green)" }}>
                                   Funcionalidades · {u.clients?.name ?? "cliente"}
@@ -417,7 +442,7 @@ function UsuariosPage() {
                               </td>
                             </tr>
                           )}
-                        </>
+                        </Fragment>
                       );
                     })}
                   </tbody>
@@ -429,23 +454,22 @@ function UsuariosPage() {
 
       </div>
 
-      {/* Modal de convite */}
-      {showInvite && (
-        <InviteModal
+      {inviteKind === "portal" && (
+        <InvitePortalModal
           clients={clients}
-          onClose={() => setShowInvite(false)}
+          onClose={() => setInviteKind(null)}
           onSuccess={() => {
-            setShowInvite(false);
+            setInviteKind(null);
             qc.invalidateQueries({ queryKey: ["admin", "portalUsers"] });
           }}
         />
       )}
 
-      {showInviteAdmin && (
+      {inviteKind === "admin" && (
         <InviteAdminModal
-          onClose={() => setShowInviteAdmin(false)}
+          onClose={() => setInviteKind(null)}
           onSuccess={() => {
-            setShowInviteAdmin(false);
+            setInviteKind(null);
             qc.invalidateQueries({ queryKey: ["admin", "adminUsers"] });
           }}
         />
@@ -453,8 +477,6 @@ function UsuariosPage() {
     </AdminLayout>
   );
 }
-
-// ─── Modal de convite admin ───────────────────────────────────────────────────
 
 function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [email, setEmail] = useState("");
@@ -497,10 +519,13 @@ function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
         style={{ border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="aurora-cap mb-1" style={{ color: "var(--navy)" }}>Sistema · Administradores</div>
-        <h2 className="aurora-serif text-[22px] mb-6">
-          Convidar <em className="italic" style={{ color: "var(--navy)" }}>admin</em>
+        <div className="aurora-cap mb-1" style={{ color: "var(--navy)" }}>Painel Aurora</div>
+        <h2 className="aurora-serif text-[22px] mb-2">
+          Convidar <em className="italic" style={{ color: "var(--navy)" }}>administrador</em>
         </h2>
+        <p className="text-[12px] mb-6" style={{ color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+          Este usuário entra no painel admin (importação, clientes, DFC, configuração). Não é acesso de portal do cliente.
+        </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <label className="block">
             <div className="aurora-cap mb-1.5">Nome completo</div>
@@ -540,9 +565,7 @@ function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
   );
 }
 
-// ─── Modal de convite ──────────────────────────────────────────────────────────
-
-function InviteModal({
+function InvitePortalModal({
   clients,
   onClose,
   onSuccess,
@@ -595,10 +618,13 @@ function InviteModal({
         style={{ border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="aurora-cap mb-1">Novo acesso</div>
-        <h2 className="aurora-serif text-[24px] mb-6">
-          Convidar <em className="italic" style={{ color: "var(--green)" }}>usuário</em>
+        <div className="aurora-cap mb-1">Portal do cliente</div>
+        <h2 className="aurora-serif text-[24px] mb-2">
+          Convidar <em className="italic" style={{ color: "var(--green)" }}>usuário do portal</em>
         </h2>
+        <p className="text-[12px] mb-6" style={{ color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+          Acesso apenas ao portal da empresa escolhida — sem painel admin da Aurora.
+        </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
@@ -643,7 +669,7 @@ function InviteModal({
           </div>
 
           <div>
-            <label className="aurora-cap block mb-2">Perfil de acesso</label>
+            <label className="aurora-cap block mb-2">Perfil no portal</label>
             <div className="flex gap-3">
               {(["owner", "financeiro"] as const).map((r) => (
                 <button
@@ -666,7 +692,7 @@ function InviteModal({
             </div>
             <p className="text-[10px] mt-2" style={{ color: "var(--muted-foreground)" }}>
               {role === "owner"
-                ? "Acesso completo: saldo, DFC, DRE, downloads."
+                ? "Acesso completo ao portal: saldo, DFC, DRE, downloads."
                 : "Acesso restrito: DFC e DRE. Sem saldo consolidado nem downloads."}
             </p>
           </div>
