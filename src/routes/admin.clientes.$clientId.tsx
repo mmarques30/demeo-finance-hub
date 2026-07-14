@@ -8,6 +8,7 @@ import { HealthAlertCard } from "@/components/HealthAlertCard";
 import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
 import { authHeaders } from "@/lib/auth";
 import { computeDRE, DRE_EBITDA_PIVOT, type CatInfo, type DREData } from "@/lib/dre";
+import { deleteUploadCascade } from "@/lib/uploads";
 
 export const Route = createFileRoute("/admin/clientes/$clientId")({
   component: ClientePage,
@@ -50,6 +51,8 @@ interface UploadHistory {
   id: string;
   period: string;
   bank_name: string;
+  filename: string;
+  tx_total: number;
   tx_classified: number;
   tx_pending: number;
   status: string;
@@ -71,6 +74,9 @@ function ClientePage() {
   const [error, setError] = useState<string | null>(null);
   const [uploads, setUploads] = useState<UploadHistory[]>([]);
   const [uploadsLoading, setUploadsLoading] = useState(true);
+  const [deleteUpload, setDeleteUpload] = useState<UploadHistory | null>(null);
+  const [deletingUpload, setDeletingUpload] = useState(false);
+  const [deleteUploadErr, setDeleteUploadErr] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("lancamentos");
   const [catMap, setCatMap] = useState<Map<string, CatInfo>>(new Map());
   const [catMapLoaded, setCatMapLoaded] = useState(false);
@@ -106,7 +112,7 @@ function ClientePage() {
     if (!clientId) return;
     supabase()
       .from("uploads")
-      .select("id, period, bank_name, tx_classified, tx_pending, status, created_at")
+      .select("id, period, bank_name, filename, tx_total, tx_classified, tx_pending, status, created_at")
       .eq("client_id", clientId)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
@@ -195,6 +201,31 @@ function ClientePage() {
     if (!confirm("Remover acesso deste usuário ao portal?")) return;
     await supabase().from("user_client_mapping").delete().eq("user_id", userId).eq("client_id", clientId);
     loadPortalUsers();
+  }
+
+  async function handleDeleteUploadConfirm() {
+    if (!deleteUpload) return;
+    setDeletingUpload(true);
+    setDeleteUploadErr(null);
+    const { error } = await deleteUploadCascade(deleteUpload.id);
+    setDeletingUpload(false);
+    if (error) {
+      setDeleteUploadErr(error);
+      return;
+    }
+    setUploads((prev) => prev.filter((u) => u.id !== deleteUpload.id));
+    setDeleteUpload(null);
+    // Recarrega lançamentos do período caso o extrato excluído os afetasse
+    const { start, end } = monthRangeDates(period);
+    const { data } = await supabase()
+      .from("transactions")
+      .select("id, date, description, amount, category, status, is_recurring")
+      .eq("client_id", clientId)
+      .in("status", ["approved", "pending"])
+      .gte("date", start)
+      .lte("date", end)
+      .order("date", { ascending: false });
+    setTx((data ?? []) as Tx[]);
   }
 
 const receita = useMemo(
@@ -556,8 +587,8 @@ const receita = useMemo(
               <table className="w-full">
                 <thead>
                   <tr style={{ background: "#FAFAF8" }}>
-                    {["Período", "Banco", "Classificados", "Pendentes", "Cobertura", "Status", "Importado em"].map((h) => (
-                      <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
+                    {["Período", "Banco", "Arquivo", "Classificados", "Pendentes", "Cobertura", "Status", "Importado em", ""].map((h) => (
+                      <th key={h || "ações"} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
                         {h}
                       </th>
                     ))}
@@ -573,6 +604,9 @@ const receita = useMemo(
                       <tr key={u.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
                         <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 600 }}>{u.period}</td>
                         <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{u.bank_name}</td>
+                        <td className="px-6 py-3 text-[12px] max-w-[160px] truncate" style={{ color: "var(--muted-foreground)" }} title={u.filename}>
+                          {u.filename || "—"}
+                        </td>
                         <td className="px-6 py-3 aurora-value" style={{ fontSize: 14, color: "var(--green)" }}>{classified}</td>
                         <td className="px-6 py-3 aurora-value" style={{ fontSize: 14, color: pending > 0 ? "var(--tan)" : "var(--muted-foreground)" }}>{pending}</td>
                         <td className="px-6 py-3">
@@ -593,6 +627,17 @@ const receita = useMemo(
                         </td>
                         <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                           {formatDatePtBR(u.created_at)}
+                        </td>
+                        <td className="px-6 py-3 text-right whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => { setDeleteUploadErr(null); setDeleteUpload(u); }}
+                            className="text-[11px] transition-opacity hover:opacity-70"
+                            style={{ color: "var(--tan)" }}
+                            title="Remove o extrato e todos os lançamentos gerados por ele"
+                          >
+                            Excluir
+                          </button>
                         </td>
                       </tr>
                     );
@@ -736,6 +781,74 @@ const receita = useMemo(
           </div>
         )}
       </div>
+
+      {deleteUpload && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.45)" }}
+          onClick={(e) => { if (e.target === e.currentTarget && !deletingUpload) { setDeleteUpload(null); setDeleteUploadErr(null); } }}
+        >
+          <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+            <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(184,149,106,0.12)", borderBottom: "1px solid var(--line)" }}>
+              <div>
+                <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>
+                <div className="aurora-serif text-[20px]">Excluir extrato</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setDeleteUpload(null); setDeleteUploadErr(null); }}
+                disabled={deletingUpload}
+                className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100"
+              >
+                ×
+              </button>
+            </div>
+            <div className="px-6 py-5 flex flex-col gap-4">
+              <div className="text-[13px]" style={{ lineHeight: 1.6 }}>
+                <span style={{ fontWeight: 500 }}>{deleteUpload.filename || "Extrato"}</span>
+                <br />
+                <span style={{ color: "var(--muted-foreground)" }}>
+                  {deleteUpload.bank_name} · {deleteUpload.period}
+                </span>
+              </div>
+              <div
+                className="text-[12px] px-4 py-3"
+                style={{ background: "rgba(184,149,106,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}
+              >
+                Este extrato e <strong>todos os lançamentos</strong> gerados por ele
+                {deleteUpload.tx_total > 0 ? <> ({deleteUpload.tx_total})</> : null}
+                {" "}serão removidos permanentemente — inclusive pendentes, classificados e aprovados.
+                DFC, DRE e portais refletem a exclusão imediatamente. Essa ação não pode ser desfeita.
+              </div>
+              {deleteUploadErr && (
+                <div className="text-[12px] px-4 py-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
+                  {deleteUploadErr}
+                </div>
+              )}
+              <div className="flex justify-end gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setDeleteUpload(null); setDeleteUploadErr(null); }}
+                  disabled={deletingUpload}
+                  className="text-[10px] uppercase px-5 py-3 transition-opacity disabled:opacity-40"
+                  style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteUploadConfirm}
+                  disabled={deletingUpload}
+                  className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
+                  style={{ background: "var(--tan)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                >
+                  {deletingUpload ? "Excluindo..." : "Excluir extrato"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
