@@ -1,11 +1,12 @@
 // Form do hero — Nome + Telefone + E-mail + 2 perguntas qualificação.
-// Fundo: azul intermediário da marca (#6D92A6).
+// Fundo sólido do azul intermediário da marca (sem transparência / sem caixa atrás).
 import { useState } from "react";
 import { FUNCTIONS_URL } from "@/lib/supabase";
 
 const INK = "#1C2D45";
-const STEEL = "#6D92A6";
-const SURFACE = "#E0E4D6";
+/** Azul intermediário mais fechado — contraste sólido no hero */
+const STEEL_SOLID = "#4A7088";
+const OFFWHITE = "#FAFBFA";
 const FOREST = "#284C2B";
 
 const FATURAMENTO = [
@@ -29,6 +30,14 @@ function maskPhone(v: string) {
   if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
+
+const formShell: React.CSSProperties = {
+  background: STEEL_SOLID,
+  border: "1px solid rgba(28,45,69,0.2)",
+  borderRadius: 22,
+  boxShadow: "0 28px 56px -24px rgba(28,45,69,0.4)",
+  padding: 30,
+};
 
 export function HeroLeadForm() {
   const [name, setName] = useState("");
@@ -71,18 +80,7 @@ export function HeroLeadForm() {
 
   if (status === "ok") {
     return (
-      <div
-        className="relative overflow-hidden"
-        style={{
-          background: `linear-gradient(160deg, ${STEEL} 0%, #5A7F94 100%)`,
-          border: "1px solid rgba(28,45,69,0.12)",
-          borderRadius: 24,
-          boxShadow:
-            "0 40px 80px -28px rgba(28,45,69,0.35), 0 16px 32px -16px rgba(40,76,43,0.18)",
-          padding: 36,
-          color: "#fff",
-        }}
-      >
+      <div style={{ ...formShell, color: "#fff" }}>
         <div
           aria-hidden
           style={{
@@ -96,7 +94,6 @@ export function HeroLeadForm() {
             justifyContent: "center",
             fontSize: 28,
             marginBottom: 16,
-            boxShadow: "0 12px 24px -6px rgba(40,76,43,0.45)",
           }}
         >
           ✓
@@ -112,11 +109,11 @@ export function HeroLeadForm() {
           }}
         >
           Obrigada, {name.split(" ")[0]}.{" "}
-          <em className="italic" style={{ color: SURFACE }}>
+          <em className="italic" style={{ color: OFFWHITE }}>
             A Claudia te chama em até 1 dia útil.
           </em>
         </h3>
-        <p className="mt-4" style={{ fontSize: 14, color: "rgba(255,255,255,0.82)", lineHeight: 1.6 }}>
+        <p className="mt-4" style={{ fontSize: 14, color: "rgba(255,255,255,0.88)", lineHeight: 1.6 }}>
           Sem pressão, sem cobrança no primeiro papo.
         </p>
       </div>
@@ -124,212 +121,155 @@ export function HeroLeadForm() {
   }
 
   return (
-    <form
-      onSubmit={submit}
-      className="relative overflow-hidden"
-      style={{
-        background: `linear-gradient(165deg, ${STEEL} 0%, #5C8296 55%, #547A8E 100%)`,
-        border: "1px solid rgba(28,45,69,0.14)",
-        borderRadius: 24,
-        boxShadow:
-          "0 40px 80px -28px rgba(28,45,69,0.32), 0 18px 36px -18px rgba(40,76,43,0.16), inset 0 1px 0 rgba(255,255,255,0.22)",
-        padding: 30,
-      }}
-    >
+    <form onSubmit={submit} style={formShell}>
       <div
-        aria-hidden
-        className="absolute"
+        className="inline-flex items-center gap-2 mb-3"
         style={{
-          right: -50,
-          top: -50,
-          width: 200,
-          height: 200,
-          background: "radial-gradient(circle, rgba(224,228,214,0.35) 0%, transparent 70%)",
-          filter: "blur(28px)",
-          borderRadius: "50%",
-          pointerEvents: "none",
+          background: OFFWHITE,
+          color: FOREST,
+          padding: "5px 12px",
+          borderRadius: 999,
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "1px",
         }}
-      />
-      <div
-        aria-hidden
-        className="absolute"
+      >
+        DIAGNÓSTICO GRATUITO
+      </div>
+      <h3
         style={{
-          left: -40,
-          bottom: -60,
-          width: 180,
-          height: 180,
-          background: "radial-gradient(circle, rgba(40,76,43,0.28) 0%, transparent 70%)",
-          filter: "blur(36px)",
-          borderRadius: "50%",
-          pointerEvents: "none",
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: 26,
+          fontWeight: 400,
+          color: "#FFFFFF",
+          letterSpacing: "-0.6px",
+          lineHeight: 1.15,
         }}
-      />
+      >
+        Conta um pouco da sua{" "}
+        <em className="italic" style={{ color: OFFWHITE }}>
+          empresa
+        </em>
+        .
+      </h3>
 
-      <div className="relative">
-        <div
-          className="inline-flex items-center gap-2 mb-3"
-          style={{
-            background: SURFACE,
-            color: FOREST,
-            padding: "5px 12px",
-            borderRadius: 999,
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "1px",
-          }}
-        >
-          DIAGNÓSTICO GRATUITO
-        </div>
-        <h3
-          style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 26,
-            fontWeight: 400,
-            color: "#FFFFFF",
-            letterSpacing: "-0.6px",
-            lineHeight: 1.15,
-          }}
-        >
-          Conta um pouco da sua{" "}
-          <em className="italic" style={{ color: SURFACE }}>
-            empresa
-          </em>
-          .
-        </h3>
+      <div className="mt-5 flex flex-col gap-2.5">
+        <Field label="Nome">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Como prefere ser chamado(a)"
+            required
+            className="focus-ring"
+            style={inputStyle}
+          />
+        </Field>
 
-        <div className="mt-5 flex flex-col gap-2.5">
-          <Field label="Nome">
+        <div className="grid grid-cols-2 gap-2.5">
+          <Field label="Telefone">
             <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Como prefere ser chamado(a)"
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={(e) => setPhone(maskPhone(e.target.value))}
+              placeholder="(11) 91234-5678"
               required
               className="focus-ring"
               style={inputStyle}
             />
           </Field>
-
-          <div className="grid grid-cols-2 gap-2.5">
-            <Field label="Telefone">
-              <input
-                type="tel"
-                inputMode="numeric"
-                value={phone}
-                onChange={(e) => setPhone(maskPhone(e.target.value))}
-                placeholder="(11) 91234-5678"
-                required
-                className="focus-ring"
-                style={inputStyle}
-              />
-            </Field>
-            <Field label="E-mail">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="você@empresa.com"
-                required
-                className="focus-ring"
-                style={inputStyle}
-              />
-            </Field>
-          </div>
-
-          <Field label="Faturamento mensal da empresa">
-            <select
-              value={fat}
-              onChange={(e) => setFat(e.target.value)}
+          <Field label="E-mail">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="você@empresa.com"
               required
               className="focus-ring"
-              style={{ ...inputStyle, color: fat ? INK : "rgba(28,45,69,0.5)" }}
-            >
-              <option value="" disabled>
-                Selecione…
-              </option>
-              {FATURAMENTO.map((o) => (
-                <option key={o.v} value={o.v} style={{ color: INK }}>
-                  {o.l}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Sua principal dor no financeiro">
-            <select
-              value={dor}
-              onChange={(e) => setDor(e.target.value)}
-              required
-              className="focus-ring"
-              style={{ ...inputStyle, color: dor ? INK : "rgba(28,45,69,0.5)" }}
-            >
-              <option value="" disabled>
-                Selecione…
-              </option>
-              {DOR.map((o) => (
-                <option key={o.v} value={o.v} style={{ color: INK }}>
-                  {o.l}
-                </option>
-              ))}
-            </select>
+              style={inputStyle}
+            />
           </Field>
         </div>
 
-        <button
-          type="submit"
-          disabled={status === "loading"}
-          className="focus-ring mt-4 w-full inline-flex items-center justify-center gap-2 relative overflow-hidden"
-          style={{
-            background:
-              status === "loading"
-                ? "rgba(28,45,69,0.55)"
-                : `linear-gradient(135deg, ${FOREST} 0%, #1f3a22 100%)`,
-            color: "#fff",
-            fontSize: 14,
-            fontWeight: 600,
-            padding: "16px 24px",
-            border: "none",
-            borderRadius: 999,
-            boxShadow: "0 12px 28px -10px rgba(40,76,43,0.55)",
-            cursor: status === "loading" ? "wait" : "pointer",
-            letterSpacing: "0.2px",
-            transition: "transform 0.2s, box-shadow 0.2s",
-          }}
-          onMouseEnter={(e) => {
-            if (status === "idle") {
-              e.currentTarget.style.transform = "translateY(-1px) scale(1.01)";
-              e.currentTarget.style.boxShadow = "0 16px 32px -10px rgba(40,76,43,0.65)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "";
-            e.currentTarget.style.boxShadow = "0 12px 28px -10px rgba(40,76,43,0.55)";
-          }}
-        >
-          <span
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 50%)",
-              pointerEvents: "none",
-            }}
-          />
-          <span style={{ position: "relative" }}>
-            {status === "loading" ? "Enviando…" : "Agendar diagnóstico →"}
-          </span>
-        </button>
+        <Field label="Faturamento mensal da empresa">
+          <select
+            value={fat}
+            onChange={(e) => setFat(e.target.value)}
+            required
+            className="focus-ring"
+            style={{ ...inputStyle, color: fat ? INK : "rgba(28,45,69,0.5)" }}
+          >
+            <option value="" disabled>
+              Selecione…
+            </option>
+            {FATURAMENTO.map((o) => (
+              <option key={o.v} value={o.v} style={{ color: INK }}>
+                {o.l}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-        {status === "error" && errMsg && (
-          <p className="mt-2 text-center" style={{ fontSize: 11, color: SURFACE, lineHeight: 1.5 }}>
-            {errMsg}
-          </p>
-        )}
-        <p className="mt-3 text-center" style={{ fontSize: 11, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
-          Resposta em até 1 dia útil. Sem pressão, sem cobrança.
-        </p>
+        <Field label="Sua principal dor no financeiro">
+          <select
+            value={dor}
+            onChange={(e) => setDor(e.target.value)}
+            required
+            className="focus-ring"
+            style={{ ...inputStyle, color: dor ? INK : "rgba(28,45,69,0.5)" }}
+          >
+            <option value="" disabled>
+              Selecione…
+            </option>
+            {DOR.map((o) => (
+              <option key={o.v} value={o.v} style={{ color: INK }}>
+                {o.l}
+              </option>
+            ))}
+          </select>
+        </Field>
       </div>
+
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className="focus-ring mt-4 w-full inline-flex items-center justify-center gap-2"
+        style={{
+          background: status === "loading" ? INK : FOREST,
+          color: "#fff",
+          fontSize: 14,
+          fontWeight: 600,
+          padding: "16px 24px",
+          border: "none",
+          borderRadius: 999,
+          boxShadow: "0 10px 24px -8px rgba(40,76,43,0.55)",
+          cursor: status === "loading" ? "wait" : "pointer",
+          letterSpacing: "0.2px",
+          transition: "transform 0.2s, box-shadow 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          if (status === "idle") {
+            e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 14px 28px -8px rgba(40,76,43,0.65)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "";
+          e.currentTarget.style.boxShadow = "0 10px 24px -8px rgba(40,76,43,0.55)";
+        }}
+      >
+        {status === "loading" ? "Enviando…" : "Agendar diagnóstico →"}
+      </button>
+
+      {status === "error" && errMsg && (
+        <p className="mt-2 text-center" style={{ fontSize: 11, color: OFFWHITE, lineHeight: 1.5 }}>
+          {errMsg}
+        </p>
+      )}
+      <p className="mt-3 text-center" style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>
+        Resposta em até 1 dia útil. Sem pressão, sem cobrança.
+      </p>
     </form>
   );
 }
@@ -342,7 +282,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
           fontSize: 10,
           fontWeight: 700,
           letterSpacing: "1.2px",
-          color: SURFACE,
+          color: OFFWHITE,
           marginBottom: 5,
         }}
       >
@@ -357,12 +297,11 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "11px 14px",
   fontSize: 13.5,
-  background: "#FAFBFA",
-  border: "1px solid rgba(255,255,255,0.35)",
+  background: OFFWHITE,
+  border: "1px solid rgba(28,45,69,0.12)",
   borderRadius: 10,
   outline: "none",
   fontFamily: "inherit",
   color: INK,
-  transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
+  transition: "border-color 0.2s, box-shadow 0.2s",
 };
