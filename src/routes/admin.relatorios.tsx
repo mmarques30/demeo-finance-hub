@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { brl, formatDatePtBR } from "@/lib/utils";
-import { todayISO, firstOfMonthISO, lastOfMonthISO } from "@/lib/dateUtils";
+import { todayISO, firstOfMonthISO, lastOfMonthISO, firstOfYearISO } from "@/lib/dateUtils";
+import { FilterMenu, FilterMenuOption } from "@/components/FilterMenu";
 import { supabase } from "@/lib/supabase";
 import * as XLSX from "xlsx";
 import { computeForecastMonths, type ForecastMonth, type PayableProjection } from "@/hooks/useDFCForecast";
@@ -36,6 +37,14 @@ function brlK(n: number): string {
 }
 
 const MES_ABBR = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+const PERIOD_PRESETS = [
+  { label: "Este mês", start: () => firstOfMonthISO(0), end: () => todayISO() },
+  { label: "Mês anterior", start: () => firstOfMonthISO(-1), end: () => lastOfMonthISO(-1) },
+  { label: "Últ. 3 meses", start: () => firstOfMonthISO(-2), end: () => todayISO() },
+  { label: "Últ. 6 meses", start: () => firstOfMonthISO(-5), end: () => todayISO() },
+  { label: "Este ano", start: () => firstOfYearISO(), end: () => todayISO() },
+] as const;
 
 // ─── tipos ────────────────────────────────────────────────────────────────────
 interface ClientRow {
@@ -574,6 +583,7 @@ function RelatoriosPage() {
   const [filterClientId, setFilterClientId] = useState<string>("");
   const [filterStart, setFilterStart] = useState(firstOfMonthISO(-1));
   const [filterEnd, setFilterEnd] = useState(lastOfMonthISO(-1));
+  const [activePreset, setActivePreset] = useState("Mês anterior");
 
   useEffect(() => {
     supabase()
@@ -787,12 +797,30 @@ function RelatoriosPage() {
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+            <FilterMenu label="Período" valueLabel={activePreset} minWidth={200}>
+              {(close) =>
+                PERIOD_PRESETS.map((p) => (
+                  <FilterMenuOption
+                    key={p.label}
+                    active={activePreset === p.label}
+                    onClick={() => {
+                      setActivePreset(p.label);
+                      setFilterStart(p.start());
+                      setFilterEnd(p.end());
+                      close();
+                    }}
+                  >
+                    {p.label}
+                  </FilterMenuOption>
+                ))
+              }
+            </FilterMenu>
             <DateRangeFilter
               startDate={filterStart}
               endDate={filterEnd}
               maxDate={todayISO()}
-              onStartChange={(d) => setFilterStart(d)}
-              onEndChange={(d) => setFilterEnd(d)}
+              onStartChange={(d) => { setFilterStart(d); setActivePreset("Personalizado"); }}
+              onEndChange={(d) => { setFilterEnd(d); setActivePreset("Personalizado"); }}
             />
           </div>
         }
@@ -953,7 +981,7 @@ function RelatoriosPage() {
                         style={{
                           border: `1px solid ${r.type === "pdf" ? "var(--navy)" : "var(--green)"}`,
                           color: r.type === "pdf" ? "var(--navy)" : "var(--green)",
-                          borderRadius: "4px",
+                          borderRadius: 999,
                           letterSpacing: "1.5px",
                         }}
                       >
@@ -963,7 +991,7 @@ function RelatoriosPage() {
                     <td className="px-6 py-3">
                       <span
                         className="text-[10px] px-2 py-0.5"
-                        style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", borderRadius: "4px", letterSpacing: "0.5px" }}
+                        style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", borderRadius: 999, letterSpacing: "0.5px" }}
                       >
                         {r.report_format ?? "DFC"}
                       </span>

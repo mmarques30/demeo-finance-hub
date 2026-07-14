@@ -397,6 +397,13 @@
   .app-shell button:not(.rounded-full):not([class*="rounded-"]) {
     border-radius: var(--radius-sm);
   }
+  /* Segmented controls and filter chips inherit soft corners via container */
+  .app-shell .aurora-card,
+  .app-shell .aurora-panel,
+  .app-shell .aurora-panel--tint {
+    border-radius: var(--radius-lg);
+  }
+
   .app-shell table {
     border-collapse: separate;
     border-spacing: 0;
