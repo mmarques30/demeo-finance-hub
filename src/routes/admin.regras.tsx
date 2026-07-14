@@ -146,7 +146,8 @@ function RegrasPage() {
                     background: filter === f ? "var(--navy)" : "transparent",
                     color: filter === f ? "#fff" : "var(--foreground)",
                     border: "1px solid var(--line)",
-                  , borderRadius: 12 }}
+                    borderRadius: 12,
+                  }}
                 >
                   {labels[f]}
                 </button>

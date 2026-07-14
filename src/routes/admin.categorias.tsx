@@ -350,7 +350,8 @@ function CategoriasPage() {
                                       border: "1px solid var(--line)",
                                       color: cat.is_active ? "var(--green)" : "var(--muted-foreground)",
                                       letterSpacing: "1.5px",
-                                    , borderRadius: 12 }}
+                                      borderRadius: 12,
+                                    }}
                                   >
                                     {cat.is_active ? "Ativa" : "Inativa"}
                                   </button>
