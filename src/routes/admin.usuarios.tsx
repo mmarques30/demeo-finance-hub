@@ -5,6 +5,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, PageHeader } from "@/components/AdminLayout";
 import { supabase, FUNCTIONS_URL } from "@/lib/supabase";
 import { authHeaders, useIsAdmin } from "@/lib/auth";
+import {
+  createPanelAdmin,
+  deletePanelAdmin,
+  updatePanelAdminAuth,
+} from "@/lib/panel-admin.functions";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: UsuariosPage,
@@ -85,7 +90,18 @@ function UsuariosPage() {
 
   const removeAdmin = useMutation({
     mutationFn: async (userId: string) => {
-      // Preferência: remove direto via RLS (admin_full_user_roles). Edge é fallback.
+      const { data: sessionData } = await supabase().auth.getSession();
+      const access_token = sessionData.session?.access_token;
+      if (access_token) {
+        try {
+          await deletePanelAdmin({ data: { access_token, user_id: userId } });
+          return;
+        } catch (err) {
+          // fallback edge abaixo
+          console.warn("[removeAdmin] server fn:", err);
+        }
+      }
+
       const { error } = await supabase()
         .from("user_roles")
         .delete()
@@ -106,11 +122,11 @@ function UsuariosPage() {
           if (res.ok) return;
           if (res.status !== 404) throw new Error((json.error as string) ?? `Erro ${res.status}`);
         } catch (err) {
-          if (err instanceof TypeError) continue; // Failed to fetch → tenta próxima
+          if (err instanceof TypeError) continue;
           throw err;
         }
       }
-      throw new Error(error.message || "Não foi possível remover o admin.");
+      throw new Error(error?.message || "Não foi possível remover o admin.");
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "adminUsers"] }),
   });
@@ -576,6 +592,29 @@ function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
     setLoading(true);
     setError(null);
     try {
+      const { data: sessionData } = await supabase().auth.getSession();
+      const access_token = sessionData.session?.access_token;
+      if (!access_token) {
+        setError("Sessão expirada. Entre novamente.");
+        return;
+      }
+
+      // Preferência: server fn (Admin e Owner) — não depende da edge antiga
+      try {
+        await createPanelAdmin({
+          data: {
+            access_token,
+            email,
+            display_name: name,
+            password,
+          },
+        });
+        onSuccess();
+        return;
+      } catch (serverErr) {
+        console.warn("[InviteAdmin] server fn:", serverErr);
+      }
+
       const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
       const res = await fetch(`${FUNCTIONS_URL}/create-admin-user`, {
         method: "POST",
@@ -584,7 +623,15 @@ function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
       });
       let json: Record<string, unknown> = {};
       try { json = await res.json(); } catch { /* vazio */ }
-      if (!res.ok) { setError((json.error as string) ?? `Erro ${res.status}`); return; }
+      if (!res.ok) {
+        const msg = (json.error as string) ?? `Erro ${res.status}`;
+        if (/owner pode convidar/i.test(msg)) {
+          setError("Não foi possível criar o admin no servidor. Verifique se o service role está configurado no hosting.");
+          return;
+        }
+        setError(msg);
+        return;
+      }
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro de conexão.");
@@ -657,10 +704,37 @@ async function syncAdminAuth(payload: {
   password?: string;
   role?: "admin" | "owner";
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+  const { data: sessionData } = await supabase().auth.getSession();
+  const access_token = sessionData.session?.access_token;
 
-  // 1) update via create-admin-user / manage-admin-user
-  // 2) fallback create-style (email+password) — mesma EF aceita admin/owner e atualiza Auth
+  // 1) Server fn com service role — Admin e Owner (Owner é só perfil)
+  if (access_token) {
+    try {
+      await updatePanelAdminAuth({
+        data: {
+          access_token,
+          user_id: payload.user_id,
+          display_name: payload.display_name,
+          email: payload.email,
+          password: payload.password,
+          role: payload.role,
+        },
+      });
+      return { ok: true };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Se service role estiver ausente no host, tenta edge
+      console.warn("[syncAdminAuth] server fn:", msg);
+      if (!/Missing Supabase|SERVICE_ROLE|service role/i.test(msg) && !/fetch|network|Failed/i.test(msg)) {
+        // Erro de negócio real (ex.: único owner) — não mascara
+        if (!/Não autenticado|administradores do painel/i.test(msg)) {
+          return { ok: false, error: msg };
+        }
+      }
+    }
+  }
+
+  const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
   const attempts: { fn: string; body: Record<string, unknown> }[] = [
     { fn: "create-admin-user", body: { action: "update", ...payload } },
     { fn: "manage-admin-user", body: { action: "update", ...payload } },
@@ -690,7 +764,7 @@ async function syncAdminAuth(payload: {
       if (res.ok) return { ok: true };
       if (res.status === 404) continue;
       const msg = (json.error as string) ?? `Erro ${res.status}`;
-      // Versão antiga da EF só deixava Owner — tenta próximo caminho (admin deve poder)
+      // Edge legado com gate de Owner — ignora e tenta próximo
       if (/owner pode convidar/i.test(msg) || res.status === 403 || res.status === 400) {
         lastError = msg;
         continue;
@@ -699,6 +773,14 @@ async function syncAdminAuth(payload: {
     } catch {
       continue;
     }
+  }
+
+  if (/owner pode convidar/i.test(lastError)) {
+    return {
+      ok: false,
+      error:
+        "A senha exige a função atualizada no servidor (Admin também pode alterar). Peça o redeploy de create-admin-user ou configure o service role no hosting.",
+    };
   }
   return { ok: false, error: lastError };
 }
