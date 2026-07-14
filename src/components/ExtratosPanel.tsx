@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { brl, formatDatePtBR } from "@/lib/utils";
 import { useCategories } from "@/hooks/useCategories";
+import { deleteUploadCascade } from "@/lib/uploads";
 
 interface UploadRecord {
   id: string;
@@ -113,13 +114,25 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
 
   async function handleDeleteUpload(upload: UploadRecord) {
     setDeleting(true);
-    const { error } = await supabase().from("uploads").delete().eq("id", upload.id);
+    setErr(null);
+    const { error } = await deleteUploadCascade(upload.id);
     setDeleting(false);
-    if (!error) {
-      setDeleteUpload(null);
-      setUploads((prev) => prev.filter((u) => u.id !== upload.id));
-      setTxMap((prev) => { const next = { ...prev }; delete next[upload.id]; return next; });
+    if (error) {
+      setErr(error);
+      return;
     }
+    setDeleteUpload(null);
+    setUploads((prev) => prev.filter((u) => u.id !== upload.id));
+    setTxMap((prev) => {
+      const next = { ...prev };
+      delete next[upload.id];
+      return next;
+    });
+    setAwaiting((prev) => {
+      const next = { ...prev };
+      delete next[upload.id];
+      return next;
+    });
   }
 
   async function handleDeleteTx(tx: TxRecord, uploadId: string) {
@@ -279,7 +292,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
                   Editar
                 </button>
                 <button
-                  onClick={() => setDeleteUpload(upload)}
+                  onClick={() => { setErr(null); setDeleteUpload(upload); }}
                   className="text-[11px] transition-opacity hover:opacity-70"
                   style={{ color: "var(--tan)" }}
                 >
@@ -478,8 +491,9 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
         <DeleteUploadModal
           upload={deleteUpload}
           deleting={deleting}
+          error={err}
           onConfirm={() => handleDeleteUpload(deleteUpload)}
-          onCancel={() => setDeleteUpload(null)}
+          onCancel={() => { setDeleteUpload(null); setErr(null); }}
         />
       )}
 
@@ -590,10 +604,11 @@ function EditUploadModal({
 }
 
 function DeleteUploadModal({
-  upload, deleting, onConfirm, onCancel,
+  upload, deleting, error, onConfirm, onCancel,
 }: {
   upload: UploadRecord;
   deleting: boolean;
+  error?: string | null;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -601,7 +616,7 @@ function DeleteUploadModal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.45)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+      onClick={(e) => { if (e.target === e.currentTarget && !deleting) onCancel(); }}
     >
       <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
         <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(184,149,106,0.12)", borderBottom: "1px solid var(--line)" }}>
@@ -609,7 +624,7 @@ function DeleteUploadModal({
             <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>
             <div className="aurora-serif text-[20px]">Excluir extrato</div>
           </div>
-          <button onClick={onCancel} className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100">×</button>
+          <button onClick={onCancel} disabled={deleting} className="text-[18px] leading-none mt-1 opacity-50 hover:opacity-100">×</button>
         </div>
         <div className="px-6 py-5 flex flex-col gap-4">
           <div className="text-[13px]" style={{ lineHeight: 1.6 }}>
@@ -619,8 +634,16 @@ function DeleteUploadModal({
           </div>
           <div className="text-[12px] px-4 py-3"
             style={{ background: "rgba(184,149,106,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}>
-            Este extrato e todas as suas <strong>{upload.tx_total} transações</strong> serão removidos permanentemente. Essa ação não pode ser desfeita.
+            Este extrato e <strong>todas as suas transações</strong>
+            {upload.tx_total > 0 ? <> ({upload.tx_total})</> : null}
+            {" "}serão removidos permanentemente — inclusive pendentes e classificados.
+            Relatórios e DFC deixam de considerar esses lançamentos. Essa ação não pode ser desfeita.
           </div>
+          {error && (
+            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
+              {error}
+            </div>
+          )}
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onCancel} disabled={deleting}
               className="text-[10px] uppercase px-5 py-3 transition-opacity disabled:opacity-40"
