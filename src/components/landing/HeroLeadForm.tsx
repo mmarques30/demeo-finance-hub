@@ -108,7 +108,7 @@ export function HeroLeadForm() {
           }}
         >
           Obrigada, {name.split(" ")[0]}.{" "}
-          <em className="italic" style={{ color: OFFWHITE }}>
+          <em className="italic" style={{ color: SAGE }}>
             A Claudia te chama em até 1 dia útil.
           </em>
         </h3>
@@ -146,7 +146,7 @@ export function HeroLeadForm() {
         }}
       >
         Conta um pouco da sua{" "}
-        <em className="italic" style={{ color: OFFWHITE }}>
+        <em className="italic" style={{ color: SAGE }}>
           empresa
         </em>
         .
