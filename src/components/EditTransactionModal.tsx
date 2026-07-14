@@ -100,7 +100,7 @@ export function EditTransactionModal({ tx, categories, cap = "Lançamento", onCl
             </label>
           </div>
           {err && (
-            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
+            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
               {err}
             </div>
           )}

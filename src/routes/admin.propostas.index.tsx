@@ -126,7 +126,7 @@ function PropostasListing() {
             </thead>
             <tbody>
               {filtered.map((p, i) => (
-                <tr key={p.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                <tr key={p.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}>
                   <td className="px-5 py-3 text-[11px]" style={{ fontFamily: "monospace" }}>
                     {p.number}
                   </td>

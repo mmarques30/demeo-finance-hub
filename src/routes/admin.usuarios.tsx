@@ -225,7 +225,7 @@ function UsuariosPage() {
           <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
             <header
               className="flex items-center justify-between px-6 py-4"
-              style={{ borderBottom: adminSectionOpen ? "1px solid var(--line)" : "none", background: "#FAFAF8" }}
+              style={{ borderBottom: adminSectionOpen ? "1px solid var(--line)" : "none", background: "#FAFBFA" }}
             >
               <div>
                 <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--navy)", fontWeight: 600 }}>Painel Aurora</div>
@@ -265,7 +265,7 @@ function UsuariosPage() {
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr style={{ background: "#FAFAF8" }}>
+                    <tr style={{ background: "#FAFBFA" }}>
                       {["Nome", "E-mail", "Papel", "Ações"].map((h) => (
                         <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500, fontSize: 9, borderBottom: "1px solid var(--line)", letterSpacing: "2px" }}>{h}</th>
                       ))}
@@ -338,7 +338,7 @@ function UsuariosPage() {
         <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
           <header
             className="flex items-center justify-between px-6 py-4"
-            style={{ borderBottom: usersSectionOpen ? "1px solid var(--line)" : "none", background: "#FAFAF8" }}
+            style={{ borderBottom: usersSectionOpen ? "1px solid var(--line)" : "none", background: "#FAFBFA" }}
           >
             <div>
               <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--green)", fontWeight: 600 }}>Portal do cliente</div>
@@ -414,7 +414,7 @@ function UsuariosPage() {
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr style={{ background: "#FAFAF8" }}>
+                    <tr style={{ background: "#FAFBFA" }}>
                       {["Nome", "E-mail", "Cliente", "Perfil", "Ações"].map((h) => (
                         <th key={h} className="text-left px-5 py-3 aurora-cap"
                           style={{ fontWeight: 500, fontSize: 9, borderBottom: "1px solid var(--line)", letterSpacing: "2px" }}>
@@ -628,7 +628,7 @@ function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
               className="w-full px-4 py-2.5 text-[13px]" style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }} />
           </label>
           {error && (
-            <div className="text-[12px] px-3 py-2.5" style={{ background: "rgba(184,149,106,0.10)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
+            <div className="text-[12px] px-3 py-2.5" style={{ background: "rgba(109,146,166,0.10)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
               {error}
             </div>
           )}
@@ -827,7 +827,7 @@ function EditAdminModal({
             />
           </label>
           {error && (
-            <div className="text-[12px] px-3 py-2.5" style={{ background: "rgba(184,149,106,0.10)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
+            <div className="text-[12px] px-3 py-2.5" style={{ background: "rgba(109,146,166,0.10)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
               {error}
             </div>
           )}
@@ -982,7 +982,7 @@ function InvitePortalModal({
           </div>
 
           {error && (
-            <div className="text-[12px] px-3 py-2.5" style={{ background: "rgba(184,149,106,0.10)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
+            <div className="text-[12px] px-3 py-2.5" style={{ background: "rgba(109,146,166,0.10)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
               {error}
             </div>
           )}

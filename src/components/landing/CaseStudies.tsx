@@ -170,16 +170,16 @@ function CaseAsset({ variant }: { variant: Case["asset"] }) {
     >
       {variant === "padaria" && (
         <svg viewBox="0 0 400 300" {...common}>
-          <rect width="400" height="300" fill="#F7F1E8" />
+          <rect width="400" height="300" fill="#E0E4D6" />
           {/* Pão estilizado */}
-          <ellipse cx="200" cy="220" rx="160" ry="50" fill="#B8956A" opacity="0.4" />
-          <path d="M40,220 Q60,140 130,130 Q200,120 270,135 Q340,150 360,220 Z" fill="#D4B896" />
+          <ellipse cx="200" cy="220" rx="160" ry="50" fill="#6D92A6" opacity="0.4" />
+          <path d="M40,220 Q60,140 130,130 Q200,120 270,135 Q340,150 360,220 Z" fill="#99A989" />
           {/* Linhas do pão */}
           {[0.3, 0.45, 0.6, 0.75].map((t) => (
             <path
               key={t}
               d={`M${60 + 280 * t * 0.2},${190 - 30 * Math.sin(t * Math.PI)} Q${130 + 140 * t * 0.3},${130 + 30 * t} ${260 - 100 * t * 0.2},${190 - 30 * Math.sin((1 - t) * Math.PI)}`}
-              stroke="#9F7E59"
+              stroke="#4A6B55"
               strokeWidth="1.5"
               fill="none"
               opacity="0.5"
@@ -217,12 +217,12 @@ function CaseAsset({ variant }: { variant: Case["asset"] }) {
           <rect width="400" height="300" fill="#1B394D" />
           {/* Prato */}
           <ellipse cx="200" cy="210" rx="120" ry="20" fill="#0F2535" opacity="0.5" />
-          <circle cx="200" cy="180" r="90" fill="#FDF9F4" />
-          <circle cx="200" cy="180" r="76" fill="#F7F1E8" />
+          <circle cx="200" cy="180" r="90" fill="#FAFBFA" />
+          <circle cx="200" cy="180" r="76" fill="#E0E4D6" />
           {/* Comida estilizada */}
           <circle cx="180" cy="160" r="24" fill="#4A6741" opacity="0.85" />
-          <circle cx="220" cy="180" r="20" fill="#B8956A" />
-          <circle cx="200" cy="200" r="18" fill="#D4B896" opacity="0.85" />
+          <circle cx="220" cy="180" r="20" fill="#6D92A6" />
+          <circle cx="200" cy="200" r="18" fill="#99A989" opacity="0.85" />
           {/* Garfo e faca abstratos */}
           <line x1="80" y1="80" x2="100" y2="240" stroke="#8FA688" strokeWidth="3" strokeLinecap="round" opacity="0.5" />
           <line x1="320" y1="80" x2="300" y2="240" stroke="#8FA688" strokeWidth="3" strokeLinecap="round" opacity="0.5" />
@@ -230,7 +230,7 @@ function CaseAsset({ variant }: { variant: Case["asset"] }) {
       )}
       {variant === "consultorio" && (
         <svg viewBox="0 0 400 300" {...common}>
-          <rect width="400" height="300" fill="#F7F1E8" />
+          <rect width="400" height="300" fill="#E0E4D6" />
           {/* Caduceus abstrato — duas linhas se cruzando */}
           <line x1="200" y1="40" x2="200" y2="260" stroke="#4A6741" strokeWidth="3" strokeLinecap="round" />
           <path
@@ -263,7 +263,7 @@ function CaseAsset({ variant }: { variant: Case["asset"] }) {
       )}
       {variant === "escritorio" && (
         <svg viewBox="0 0 400 300" {...common}>
-          <rect width="400" height="300" fill="#FDF9F4" />
+          <rect width="400" height="300" fill="#FAFBFA" />
           {/* Skyline de prédios */}
           <rect x="60" y="100" width="40" height="180" fill="#1B394D" opacity="0.85" />
           <rect x="110" y="60" width="50" height="220" fill="#1B394D" />
@@ -278,7 +278,7 @@ function CaseAsset({ variant }: { variant: Case["asset"] }) {
               y={80 + Math.floor(i / 4) * 60}
               width="4"
               height="6"
-              fill="#D4B896"
+              fill="#99A989"
             />
           ))}
           {Array.from({ length: 12 }).map((_, i) => (
@@ -288,7 +288,7 @@ function CaseAsset({ variant }: { variant: Case["asset"] }) {
               y={100 + Math.floor(i / 4) * 50}
               width="5"
               height="7"
-              fill="#D4B896"
+              fill="#99A989"
               opacity="0.8"
             />
           ))}

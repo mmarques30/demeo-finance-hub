@@ -136,7 +136,7 @@ export function HeroProduct() {
             style={{
               width: 28,
               height: 28,
-              background: "rgba(184,149,106,0.18)",
+              background: "rgba(109,146,166,0.18)",
               color: "var(--tan)",
               display: "inline-flex",
               alignItems: "center",

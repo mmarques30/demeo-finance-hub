@@ -220,7 +220,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
     <div className="px-8 lg:px-12 pb-12 pt-6 grid gap-6">
 
       {err && (
-        <div className="aurora-card flex items-center gap-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)" }}>
+        <div className="aurora-card flex items-center gap-3" style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)" }}>
           <span style={{ color: "var(--tan)", fontSize: 18 }}>!</span>
           <div className="text-[13px]">{err}</div>
         </div>
@@ -279,7 +279,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
                 {aw.pending > 0 && (
                   <span
                     className="aurora-cap px-2 py-0.5 text-[10px]"
-                    style={{ background: "rgba(184,149,106,0.15)", color: "var(--tan)", border: "1px solid rgba(184,149,106,0.3)" }}
+                    style={{ background: "rgba(109,146,166,0.15)", color: "var(--tan)", border: "1px solid rgba(109,146,166,0.3)" }}
                     title="Sem categoria — revise em Pendentes"
                   >
                     {aw.pending} sem categoria
@@ -339,7 +339,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
             {isExpanded && txs !== undefined && txs.length > 0 && (
               <table className="w-full">
                 <thead>
-                  <tr style={{ background: "#FAFAF8" }}>
+                  <tr style={{ background: "#FAFBFA" }}>
                     {["Data", "Descrição", "Parcelamento", "Valor", "Categoria", "Ações"].map((h) => (
                       <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
                     ))}
@@ -347,7 +347,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
                 </thead>
                 <tbody>
                   {txs.map((tx, i) => (
-                    <tr key={tx.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                    <tr key={tx.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}>
                       <td className="px-5 py-3 text-[12px] whitespace-nowrap">{formatDatePtBR(tx.date)}</td>
                       <td className="px-5 py-3 text-[12px]">{tx.description}</td>
                       <td className="px-5 py-3 text-[12px]">
@@ -399,8 +399,8 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
             <div
               className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap"
               style={{
-                background: "rgba(184,149,106,0.08)",
-                borderBottom: isExpanded ? "1px solid rgba(184,149,106,0.25)" : "none",
+                background: "rgba(109,146,166,0.08)",
+                borderBottom: isExpanded ? "1px solid rgba(109,146,166,0.25)" : "none",
               }}
             >
               <div className="flex items-center gap-4">
@@ -419,9 +419,9 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
                       style={{
                         letterSpacing: "1.5px",
                         fontWeight: 600,
-                        background: "rgba(184,149,106,0.18)",
+                        background: "rgba(109,146,166,0.18)",
                         color: "#8C6A40",
-                        border: "1px solid rgba(184,149,106,0.35)",
+                        border: "1px solid rgba(109,146,166,0.35)",
                       }}
                     >
                       Manual
@@ -437,7 +437,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
             {isExpanded && (
               <table className="w-full">
                 <thead>
-                  <tr style={{ background: "#FAFAF8" }}>
+                  <tr style={{ background: "#FAFBFA" }}>
                     {["Data", "Descrição", "Valor", "Categoria", "Status", "Ações"].map((h) => (
                       <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>{h}</th>
                     ))}
@@ -445,7 +445,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
                 </thead>
                 <tbody>
                   {manualTxs.map((tx, i) => (
-                    <tr key={tx.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                    <tr key={tx.id} style={{ background: i % 2 === 0 ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}>
                       <td className="px-5 py-3 text-[12px] whitespace-nowrap">{formatDatePtBR(tx.date)}</td>
                       <td className="px-5 py-3 text-[12px]">{tx.description}</td>
                       <td className="px-5 py-3 aurora-value text-[14px] whitespace-nowrap"
@@ -459,7 +459,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
                         <span
                           className="aurora-cap px-2 py-0.5 rounded text-[10px]"
                           style={{
-                            background: tx.status === "approved" ? "rgba(74,103,65,0.12)" : "rgba(184,149,106,0.15)",
+                            background: tx.status === "approved" ? "rgba(74,103,65,0.12)" : "rgba(109,146,166,0.15)",
                             color: tx.status === "approved" ? "var(--green)" : "var(--tan)",
                           }}
                         >
@@ -592,7 +592,7 @@ function EditUploadModal({
               style={{ border: "1px solid var(--line)" }} />
           </label>
           {err && (
-            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
+            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
               {err}
             </div>
           )}
@@ -630,7 +630,7 @@ function DeleteUploadModal({
       onClick={(e) => { if (e.target === e.currentTarget && !deleting) onCancel(); }}
     >
       <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(184,149,106,0.12)", borderBottom: "1px solid var(--line)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(109,146,166,0.12)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>
             <div className="aurora-serif text-[20px]">Excluir extrato</div>
@@ -644,14 +644,14 @@ function DeleteUploadModal({
             <span style={{ color: "var(--muted-foreground)" }}>{upload.bank_name} · {upload.period}</span>
           </div>
           <div className="text-[12px] px-4 py-3"
-            style={{ background: "rgba(184,149,106,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}>
+            style={{ background: "rgba(109,146,166,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}>
             Este extrato e <strong>todas as suas transações</strong>
             {upload.tx_total > 0 ? <> ({upload.tx_total})</> : null}
             {" "}serão removidos permanentemente — inclusive pendentes e classificados.
             Relatórios e DFC deixam de considerar esses lançamentos. Essa ação não pode ser desfeita.
           </div>
           {error && (
-            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
+            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
               {error}
             </div>
           )}
@@ -764,7 +764,7 @@ function EditTxModal({
             </label>
           </div>
           {err && (
-            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
+            <div className="text-[12px] px-4 py-3" style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
               {err}
             </div>
           )}
@@ -801,7 +801,7 @@ function DeleteTxModal({
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
       <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(184,149,106,0.12)", borderBottom: "1px solid var(--line)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(109,146,166,0.12)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>
             <div className="aurora-serif text-[20px]">Excluir transação</div>
@@ -815,7 +815,7 @@ function DeleteTxModal({
             <span style={{ color: "var(--muted-foreground)" }}>{formatDatePtBR(tx.date)} · {brl(tx.amount)}</span>
           </div>
           <div className="text-[12px] px-4 py-3"
-            style={{ background: "rgba(184,149,106,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}>
+            style={{ background: "rgba(109,146,166,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}>
             Esta transação será removida permanentemente. Essa ação não pode ser desfeita.
           </div>
           <div className="flex justify-end gap-3 pt-1">

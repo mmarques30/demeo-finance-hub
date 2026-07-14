@@ -524,7 +524,7 @@ function ImportarPage() {
         {error && (
           <div
             className="aurora-card flex items-center gap-3"
-            style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)" }}
+            style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)" }}
           >
             <span style={{ color: "var(--tan)", fontSize: 18 }}>!</span>
             <div className="text-[13px]" style={{ color: "var(--foreground)" }}>
@@ -553,7 +553,7 @@ function ImportarPage() {
         {/* Aviso de timeout na classificação automática */}
         {stage === "done" && classifyTimedOut && (
           <div className="flex items-start gap-3 px-5 py-4 rounded-xl text-[12px]"
-            style={{ background: "rgba(184,149,106,0.12)", border: "1px solid rgba(184,149,106,0.35)", color: "var(--tan)" }}>
+            style={{ background: "rgba(109,146,166,0.12)", border: "1px solid rgba(109,146,166,0.35)", color: "var(--tan)" }}>
             <span style={{ fontSize: 16, lineHeight: 1 }}>⚠</span>
             <div>
               <strong style={{ fontWeight: 600 }}>Classificação automática expirou</strong> — os lançamentos foram importados, mas a IA não conseguiu classificá-los a tempo.
@@ -651,7 +651,7 @@ function ImportarPage() {
                     <tr
                       key={tx.id}
                       style={{
-                        background: isPending ? "rgba(184,149,106,0.07)" : i % 2 === 0 ? "#fff" : "#FAFAF8",
+                        background: isPending ? "rgba(109,146,166,0.07)" : i % 2 === 0 ? "#fff" : "#FAFBFA",
                         borderTop: "1px solid var(--line)",
                       }}
                     >
@@ -755,7 +755,7 @@ function ImportarPage() {
                         <span
                           className="aurora-cap px-2 py-0.5 rounded text-[10px]"
                           style={{
-                            background: isApproved ? "rgba(74,103,65,0.12)" : isClassified ? "rgba(27,57,77,0.10)" : "rgba(184,149,106,0.15)",
+                            background: isApproved ? "rgba(74,103,65,0.12)" : isClassified ? "rgba(27,57,77,0.10)" : "rgba(109,146,166,0.15)",
                             color: isApproved ? "var(--green)" : isClassified ? "var(--navy)" : "var(--tan)",
                           }}
                         >
@@ -963,7 +963,7 @@ function ImportarPage() {
               {manualError && (
                 <div
                   className="flex items-center gap-3 px-4 py-3 text-[12px]"
-                  style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}
+                  style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}
                 >
                   <span style={{ fontSize: 16 }}>!</span> {manualError}
                 </div>
@@ -1164,7 +1164,7 @@ function ConfirmUploadModal({
                   key={i}
                   className="text-[12px] truncate px-3 py-2"
                   title={f.name}
-                  style={{ background: "#FAFAF8", border: "1px solid var(--line)", borderRadius: 4 }}
+                  style={{ background: "#FAFBFA", border: "1px solid var(--line)", borderRadius: 4 }}
                 >
                   {f.name}
                 </div>

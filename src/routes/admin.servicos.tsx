@@ -97,7 +97,7 @@ function Row({ svc, striped, onSave }: { svc: Service; striped: boolean; onSave:
   const dirty =
     local.name !== svc.name || local.unit !== svc.unit || local.base_price !== svc.base_price || local.is_active !== svc.is_active;
   return (
-    <tr style={{ background: striped ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+    <tr style={{ background: striped ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}>
       <td className="px-5 py-3">
         <input value={local.name} onChange={(e) => setLocal({ ...local, name: e.target.value })} className="aurora-input" />
       </td>

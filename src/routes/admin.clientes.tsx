@@ -207,7 +207,7 @@ function ClientesPage() {
                 <tr
                   key={c.id}
                   style={{
-                    background: idx % 2 === 0 ? "#fff" : "#FAFAF8",
+                    background: idx % 2 === 0 ? "#fff" : "#FAFBFA",
                     borderTop: "1px solid var(--line)",
                   }}
                 >
@@ -716,7 +716,7 @@ const inputStyle: React.CSSProperties = {
   padding: "11px 14px",
   fontSize: 13,
   border: "1px solid var(--line)",
-  background: "#FAFAF8",
+  background: "#FAFBFA",
   color: "var(--foreground)",
   outline: "none",
   lineHeight: 1.4,

@@ -442,7 +442,7 @@ const receita = useMemo(
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr style={{ background: "#FAFAF8" }}>
+                    <tr style={{ background: "#FAFBFA" }}>
                       {["Data", "Descrição", "Categoria", "Valor", "Status"].map((h) => (
                         <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
                           {h}
@@ -452,7 +452,7 @@ const receita = useMemo(
                   </thead>
                   <tbody>
                     {tx.map((t, idx) => (
-                      <tr key={t.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                      <tr key={t.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}>
                         <td className="px-6 py-3 text-[12px]">{formatDatePtBR(t.date)}</td>
                         <td className="px-6 py-3 text-[12px]" style={{ maxWidth: 280 }}>{t.description}</td>
                         <td className="px-6 py-3 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
@@ -586,7 +586,7 @@ const receita = useMemo(
             ) : (
               <table className="w-full">
                 <thead>
-                  <tr style={{ background: "#FAFAF8" }}>
+                  <tr style={{ background: "#FAFBFA" }}>
                     {["Período", "Banco", "Arquivo", "Classificados", "Pendentes", "Cobertura", "Status", "Importado em", ""].map((h) => (
                       <th key={h || "ações"} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>
                         {h}
@@ -601,7 +601,7 @@ const receita = useMemo(
                     const total      = classified + pending;
                     const pct        = total > 0 ? Math.round((classified / total) * 100) : 0;
                     return (
-                      <tr key={u.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFAF8", borderTop: "1px solid var(--line)" }}>
+                      <tr key={u.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFBFA", borderTop: "1px solid var(--line)" }}>
                         <td className="px-6 py-3 text-[13px]" style={{ fontWeight: 600 }}>{u.period}</td>
                         <td className="px-6 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>{u.bank_name}</td>
                         <td className="px-6 py-3 text-[12px] max-w-[160px] truncate" style={{ color: "var(--muted-foreground)" }} title={u.filename}>
@@ -613,7 +613,7 @@ const receita = useMemo(
                           <span
                             className="text-[11px] uppercase px-2.5 py-1"
                             style={{
-                              background: pct >= 80 ? "rgba(74,103,65,0.10)" : pct >= 50 ? "rgba(184,149,106,0.12)" : "rgba(192,57,43,0.08)",
+                              background: pct >= 80 ? "rgba(74,103,65,0.10)" : pct >= 50 ? "rgba(109,146,166,0.12)" : "rgba(192,57,43,0.08)",
                               color:      pct >= 80 ? "var(--green)"          : pct >= 50 ? "var(--tan)"            : "#C0392B",
                               letterSpacing: "1.5px",
                               fontWeight: 600,
@@ -669,7 +669,7 @@ const receita = useMemo(
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr style={{ background: "#FAFAF8" }}>
+                    <tr style={{ background: "#FAFBFA" }}>
                       {["Nome", "E-mail", "Perfil", ""].map((h) => (
                         <th key={h} className="text-left px-6 py-3 aurora-cap" style={{ fontWeight: 500, borderBottom: "1px solid var(--line)" }}>{h}</th>
                       ))}
@@ -789,7 +789,7 @@ const receita = useMemo(
           onClick={(e) => { if (e.target === e.currentTarget && !deletingUpload) { setDeleteUpload(null); setDeleteUploadErr(null); } }}
         >
           <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-            <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(184,149,106,0.12)", borderBottom: "1px solid var(--line)" }}>
+            <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(109,146,166,0.12)", borderBottom: "1px solid var(--line)" }}>
               <div>
                 <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>
                 <div className="aurora-serif text-[20px]">Excluir extrato</div>
@@ -813,7 +813,7 @@ const receita = useMemo(
               </div>
               <div
                 className="text-[12px] px-4 py-3"
-                style={{ background: "rgba(184,149,106,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}
+                style={{ background: "rgba(109,146,166,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}
               >
                 Este extrato e <strong>todos os lançamentos</strong> gerados por ele
                 {deleteUpload.tx_total > 0 ? <> ({deleteUpload.tx_total})</> : null}
@@ -821,7 +821,7 @@ const receita = useMemo(
                 DFC, DRE e portais refletem a exclusão imediatamente. Essa ação não pode ser desfeita.
               </div>
               {deleteUploadErr && (
-                <div className="text-[12px] px-4 py-3" style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
+                <div className="text-[12px] px-4 py-3" style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)", color: "var(--tan)" }}>
                   {deleteUploadErr}
                 </div>
               )}
@@ -870,7 +870,7 @@ function TxStatusBadge({ status }: { status: string }) {
     status === "approved"
       ? { bg: "rgba(74,103,65,0.10)",   color: "var(--green)", label: "Aprovado" }
       : status === "pending"
-      ? { bg: "rgba(184,149,106,0.15)", color: "var(--tan)",   label: "Pendente" }
+      ? { bg: "rgba(109,146,166,0.15)", color: "var(--tan)",   label: "Pendente" }
       : { bg: "rgba(27,57,77,0.10)",    color: "var(--navy)",  label: status     };
   return (
     <span
@@ -889,7 +889,7 @@ function UploadStatusBadge({ status }: { status: string }) {
       ? { bg: "rgba(74,103,65,0.10)",   color: "var(--green)", label: "Concluído"   }
       : status === "processing"
       ? { bg: "rgba(27,57,77,0.10)",    color: "var(--navy)",  label: "Processando" }
-      : { bg: "rgba(184,149,106,0.15)", color: "var(--tan)",   label: status         };
+      : { bg: "rgba(109,146,166,0.15)", color: "var(--tan)",   label: status         };
   return (
     <span
       className="inline-flex items-center gap-1.5 text-[10px] uppercase"

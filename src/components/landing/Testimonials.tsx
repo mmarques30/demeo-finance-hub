@@ -77,7 +77,7 @@ export function Testimonials() {
         <article
           className="reveal grid lg:grid-cols-[1fr_auto] gap-12 items-end"
           style={{
-            background: "#FAFAF8",
+            background: "#FAFBFA",
             border: "1px solid rgba(28,45,69,0.08)",
             borderRadius: 4,
             padding: "40px 36px",

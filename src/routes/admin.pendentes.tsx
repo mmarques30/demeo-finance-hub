@@ -288,7 +288,7 @@ function PendentesPage() {
         {error && (
           <div
             className="aurora-card flex items-center gap-3"
-            style={{ background: "rgba(184,149,106,0.1)", borderLeft: "3px solid var(--tan)" }}
+            style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)" }}
           >
             <span style={{ color: "var(--tan)", fontSize: 18 }}>!</span>
             <div className="text-[13px]">{error}</div>
@@ -451,7 +451,7 @@ function PendentesPage() {
                 </thead>
                 <tbody>
                   {items.map((t, idx) => (
-                    <tr key={t.id} style={{ background: selected[t.id] ? "rgba(74,103,65,0.05)" : idx % 2 === 0 ? "#fff" : "#FAFAF8" }}>
+                    <tr key={t.id} style={{ background: selected[t.id] ? "rgba(74,103,65,0.05)" : idx % 2 === 0 ? "#fff" : "#FAFBFA" }}>
                       <td className="px-4 py-3 text-center" style={{ width: 40 }}>
                         <input
                           type="checkbox"
@@ -635,7 +635,7 @@ function DeletePendingTxModal({
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
       <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(184,149,106,0.12)", borderBottom: "1px solid var(--line)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(109,146,166,0.12)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>
             <div className="aurora-serif text-[20px]">Excluir lançamento</div>
@@ -649,7 +649,7 @@ function DeletePendingTxModal({
             <span style={{ color: "var(--muted-foreground)" }}>{formatDatePtBR(tx.date)} · {brl(tx.amount)}</span>
           </div>
           <div className="text-[12px] px-4 py-3"
-            style={{ background: "rgba(184,149,106,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}>
+            style={{ background: "rgba(109,146,166,0.10)", borderLeft: "3px solid var(--tan)", color: "var(--foreground)", lineHeight: 1.6 }}>
             Este lançamento será removido permanentemente. Essa ação não pode ser desfeita.
           </div>
           <div className="flex justify-end gap-3 pt-1">

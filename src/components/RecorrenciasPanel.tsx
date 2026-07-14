@@ -132,7 +132,7 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
         <div style={{ border: "1px solid var(--line)" }}>
           <div
             className="px-7 py-4"
-            style={{ borderBottom: "1px solid var(--line)", background: "#FAFAF8" }}
+            style={{ borderBottom: "1px solid var(--line)", background: "#FAFBFA" }}
           >
             <div
               className="text-[11px] uppercase mb-1"
@@ -148,7 +148,7 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
 
           <table className="w-full">
             <thead>
-              <tr style={{ background: "#FAFAF8", borderBottom: "1px solid var(--line)" }}>
+              <tr style={{ background: "#FAFBFA", borderBottom: "1px solid var(--line)" }}>
                 {["Padrão detectado", "Categoria sugerida", "Ocorrências", "Última vez", "Ação"].map((h) => (
                   <th
                     key={h}

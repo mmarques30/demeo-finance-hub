@@ -201,8 +201,8 @@ export function DashboardPreview() {
                     <stop offset="100%" stopColor="#4A6741" />
                   </linearGradient>
                   <linearGradient id="donut-tan" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#D4B896" />
-                    <stop offset="100%" stopColor="#B8956A" />
+                    <stop offset="0%" stopColor="#99A989" />
+                    <stop offset="100%" stopColor="#6D92A6" />
                   </linearGradient>
                 </defs>
                 <circle cx="18" cy="18" r="14" fill="none" stroke="var(--linen)" strokeWidth="3.5" />

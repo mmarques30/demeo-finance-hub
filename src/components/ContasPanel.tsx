@@ -113,7 +113,7 @@ function PayableSection({
               const status = displayStatus(p);
               const isMarking = marking === p.id;
               return (
-                <tr key={p.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFAF8" }}>
+                <tr key={p.id} style={{ background: idx % 2 === 0 ? "#fff" : "#FAFBFA" }}>
                   <td
                     className="px-5 py-3 text-[12px]"
                     style={{ color: status === "vencido" ? "#B06040" : undefined, whiteSpace: "nowrap" }}

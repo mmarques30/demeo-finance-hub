@@ -1,7 +1,7 @@
 // Preview do módulo Pipeline (CRM) Aurora — versão realista para landing.
 const COLS = [
   { label: "Lead", count: 4, color: "rgba(143,166,136,0.18)", text: "var(--sage)" },
-  { label: "Diagnóstico", count: 3, color: "rgba(184,149,106,0.18)", text: "var(--tan)" },
+  { label: "Diagnóstico", count: 3, color: "rgba(109,146,166,0.18)", text: "var(--tan)" },
   { label: "Proposta", count: 2, color: "rgba(27,57,77,0.16)", text: "var(--navy)" },
   { label: "Fechado", count: 5, color: "rgba(74,103,65,0.18)", text: "var(--green)" },
 ];
