@@ -85,15 +85,32 @@ function UsuariosPage() {
 
   const removeAdmin = useMutation({
     mutationFn: async (userId: string) => {
+      // Preferência: remove direto via RLS (admin_full_user_roles). Edge é fallback.
+      const { error } = await supabase()
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId)
+        .eq("role", "admin");
+      if (!error) return;
+
       const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
-      const res = await fetch(`${FUNCTIONS_URL}/manage-admin-user`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ action: "delete", user_id: userId }),
-      });
-      let json: Record<string, unknown> = {};
-      try { json = await res.json(); } catch { /* vazio */ }
-      if (!res.ok) throw new Error((json.error as string) ?? `Erro ${res.status}`);
+      for (const fn of ["create-admin-user", "manage-admin-user"] as const) {
+        try {
+          const res = await fetch(`${FUNCTIONS_URL}/${fn}`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ action: "delete", user_id: userId }),
+          });
+          let json: Record<string, unknown> = {};
+          try { json = await res.json(); } catch { /* vazio */ }
+          if (res.ok) return;
+          if (res.status !== 404) throw new Error((json.error as string) ?? `Erro ${res.status}`);
+        } catch (err) {
+          if (err instanceof TypeError) continue; // Failed to fetch → tenta próxima
+          throw err;
+        }
+      }
+      throw new Error(error.message || "Não foi possível remover o admin.");
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "adminUsers"] }),
   });
@@ -534,6 +551,7 @@ function UsuariosPage() {
       {editAdmin && (
         <EditAdminModal
           user={editAdmin}
+          ownerCount={adminUsers.filter((u) => u.role === "owner").length}
           onClose={() => setEditAdmin(null)}
           onSuccess={() => {
             setEditAdmin(null);
@@ -632,45 +650,119 @@ function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
   );
 }
 
-function EditAdminModal({
-  user, onClose, onSuccess,
-}: {
-  user: AdminUser;
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [email, setEmail] = useState(user.email ?? "");
-  const [name, setName] = useState(user.display_name ?? "");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) { setError("Informe o nome."); return; }
-    if (!email.trim()) { setError("Informe o e-mail."); return; }
-    setLoading(true);
-    setError(null);
+async function syncAdminAuth(payload: {
+  user_id: string;
+  display_name?: string;
+  email?: string;
+  password?: string;
+  role?: "admin" | "owner";
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+  const body = { action: "update" as const, ...payload };
+  // create-admin-user já existe em produção; manage-admin-user é fallback.
+  for (const fn of ["create-admin-user", "manage-admin-user"] as const) {
     try {
-      const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
-      const body: Record<string, string> = {
-        action: "update",
-        user_id: user.user_id,
-        display_name: name.trim(),
-        email: email.trim(),
-      };
-      if (password.length >= 8) body.password = password;
-      const res = await fetch(`${FUNCTIONS_URL}/manage-admin-user`, {
+      const res = await fetch(`${FUNCTIONS_URL}/${fn}`, {
         method: "POST",
         headers,
         body: JSON.stringify(body),
       });
       let json: Record<string, unknown> = {};
       try { json = await res.json(); } catch { /* vazio */ }
-      if (!res.ok) { setError((json.error as string) ?? `Erro ${res.status}`); return; }
+      if (res.ok) return { ok: true };
+      // 404 = função inexistente — tenta a outra
+      if (res.status === 404) continue;
+      // create antigo sem action retorna 400 — tenta manage
+      if (res.status === 400 && fn === "create-admin-user") continue;
+      return { ok: false, error: (json.error as string) ?? `Erro ${res.status}` };
+    } catch {
+      // Failed to fetch (CORS / função down)
+      continue;
+    }
+  }
+  return { ok: false, error: "Não foi possível sincronizar senha/login no Auth. Dados do painel foram salvos." };
+}
+
+function EditAdminModal({
+  user, ownerCount, onClose, onSuccess,
+}: {
+  user: AdminUser;
+  ownerCount: number;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [email, setEmail] = useState(user.email ?? "");
+  const [name, setName] = useState(user.display_name ?? "");
+  const [role, setRole] = useState<"admin" | "owner">(user.role);
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const canDemoteOwner = !(user.role === "owner" && role === "admin" && ownerCount <= 1);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) { setError("Informe o nome."); return; }
+    if (!email.trim()) { setError("Informe o e-mail."); return; }
+    if (!canDemoteOwner) {
+      setError("Não é possível rebaixar o único Owner da conta.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+
+    const displayName = name.trim();
+    const nextEmail = email.trim();
+    const emailChanged = nextEmail.toLowerCase() !== (user.email ?? "").toLowerCase();
+    const roleChanged = role !== user.role;
+    const wantsPassword = password.length >= 8;
+
+    try {
+      // 1) Perfil Owner ↔ Admin (PK composta user_id+role → UPDATE na coluna role)
+      if (roleChanged) {
+        const { error: roleErr } = await supabase()
+          .from("user_roles")
+          .update({ role })
+          .eq("user_id", user.user_id)
+          .eq("role", user.role);
+        if (roleErr) throw new Error(roleErr.message);
+      }
+
+      // 2) Nome e e-mail no painel — via cliente autenticado (RLS admin), sem edge function
+      const { error: metaErr } = await supabase()
+        .from("user_roles")
+        .update({ display_name: displayName, email: nextEmail })
+        .eq("user_id", user.user_id)
+        .in("role", ["admin", "owner"]);
+      if (metaErr) throw new Error(metaErr.message);
+
+      await supabase()
+        .from("profiles")
+        .update({ display_name: displayName })
+        .eq("user_id", user.user_id);
+
+      // 3) Senha / e-mail de login no Auth exigem service role → edge function
+      if (wantsPassword || emailChanged) {
+        const sync = await syncAdminAuth({
+          user_id: user.user_id,
+          display_name: displayName,
+          email: nextEmail,
+          ...(wantsPassword ? { password } : {}),
+          ...(roleChanged ? { role } : {}),
+        });
+        if (!sync.ok) {
+          if (wantsPassword) {
+            setError(`Dados salvos, mas a senha não foi alterada: ${sync.error}`);
+            return;
+          }
+          // Nome/e-mail/perfil já gravados no painel; Auth pode ficar dessincronizado
+          alert(`Dados salvos. Atenção: o e-mail de login no Auth pode ainda ser o anterior (${user.email ?? "—"}).`);
+        }
+      }
+
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro de conexão.");
+      setError(err instanceof Error ? err.message : "Erro ao salvar.");
     } finally {
       setLoading(false);
     }
@@ -688,26 +780,51 @@ function EditAdminModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="aurora-cap mb-1" style={{ color: "var(--navy)" }}>
-          {user.role === "owner" ? "Owner · Painel Aurora" : "Admin · Painel Aurora"}
+          {role === "owner" ? "Owner · Painel Aurora" : "Admin · Painel Aurora"}
         </div>
         <h2 className="aurora-serif text-[22px] mb-6">
           Editar <em className="italic" style={{ color: "var(--navy)" }}>usuário</em>
         </h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4" autoComplete="off">
           <label className="block">
             <div className="aurora-cap mb-1.5">Nome completo</div>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required autoComplete="off"
               className="w-full px-4 py-2.5 text-[13px]" style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }} />
           </label>
           <label className="block">
             <div className="aurora-cap mb-1.5">E-mail</div>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="off"
               className="w-full px-4 py-2.5 text-[13px]" style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }} />
           </label>
           <label className="block">
+            <div className="aurora-cap mb-1.5">Perfil no painel</div>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as "admin" | "owner")}
+              className="w-full px-4 py-2.5 text-[13px]"
+              style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }}
+            >
+              <option value="owner">Owner</option>
+              <option value="admin">Admin</option>
+            </select>
+            {!canDemoteOwner && (
+              <div className="text-[11px] mt-1.5" style={{ color: "var(--tan)" }}>
+                Este é o único Owner — promova outro antes de rebaixar.
+              </div>
+            )}
+          </label>
+          <label className="block">
             <div className="aurora-cap mb-1.5">Nova senha (opcional)</div>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} placeholder="Deixe em branco para não alterar"
-              className="w-full px-4 py-2.5 text-[13px]" style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }} />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={8}
+              placeholder="Deixe em branco para não alterar"
+              autoComplete="new-password"
+              className="w-full px-4 py-2.5 text-[13px]"
+              style={{ border: "1px solid var(--line)", background: "#fff", outline: "none" }}
+            />
           </label>
           {error && (
             <div className="text-[12px] px-3 py-2.5" style={{ background: "rgba(184,149,106,0.10)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
@@ -715,7 +832,7 @@ function EditAdminModal({
             </div>
           )}
           <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={loading || !name.trim() || !email.trim() || (password.length > 0 && password.length < 8)}
+            <button type="submit" disabled={loading || !name.trim() || !email.trim() || !canDemoteOwner || (password.length > 0 && password.length < 8)}
               className="flex-1 text-[10px] uppercase py-3 disabled:opacity-50"
               style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
               {loading ? "Salvando…" : "Salvar →"}

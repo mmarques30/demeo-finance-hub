@@ -1,6 +1,6 @@
 // supabase/functions/manage-admin-user/index.ts
-// POST admin/owner. Atualiza ou remove um administrador do painel Aurora.
-// body: { action: "update"|"delete", user_id, display_name?, email?, password? }
+// Compat: encaminha update/delete para a mesma lógica de create-admin-user.
+// Preferir create-admin-user?action=update|delete no frontend.
 
 import { z } from "https://esm.sh/zod@3.23.8";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
@@ -13,6 +13,7 @@ const BodySchema = z.discriminatedUnion("action", [
     display_name: z.string().min(2).max(100).optional(),
     email: z.string().email().optional(),
     password: z.string().min(8).optional(),
+    role: z.enum(["admin", "owner"]).optional(),
   }),
   z.object({
     action: z.literal("delete"),
@@ -51,9 +52,27 @@ Deno.serve(async (req: Request) => {
   }
 
   if (body.action === "update") {
-    const { user_id, display_name, email, password } = body;
-    if (!display_name && !email && !password) {
+    const { user_id, display_name, email, password, role } = body;
+    if (!display_name && !email && !password && !role) {
       return jsonResponse({ error: "Nada para atualizar" }, 400, origin);
+    }
+
+    if (role && role !== targetRole.role) {
+      if (targetRole.role === "owner" && role === "admin") {
+        const { count } = await sb
+          .from("user_roles")
+          .select("user_id", { count: "exact", head: true })
+          .eq("role", "owner");
+        if ((count ?? 0) <= 1) {
+          return jsonResponse({ error: "Não é possível rebaixar o único Owner da conta." }, 400, origin);
+        }
+      }
+      const { error: roleErr } = await sb
+        .from("user_roles")
+        .update({ role })
+        .eq("user_id", user_id)
+        .eq("role", targetRole.role);
+      if (roleErr) return jsonResponse({ error: `Erro ao alterar perfil: ${roleErr.message}` }, 500, origin);
     }
 
     const authPatch: Record<string, unknown> = {};
@@ -62,9 +81,7 @@ Deno.serve(async (req: Request) => {
       authPatch.email = email;
       authPatch.email_confirm = true;
     }
-    if (display_name) {
-      authPatch.user_metadata = { display_name };
-    }
+    if (display_name) authPatch.user_metadata = { display_name };
 
     if (Object.keys(authPatch).length > 0) {
       const { error: authErr } = await sb.auth.admin.updateUserById(user_id, authPatch);
@@ -83,7 +100,6 @@ Deno.serve(async (req: Request) => {
       if (roleErr) return jsonResponse({ error: `Erro ao atualizar papel: ${roleErr.message}` }, 500, origin);
     }
 
-    // Mantém profiles.display_name alinhado quando existir
     if (display_name) {
       await sb.from("profiles").update({ display_name }).eq("user_id", user_id).catch(() => null);
     }
@@ -91,7 +107,6 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ ok: true, user_id, action: "update" }, 200, origin);
   }
 
-  // delete
   if (body.user_id === caller.id) {
     return jsonResponse({ error: "Você não pode remover o próprio acesso admin." }, 400, origin);
   }
@@ -106,7 +121,5 @@ Deno.serve(async (req: Request) => {
     .eq("role", "admin");
   if (delErr) return jsonResponse({ error: `Erro ao remover admin: ${delErr.message}` }, 500, origin);
 
-  // Opcional: se não restar nenhum papel de painel, remove seed client órfão
-  // e não apaga o usuário Auth (pode ter acesso portal em outro client).
   return jsonResponse({ ok: true, user_id: body.user_id, action: "delete" }, 200, origin);
 });
