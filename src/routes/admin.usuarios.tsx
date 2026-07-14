@@ -658,9 +658,27 @@ async function syncAdminAuth(payload: {
   role?: "admin" | "owner";
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
-  const body = { action: "update" as const, ...payload };
-  // create-admin-user já existe em produção; manage-admin-user é fallback.
-  for (const fn of ["create-admin-user", "manage-admin-user"] as const) {
+
+  // 1) update via create-admin-user / manage-admin-user
+  // 2) fallback create-style (email+password) — mesma EF aceita admin/owner e atualiza Auth
+  const attempts: { fn: string; body: Record<string, unknown> }[] = [
+    { fn: "create-admin-user", body: { action: "update", ...payload } },
+    { fn: "manage-admin-user", body: { action: "update", ...payload } },
+  ];
+  if (payload.email && payload.display_name && payload.password) {
+    attempts.push({
+      fn: "create-admin-user",
+      body: {
+        email: payload.email,
+        display_name: payload.display_name,
+        password: payload.password,
+      },
+    });
+  }
+
+  let lastError = "Não foi possível sincronizar senha/login no Auth. Dados do painel foram salvos.";
+
+  for (const { fn, body } of attempts) {
     try {
       const res = await fetch(`${FUNCTIONS_URL}/${fn}`, {
         method: "POST",
@@ -670,17 +688,19 @@ async function syncAdminAuth(payload: {
       let json: Record<string, unknown> = {};
       try { json = await res.json(); } catch { /* vazio */ }
       if (res.ok) return { ok: true };
-      // 404 = função inexistente — tenta a outra
       if (res.status === 404) continue;
-      // create antigo sem action retorna 400 — tenta manage
-      if (res.status === 400 && fn === "create-admin-user") continue;
-      return { ok: false, error: (json.error as string) ?? `Erro ${res.status}` };
+      const msg = (json.error as string) ?? `Erro ${res.status}`;
+      // Versão antiga da EF só deixava Owner — tenta próximo caminho (admin deve poder)
+      if (/owner pode convidar/i.test(msg) || res.status === 403 || res.status === 400) {
+        lastError = msg;
+        continue;
+      }
+      lastError = msg;
     } catch {
-      // Failed to fetch (CORS / função down)
       continue;
     }
   }
-  return { ok: false, error: "Não foi possível sincronizar senha/login no Auth. Dados do painel foram salvos." };
+  return { ok: false, error: lastError };
 }
 
 function EditAdminModal({

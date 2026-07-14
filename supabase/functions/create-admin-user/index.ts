@@ -1,5 +1,6 @@
 // supabase/functions/create-admin-user/index.ts
-// POST owner/admin.
+// POST — qualquer admin/owner do painel Aurora.
+// Owner = classificação da plataforma (acesso total); Admin também convida e edita admins.
 // - create (default): { email, display_name, password }
 // - update: { action: "update", user_id, display_name?, email?, password?, role? }
 // - delete: { action: "delete", user_id }
@@ -37,7 +38,8 @@ Deno.serve(async (req: Request) => {
   const caller = await userFromAuthHeader(req);
   if (!caller) return jsonResponse({ error: "Não autenticado" }, 401, origin);
   if (!(await isAdmin(caller.id))) {
-    return jsonResponse({ error: "Apenas administradores podem gerenciar usuários do painel" }, 403, origin);
+    // Ambos admin e owner gerenciam o painel — Owner não é gate exclusivo.
+    return jsonResponse({ error: "Apenas administradores do painel podem gerenciar usuários" }, 403, origin);
   }
 
   let raw: unknown;
