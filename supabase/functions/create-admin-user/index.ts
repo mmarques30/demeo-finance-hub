@@ -1,16 +1,31 @@
 // supabase/functions/create-admin-user/index.ts
-// POST owner/admin. Cria usuário administrador no Auth e garante role em user_roles.
-// Requer: { email, display_name, password }
-// Retorna: { user_id, email }
+// POST owner/admin.
+// - create (default): { email, display_name, password }
+// - update: { action: "update", user_id, display_name?, email?, password?, role? }
+// - delete: { action: "delete", user_id }
 
 import { z } from "https://esm.sh/zod@3.23.8";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { serviceClient, userFromAuthHeader, isAdmin } from "../_shared/supabase.ts";
 
-const BodySchema = z.object({
-  email:        z.string().email(),
+const CreateSchema = z.object({
+  email: z.string().email(),
   display_name: z.string().min(2).max(100),
-  password:     z.string().min(8),
+  password: z.string().min(8),
+});
+
+const UpdateSchema = z.object({
+  action: z.literal("update"),
+  user_id: z.string().uuid(),
+  display_name: z.string().min(2).max(100).optional(),
+  email: z.string().email().optional(),
+  password: z.string().min(8).optional(),
+  role: z.enum(["admin", "owner"]).optional(),
+});
+
+const DeleteSchema = z.object({
+  action: z.literal("delete"),
+  user_id: z.string().uuid(),
 });
 
 Deno.serve(async (req: Request) => {
@@ -21,19 +36,28 @@ Deno.serve(async (req: Request) => {
 
   const caller = await userFromAuthHeader(req);
   if (!caller) return jsonResponse({ error: "Não autenticado" }, 401, origin);
-  // Qualquer admin/owner do painel pode convidar colegas administradores
   if (!(await isAdmin(caller.id))) {
-    return jsonResponse({ error: "Apenas administradores podem convidar outros admins" }, 403, origin);
+    return jsonResponse({ error: "Apenas administradores podem gerenciar usuários do painel" }, 403, origin);
   }
 
-  let body: z.infer<typeof BodySchema>;
-  try { body = BodySchema.parse(await req.json()); }
+  let raw: unknown;
+  try { raw = await req.json(); }
+  catch { return jsonResponse({ error: "JSON inválido" }, 400, origin); }
+
+  const action = (raw as { action?: string } | null)?.action;
+  if (action === "update") return handleUpdate(raw, caller.id, origin);
+  if (action === "delete") return handleDelete(raw, caller.id, origin);
+  return handleCreate(raw, origin);
+});
+
+async function handleCreate(raw: unknown, origin: string) {
+  let body: z.infer<typeof CreateSchema>;
+  try { body = CreateSchema.parse(raw); }
   catch (e) { return jsonResponse({ error: String(e) }, 400, origin); }
 
   const { email, display_name, password } = body;
   const sb = serviceClient();
 
-  // Localiza por e-mail (listUsers página a página — evita falso negativo)
   let userId: string | null = null;
   let page = 1;
   while (!userId && page <= 10) {
@@ -63,7 +87,6 @@ Deno.serve(async (req: Request) => {
     userId = created.user.id;
   }
 
-  // Papéis atuais do usuário (o trigger tg_handle_new_user pode ter semeado 'client')
   const { data: roles } = await sb
     .from("user_roles")
     .select("role")
@@ -72,7 +95,6 @@ Deno.serve(async (req: Request) => {
   const roleSet = new Set((roles ?? []).map((r: { role: string }) => r.role));
 
   if (roleSet.has("owner")) {
-    // Nunca rebaixa owner → admin; só atualiza meta
     const { error } = await sb
       .from("user_roles")
       .update({ display_name, email })
@@ -87,14 +109,12 @@ Deno.serve(async (req: Request) => {
       .eq("role", "admin");
     if (error) return jsonResponse({ error: `Erro ao atualizar papel: ${error.message}` }, 500, origin);
   } else {
-    // Garante role admin (mesmo se existir só 'client' do trigger)
     const { error: roleErr } = await sb
       .from("user_roles")
       .insert({ user_id: userId, role: "admin", display_name, email });
     if (roleErr) return jsonResponse({ error: `Erro ao definir papel: ${roleErr.message}` }, 500, origin);
   }
 
-  // Remove seed 'client' residual do trigger — admin do painel não é usuário-portal
   await sb.from("user_roles").delete().eq("user_id", userId).eq("role", "client").catch(() => null);
 
   return jsonResponse({
@@ -103,4 +123,112 @@ Deno.serve(async (req: Request) => {
     email,
     role: roleSet.has("owner") ? "owner" : "admin",
   }, 200, origin);
-});
+}
+
+async function handleUpdate(raw: unknown, callerId: string, origin: string) {
+  let body: z.infer<typeof UpdateSchema>;
+  try { body = UpdateSchema.parse(raw); }
+  catch (e) { return jsonResponse({ error: String(e) }, 400, origin); }
+
+  const { user_id, display_name, email, password, role } = body;
+  if (!display_name && !email && !password && !role) {
+    return jsonResponse({ error: "Nada para atualizar" }, 400, origin);
+  }
+
+  const sb = serviceClient();
+  const { data: targetRole } = await sb
+    .from("user_roles")
+    .select("role, display_name, email")
+    .eq("user_id", user_id)
+    .in("role", ["admin", "owner"])
+    .limit(1)
+    .maybeSingle();
+
+  if (!targetRole) {
+    return jsonResponse({ error: "Usuário administrador não encontrado" }, 404, origin);
+  }
+
+  if (role && role !== targetRole.role) {
+    if (targetRole.role === "owner" && role === "admin") {
+      const { count } = await sb
+        .from("user_roles")
+        .select("user_id", { count: "exact", head: true })
+        .eq("role", "owner");
+      if ((count ?? 0) <= 1) {
+        return jsonResponse({ error: "Não é possível rebaixar o único Owner da conta." }, 400, origin);
+      }
+    }
+    const { error: roleErr } = await sb
+      .from("user_roles")
+      .update({ role })
+      .eq("user_id", user_id)
+      .eq("role", targetRole.role);
+    if (roleErr) return jsonResponse({ error: `Erro ao alterar perfil: ${roleErr.message}` }, 500, origin);
+  }
+
+  const authPatch: Record<string, unknown> = {};
+  if (password) authPatch.password = password;
+  if (email) {
+    authPatch.email = email;
+    authPatch.email_confirm = true;
+  }
+  if (display_name) authPatch.user_metadata = { display_name };
+
+  if (Object.keys(authPatch).length > 0) {
+    const { error: authErr } = await sb.auth.admin.updateUserById(user_id, authPatch);
+    if (authErr) return jsonResponse({ error: `Erro ao atualizar Auth: ${authErr.message}` }, 500, origin);
+  }
+
+  const rolePatch: Record<string, string> = {};
+  if (display_name) rolePatch.display_name = display_name;
+  if (email) rolePatch.email = email;
+  if (Object.keys(rolePatch).length > 0) {
+    const { error: metaErr } = await sb
+      .from("user_roles")
+      .update(rolePatch)
+      .eq("user_id", user_id)
+      .in("role", ["admin", "owner"]);
+    if (metaErr) return jsonResponse({ error: `Erro ao atualizar dados: ${metaErr.message}` }, 500, origin);
+  }
+
+  if (display_name) {
+    await sb.from("profiles").update({ display_name }).eq("user_id", user_id).catch(() => null);
+  }
+
+  return jsonResponse({ ok: true, user_id, action: "update", caller_id: callerId }, 200, origin);
+}
+
+async function handleDelete(raw: unknown, callerId: string, origin: string) {
+  let body: z.infer<typeof DeleteSchema>;
+  try { body = DeleteSchema.parse(raw); }
+  catch (e) { return jsonResponse({ error: String(e) }, 400, origin); }
+
+  if (body.user_id === callerId) {
+    return jsonResponse({ error: "Você não pode remover o próprio acesso admin." }, 400, origin);
+  }
+
+  const sb = serviceClient();
+  const { data: targetRole } = await sb
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", body.user_id)
+    .in("role", ["admin", "owner"])
+    .limit(1)
+    .maybeSingle();
+
+  if (!targetRole) {
+    return jsonResponse({ error: "Usuário administrador não encontrado" }, 404, origin);
+  }
+  if (targetRole.role === "owner") {
+    return jsonResponse({ error: "Não é possível remover o Owner da conta. Transfira o papel antes." }, 400, origin);
+  }
+
+  const { error: delErr } = await sb
+    .from("user_roles")
+    .delete()
+    .eq("user_id", body.user_id)
+    .eq("role", "admin");
+  if (delErr) return jsonResponse({ error: `Erro ao remover admin: ${delErr.message}` }, 500, origin);
+
+  return jsonResponse({ ok: true, user_id: body.user_id, action: "delete" }, 200, origin);
+}
