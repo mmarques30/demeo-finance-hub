@@ -265,7 +265,7 @@ function NovaProposta() {
               </div>
               <table className="w-full text-[12px]">
                 <thead>
-                  <tr style={{ background: "var(--linen)" }}>
+                  <tr style={{ background: "var(--offwhite)" }}>
                     <th className="text-left px-3 py-2 aurora-cap">Descrição</th>
                     <th className="text-left px-3 py-2 aurora-cap">Unidade</th>
                     <th className="text-left px-3 py-2 aurora-cap">Qtd</th>
@@ -392,7 +392,7 @@ function NovaProposta() {
             <>
               <div className="aurora-cap">Preview</div>
               <div className="aurora-serif text-[24px] mb-2">Como vai aparecer</div>
-              <div className="p-6" style={{ border: "1px solid var(--line)", background: "var(--linen)" }}>
+              <div className="p-6" style={{ border: "1px solid var(--line)", background: "var(--offwhite)" }}>
                 <div className="aurora-cap">{draft.client_name}</div>
                 <div className="aurora-serif text-[32px]" style={{ color: "var(--green)" }}>
                   Proposta · {brl(totalMonthly)} <span className="text-[14px]" style={{ color: "var(--muted-foreground)" }}>/ mês</span>

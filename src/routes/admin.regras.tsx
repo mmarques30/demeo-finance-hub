@@ -121,7 +121,7 @@ function RegrasPage() {
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
             className="px-3 py-2 text-[13px]"
-            style={{ border: "1px solid var(--line)", background: "#fff", minWidth: 220 }}
+            style={{ border: "1px solid var(--line)", background: "#fff", minWidth: 220 , borderRadius: 12 }}
           >
             {clients.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -146,7 +146,7 @@ function RegrasPage() {
                     background: filter === f ? "var(--navy)" : "transparent",
                     color: filter === f ? "#fff" : "var(--foreground)",
                     border: "1px solid var(--line)",
-                  }}
+                  , borderRadius: 12 }}
                 >
                   {labels[f]}
                 </button>
@@ -236,7 +236,7 @@ function RegrasPage() {
                           value={editCategory}
                           onChange={(e) => setEditCategory(e.target.value)}
                           className="text-[12px] px-2 py-1"
-                          style={{ border: "1px solid var(--line)", minWidth: 160 }}
+                          style={{ border: "1px solid var(--line)", minWidth: 160 , borderRadius: 12 }}
                         />
                       ) : (
                         rule.category
@@ -276,7 +276,7 @@ function RegrasPage() {
                             <button
                               onClick={() => setEditingId(null)}
                               className="text-[10px] uppercase px-3 py-1"
-                              style={{ border: "1px solid var(--line)", letterSpacing: "1.5px" }}
+                              style={{ border: "1px solid var(--line)", letterSpacing: "1.5px" , borderRadius: 12 }}
                             >
                               Cancelar
                             </button>
@@ -293,7 +293,7 @@ function RegrasPage() {
                             <button
                               onClick={() => toggleActive(rule)}
                               className="text-[10px] uppercase px-3 py-1"
-                              style={{ border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px" }}
+                              style={{ border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px" , borderRadius: 12 }}
                             >
                               {rule.is_active ? "Desativar" : "Ativar"}
                             </button>

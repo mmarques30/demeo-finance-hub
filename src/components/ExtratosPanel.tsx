@@ -249,7 +249,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
           <div key={upload.id} className="aurora-card p-0 overflow-hidden">
             <div
               className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap"
-              style={{ background: "var(--linen)", borderBottom: isExpanded ? "1px solid var(--line)" : "none" }}
+              style={{ background: "var(--offwhite)", borderBottom: isExpanded ? "1px solid var(--line)" : "none" }}
             >
               <div className="flex items-center gap-4">
                 <button
@@ -569,8 +569,8 @@ function EditUploadModal({
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-md bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+      <div className="aurora-modal w-full max-w-md bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--offwhite)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5">Extrato importado</div>
             <div className="aurora-serif text-[20px]">Editar metadados</div>
@@ -629,7 +629,7 @@ function DeleteUploadModal({
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget && !deleting) onCancel(); }}
     >
-      <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+      <div className="aurora-modal w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
         <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(109,146,166,0.12)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>
@@ -711,8 +711,8 @@ function EditTxModal({
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-lg bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+      <div className="aurora-modal w-full max-w-lg bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--offwhite)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5">Transação do extrato</div>
             <div className="aurora-serif text-[20px]">Editar registro</div>
@@ -800,7 +800,7 @@ function DeleteTxModal({
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div className="w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+      <div className="aurora-modal w-full max-w-sm bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
         <div className="px-6 py-5 flex items-start justify-between" style={{ background: "rgba(109,146,166,0.12)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5" style={{ color: "var(--tan)" }}>Atenção</div>

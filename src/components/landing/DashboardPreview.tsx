@@ -163,7 +163,7 @@ export function DashboardPreview() {
                             ? "linear-gradient(180deg, var(--green), var(--green2))"
                             : "var(--sage)",
                         opacity: i === bars.length - 1 ? 1 : 0.5,
-                        borderRadius: 6,
+                        borderRadius: 12,
                       }}
                     />
                   ))}

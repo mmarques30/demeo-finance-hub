@@ -514,7 +514,7 @@ function AdminDashboard() {
 
         {/* Gráfico de tendência — últimos 6 meses */}
         {trendData.length > 0 && (
-          <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
+          <section className="aurora-panel--tint">
             <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)", background: "rgba(153,169,137,0.12)" }}>
               <div>
                 <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "#1C2D45", fontWeight: 600 }}>
@@ -543,7 +543,7 @@ function AdminDashboard() {
         )}
 
         {/* Receita por cliente */}
-        <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
+        <section className="aurora-panel--tint">
           <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)", background: "rgba(153,169,137,0.12)" }}>
             <div>
               <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "#1C2D45", fontWeight: 600 }}>
@@ -592,7 +592,7 @@ function AdminDashboard() {
         </section>
 
         {/* Tabela de clientes */}
-        <section style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", overflow: "hidden" }}>
+        <section className="aurora-panel--tint">
           <header
             className="flex items-center justify-between flex-wrap gap-4 px-7 lg:px-9 py-6"
             style={{ borderBottom: carteiraExpanded ? "1px solid var(--line)" : "none", background: "rgba(153,169,137,0.12)" }}
@@ -620,7 +620,7 @@ function AdminDashboard() {
                 style={{
                   width: 34,
                   height: 34,
-                  borderRadius: 8,
+                  borderRadius: 12,
                   border: "1px solid var(--line)",
                   background: "transparent",
                   color: "var(--muted-foreground)",
@@ -714,7 +714,7 @@ function KpiCard({ icon, label, value, sub, tone, footer }: {
         background: "#FFFFFF",
         border: "1px solid var(--line)",
         borderTop: `3px solid ${color}`,
-        borderRadius: 18,
+        borderRadius: 22,
         boxShadow: "var(--shadow-soft)",
         transition: "transform 0.3s cubic-bezier(.22,.61,.36,1), box-shadow 0.3s",
       }}
@@ -731,7 +731,7 @@ function KpiCard({ icon, label, value, sub, tone, footer }: {
         <div
           aria-hidden
           className="inline-flex items-center justify-center shrink-0"
-          style={{ width: 28, height: 28, background: bg, color, fontSize: 13, borderRadius: 8 }}
+          style={{ width: 28, height: 28, background: bg, color, fontSize: 13, borderRadius: 12 }}
         >
           {icon}
         </div>
@@ -792,7 +792,7 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
           contentStyle={{
             background: "#fff",
             border: "1px solid var(--line)",
-            borderRadius: 8,
+            borderRadius: 12,
             fontSize: 12,
             boxShadow: "var(--shadow-soft)",
           }}

@@ -27,7 +27,7 @@ export function ServicePicker({ onPick, onClose }: { onPick: (s: ServiceRow) => 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white p-6 max-w-[520px] w-full" onClick={(e) => e.stopPropagation()}>
+      <div className="aurora-modal bg-white p-6 max-w-[520px] w-full" style={{ borderRadius: 28 }} onClick={(e) => e.stopPropagation()}>
         <div className="aurora-cap mb-2">Catálogo</div>
         <h3 className="aurora-serif text-[24px] mb-4">Adicionar serviço</h3>
         <input

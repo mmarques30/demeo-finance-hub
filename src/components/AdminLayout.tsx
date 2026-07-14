@@ -157,7 +157,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: "#FFFFFF" }}>
+    <div className="min-h-screen flex app-shell" style={{ background: "var(--offwhite)" }}>
       {/* ============= SIDEBAR DESKTOP ============= */}
       <aside
         className="hidden lg:flex flex-col shrink-0 sticky top-0 h-screen transition-[width] duration-300"
@@ -359,7 +359,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 min-w-0" style={{ background: "#FFFFFF" }}>
+        <main className="flex-1 min-w-0" style={{ background: "var(--offwhite)" }}>
           {sessionLoading || adminLoading || !session || isAdmin !== true ? (
             <div className="px-8 py-16 flex items-center gap-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
               <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
@@ -372,7 +372,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
         <footer
           className="px-4 lg:px-10 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
-          style={{ borderTop: "1px solid #EFEFEF", background: "#FFFFFF" }}
+          style={{ borderTop: "1px solid var(--line)", background: "var(--offwhite)" }}
         >
           <div className="aurora-serif italic text-[13px]" style={{ color: "var(--muted-foreground)" }}>
             Clareza que envolve. Resultado que permanece.
@@ -552,8 +552,8 @@ function ProfileModal({
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-md bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+      <div className="aurora-modal w-full max-w-md bg-white overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--offwhite)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5">Conta</div>
             <div className="aurora-serif text-[20px]">Meu perfil</div>
@@ -788,7 +788,7 @@ function SidebarContent({
           className="mx-3 my-3 opacity-70 hover:opacity-100 transition-opacity"
           style={{
             height: 28,
-            borderRadius: 8,
+            borderRadius: 12,
             background: "rgba(255,255,255,0.10)",
             border: "1px solid rgba(255,255,255,0.12)",
             color: "rgba(255,255,255,0.90)",
@@ -1125,7 +1125,7 @@ export function PageHeader({
     <div
       className="px-6 lg:px-10 py-6 flex items-center justify-between gap-4 flex-wrap"
       style={{
-        background: "#FFFFFF",
+        background: "var(--offwhite)",
       }}
     >
       <h1

@@ -166,7 +166,7 @@ function ClientesPage() {
 
         {/* Tabela */}
         <div className="aurora-card p-0 overflow-hidden">
-          <header className="px-6 py-4 flex items-center justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+          <header className="px-6 py-4 flex items-center justify-between" style={{ background: "var(--offwhite)", borderBottom: "1px solid var(--line)" }}>
             <div>
               <div className="aurora-cap mb-0.5">Carteira</div>
               <div className="aurora-serif text-[20px]">
@@ -182,7 +182,7 @@ function ClientesPage() {
           </header>
           <table className="w-full">
             <thead>
-              <tr style={{ background: "var(--linen)" }}>
+              <tr style={{ background: "var(--offwhite)" }}>
                 {["Empresa", "Bancos", "Fechamento", "Status", "Último extrato", ""].map((h) => (
                   <th key={h} className="text-left px-6 py-3 text-[11px] uppercase" style={{ fontWeight: 600, letterSpacing: "2px", color: "var(--muted-foreground)" }}>{h}</th>
                 ))}
@@ -546,7 +546,7 @@ function ClienteModal({
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center"
-            style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", fontSize: 16, borderRadius: 8 }}
+            style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", fontSize: 16, borderRadius: 12 }}
             aria-label="Fechar"
           >
             ×
@@ -671,7 +671,7 @@ function BancosField({
           type="button"
           onClick={() => addBanco(bancosInput)}
           className="px-4 text-[11px] uppercase"
-          style={{ background: "var(--linen)", border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px", fontWeight: 500, flexShrink: 0 }}
+          style={{ background: "var(--offwhite)", border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px", fontWeight: 500, flexShrink: 0 }}
         >
           + Add
         </button>
@@ -767,8 +767,8 @@ function ExcluirClienteModal({ client, onClose }: { client: ClientRow; onClose: 
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-md bg-white" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
-        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--linen)", borderBottom: "1px solid var(--line)" }}>
+      <div className="aurora-modal w-full max-w-md bg-white" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18)" }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ background: "var(--offwhite)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div className="aurora-cap mb-0.5">Confirmar exclusão</div>
             <div className="aurora-serif text-[20px]">{client.name}</div>

@@ -128,7 +128,7 @@ export function DetalhamentoPanel({ clientId, startDate, endDate }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr style={{ background: "var(--linen)" }}>
+                <tr style={{ background: "var(--offwhite)" }}>
                   {["Data", "NF / Referência", "Canal de Venda", "Valor Bruto", "Impostos Retidos", "Valor Líquido"].map(
                     (h) => (
                       <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>
@@ -225,7 +225,7 @@ export function DetalhamentoPanel({ clientId, startDate, endDate }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr style={{ background: "var(--linen)" }}>
+                <tr style={{ background: "var(--offwhite)" }}>
                   {["Data", "Banco", "Descrição", "Categoria", "Valor"].map((h) => (
                     <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>
                       {h}
@@ -257,7 +257,7 @@ export function DetalhamentoPanel({ clientId, startDate, endDate }: Props) {
                     </td>
                   </tr>
                 ))}
-                <tr style={{ background: "var(--linen)", borderTop: "2px solid var(--line)" }}>
+                <tr style={{ background: "var(--offwhite)", borderTop: "2px solid var(--line)" }}>
                   <td
                     colSpan={3}
                     className="px-5 py-3 text-[11px] uppercase"

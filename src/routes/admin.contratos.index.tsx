@@ -64,7 +64,7 @@ function ContratosListing() {
         <div className="aurora-card p-0 overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr style={{ background: "var(--linen)" }}>
+              <tr style={{ background: "var(--offwhite)" }}>
                 {["Número", "Cliente", "Valor mensal", "Início", "Status", "Assinatura", "PDF"].map((h) => (
                   <th key={h} className="text-left px-5 py-3 aurora-cap" style={{ fontWeight: 500 }}>
                     {h}

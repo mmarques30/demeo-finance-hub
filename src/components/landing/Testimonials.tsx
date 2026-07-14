@@ -79,7 +79,7 @@ export function Testimonials() {
           style={{
             background: "#FAFBFA",
             border: "1px solid rgba(28,45,69,0.08)",
-            borderRadius: 4,
+            borderRadius: 12,
             padding: "40px 36px",
           }}
         >
@@ -130,7 +130,7 @@ export function Testimonials() {
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRadius: 4,
+                  borderRadius: 12,
                 }}
               >
                 {cur.initial}
@@ -156,7 +156,7 @@ export function Testimonials() {
                 background: "transparent",
                 color: INK,
                 fontSize: 14,
-                borderRadius: 4,
+                borderRadius: 12,
               }}
             >
               ←
@@ -172,7 +172,7 @@ export function Testimonials() {
                 color: "#fff",
                 fontSize: 14,
                 border: "none",
-                borderRadius: 4,
+                borderRadius: 12,
               }}
             >
               →

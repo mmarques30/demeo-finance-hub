@@ -167,7 +167,7 @@ function PipelinePage() {
           </div>
           <DragOverlay>
             {dragDealId && (
-              <div className="bg-white p-4 shadow-lg" style={{ border: "1px solid var(--green)" }}>
+              <div className="aurora-panel bg-white p-4 shadow-lg" style={{ border: "1px solid var(--green)" }}>
                 <div className="text-[12px]" style={{ fontWeight: 500 }}>
                   {deals.find((d) => d.id === dragDealId)?.contact_name}
                 </div>
@@ -233,9 +233,10 @@ function KanbanColumn({
       ref={setNodeRef}
       className="flex flex-col gap-2"
       style={{
-        padding: 4,
-        background: isOver ? "rgba(74,103,65,0.04)" : "transparent",
-        border: isOver ? "1px solid var(--green)" : "1px solid transparent",
+        padding: 10,
+        background: isOver ? "rgba(153,169,137,0.22)" : "var(--surface)",
+        border: isOver ? "1px solid var(--green)" : "1px solid rgba(153,169,137,0.35)",
+        borderRadius: 22,
         transition: "background 0.15s",
         opacity: isActiveDrag && !isOver ? 0.85 : 1,
       }}
@@ -267,6 +268,7 @@ function DealCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
     opacity: isDragging ? 0.5 : 1,
     background: "#fff",
     border: "1px solid var(--line)",
+    borderRadius: 16,
     padding: 12,
     cursor: "pointer",
   };
@@ -323,7 +325,7 @@ function LossReasonModal({
   const [reason, setReason] = useState("");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onCancel}>
-      <div className="bg-white p-8 max-w-[480px] w-full" onClick={(e) => e.stopPropagation()}>
+      <div className="aurora-modal bg-white p-8 max-w-[480px] w-full" style={{ borderRadius: 24, overflow: "hidden", border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }} onClick={(e) => e.stopPropagation()}>
         <div className="aurora-cap mb-2">Motivo da perda</div>
         <h3 className="aurora-serif text-[24px] mb-4">Por que esse deal foi perdido?</h3>
         <textarea
@@ -403,7 +405,7 @@ function NewDealModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white p-8 max-w-[520px] w-full" onClick={(e) => e.stopPropagation()}>
+      <div className="aurora-modal bg-white p-8 max-w-[520px] w-full" style={{ borderRadius: 24, overflow: "hidden", border: "1px solid var(--line)", boxShadow: "0 24px 64px -16px rgba(28,45,69,0.22)" }} onClick={(e) => e.stopPropagation()}>
         <div className="aurora-cap mb-2">Novo contato</div>
         <h3 className="aurora-serif text-[24px] mb-6">Adicionar deal manualmente</h3>
         <div className="flex flex-col gap-4">

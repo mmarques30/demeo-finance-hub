@@ -10,13 +10,13 @@
  */
 
 @theme inline {
-  /* Radius: cantos vivos só nas tabelas administrativas. Tudo na landing fica orgânico. */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 26px;
-  --radius-2xl: 32px;
-  --radius-3xl: 40px;
+  /* Radius mais abaulado — padrão de todo o sistema (cards, modais, inputs) */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-2xl: 34px;
+  --radius-3xl: 42px;
   --radius-4xl: 999px;
 
   --font-sans: 'Space Grotesk', 'Jost', ui-sans-serif, system-ui, sans-serif;
@@ -76,22 +76,24 @@
 }
 
 :root {
-  --radius: 14px;
+  --radius: 16px;
 
   /* Brand palette — De Meo / Aurora */
-  --offwhite:#FAFBFA;   /* superfícies internas — nunca bege */
-  --surface: #E0E4D6;   /* superfície fria da marca (landing / bands) */
+  --offwhite:#FAFBFA;   /* fundo de páginas / shell — nunca bege */
+  --surface: #E0E4D6;   /* superfície fria da marca */
   --linen:   #FAFBFA;   /* alias legado → off-white */
-  --linen2:  #FFFFFF;   /* cards / painéis */
-  --green:   #284C2B;   /* Verde Floresta — primary */
-  --green2:  #1E3B21;   /* Verde Floresta escuro */
-  --sage:    #99A989;   /* Sálvia — charts, tags */
-  --navy:    #1C2D45;   /* Azul Noite — sidebar / texto */
-  --steel:   #6D92A6;   /* Azul intermediário — forms, links, alertas */
-  --tan:     #6D92A6;   /* alias legado → steel (sem âmbar/bege) */
-  --tan2:    #99A989;   /* alias legado → sage */
-  --expense: #C0392B;   /* saídas / negativos */
-  --line:    #E5E8E2;   /* divisores frios */
+  --linen2:  #FFFFFF;   /* cards elevados */
+  --panel:   #FFFFFF;   /* card padrão (elevado sobre off-white) */
+  --panel-tint: #E0E4D6; /* surface da marca — buckets / cards grandes */
+  --green:   #284C2B;
+  --green2:  #1E3B21;
+  --sage:    #99A989;
+  --navy:    #1C2D45;
+  --steel:   #6D92A6;
+  --tan:     #6D92A6;
+  --tan2:    #99A989;
+  --expense: #C0392B;
+  --line:    #E5E8E2;
   --line-soft: rgba(28,45,69,0.08);
 
   --ink:     #1C2D45;
@@ -109,7 +111,7 @@
   --shadow-glow: 0 0 0 1px rgba(40,76,43,0.06), 0 40px 80px -32px rgba(40,76,43,0.35), 0 16px 48px -16px rgba(153,169,137,0.25);
 
   /* Semantic mapping */
-  --background: #FFFFFF;
+  --background: #FAFBFA;
   --foreground: #1C1C19;
   --card: #FFFFFF;
   --card-foreground: #1C1C19;
@@ -199,11 +201,11 @@
     line-height: 1;
   }
 
-  /* Card padrão da landing — cantos generosos, sombra suave, hover-lift */
+  /* Card padrão — cantos abaulados, sombra suave, hover-lift */
   .aurora-card {
     background: #fff;
     border: 1px solid var(--line-soft);
-    border-radius: 22px;
+    border-radius: var(--radius-lg);
     padding: 28px;
     box-shadow: var(--shadow-soft);
     transition: transform 0.45s cubic-bezier(.22,.61,.36,1), box-shadow 0.45s cubic-bezier(.22,.61,.36,1), border-color 0.3s;
@@ -218,7 +220,16 @@
   .aurora-card--still {
     background: #fff;
     border: 1px solid var(--line-soft);
-    border-radius: 22px;
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* Bucket / card grande com surface da marca (diferencia do off-white) */
+  .aurora-card--bucket {
+    background: var(--surface);
+    border: 1px solid rgba(153,169,137,0.35);
+    border-radius: var(--radius-lg);
     padding: 28px;
     box-shadow: var(--shadow-soft);
   }
@@ -229,7 +240,7 @@
     backdrop-filter: blur(18px) saturate(1.2);
     -webkit-backdrop-filter: blur(18px) saturate(1.2);
     border: 1px solid rgba(255,255,255,0.6);
-    border-radius: 18px;
+    border-radius: var(--radius-md);
     box-shadow: var(--shadow-card);
   }
 
@@ -346,6 +357,49 @@
     text-transform: uppercase;
     font-weight: 500;
     border: 1px solid rgba(40,76,43,0.08);
+  }
+
+  /* Painel elevado (card branco) vs bucket com tint sage da marca */
+  .aurora-panel {
+    background: var(--panel, #fff);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+  }
+  .aurora-panel--tint {
+    background: var(--panel-tint);
+    border: 1px solid rgba(153,169,137,0.35);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+  }
+  .aurora-modal {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 24px 64px -16px rgba(28,45,69,0.22);
+    overflow: hidden;
+  }
+  .aurora-field {
+    border-radius: var(--radius-sm) !important;
+  }
+
+  /* Shell do app: fundo off-white + campos/botões arredondados */
+  .app-shell {
+    background: var(--offwhite);
+  }
+  .app-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  .app-shell select,
+  .app-shell textarea {
+    border-radius: var(--radius-sm);
+  }
+  .app-shell button:not(.rounded-full):not([class*="rounded-"]) {
+    border-radius: var(--radius-sm);
+  }
+  .app-shell table {
+    border-collapse: separate;
+    border-spacing: 0;
   }
 }
 
