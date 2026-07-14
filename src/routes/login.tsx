@@ -99,7 +99,11 @@ function LoginPage() {
 
         <div
           className="bg-white px-9 py-10"
-          style={{ border: "1px solid var(--line)" }}
+          style={{
+            border: "1px solid var(--line)",
+            borderRadius: 28,
+            boxShadow: "0 24px 48px -28px rgba(28,45,69,0.22)",
+          }}
         >
           <div className="aurora-cap mb-2">Acesso à plataforma</div>
           <h1 className="aurora-serif text-[28px] mb-1">
@@ -110,7 +114,10 @@ function LoginPage() {
           </p>
 
           {/* Role tabs */}
-          <div className="grid grid-cols-2 mb-6" style={{ border: "1px solid var(--line)" }}>
+          <div
+            className="grid grid-cols-2 mb-6 overflow-hidden"
+            style={{ border: "1px solid var(--line)", borderRadius: 14 }}
+          >
             {(["admin", "client"] as const).map((r) => (
               <button
                 key={r}
@@ -189,7 +196,7 @@ function LoginPage() {
                   required
                   autoComplete="email"
                   className="w-full bg-white px-3.5 py-3 text-[13px] outline-none transition-colors"
-                  style={{ border: "1px solid var(--line)" }}
+                  style={{ border: "1px solid var(--line)", borderRadius: 12 }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--green)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--line)")}
                 />
@@ -214,14 +221,14 @@ function LoginPage() {
                   required
                   autoComplete="current-password"
                   className="w-full bg-white px-3.5 py-3 text-[13px] outline-none transition-colors"
-                  style={{ border: "1px solid var(--line)" }}
+                  style={{ border: "1px solid var(--line)", borderRadius: 12 }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--green)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--line)")}
                 />
               </label>
 
               {error && (
-                <div className="text-[12px] px-3 py-2" style={{ background: "rgba(109,146,166,0.12)", color: "var(--tan)", border: "1px solid var(--tan)" }}>
+                <div className="text-[12px] px-3 py-2" style={{ background: "rgba(109,146,166,0.12)", color: "var(--tan)", border: "1px solid var(--tan)", borderRadius: 12 }}>
                   {error}
                 </div>
               )}
@@ -230,7 +237,7 @@ function LoginPage() {
                 type="submit"
                 disabled={loading}
                 className="mt-2 w-full text-[10px] uppercase py-3.5 transition-colors disabled:opacity-60"
-                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500, borderRadius: 999 }}
                 onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "var(--green2)"; }}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "var(--green)")}
               >

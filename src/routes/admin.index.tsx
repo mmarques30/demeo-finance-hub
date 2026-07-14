@@ -95,6 +95,7 @@ function AdminDashboard() {
   const [startDate, setStartDate] = useState(firstOfMonthISO(0));
   const [endDate, setEndDate] = useState(todayISO());
   const [activePreset, setActivePreset] = useState<string>("Este mês");
+  const [presetOpen, setPresetOpen] = useState(false);
   const [trendData, setTrendData] = useState<TrendPoint[]>([]);
   const [closingAlerts, setClosingAlerts] = useState<ClosingAlertItem[]>([]);
   const [closingDropdownOpen, setClosingDropdownOpen] = useState(false);
@@ -292,20 +293,19 @@ function AdminDashboard() {
         cap={`Fechamentos · ${periodoLabel}`}
         title="Visão geral"
         emphasis="da carteira"
-        description="Acompanhe o status do período, lançamentos pendentes e a evolução de cada cliente em um único lugar."
         right={
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to={"/admin/clientes" as never}
-              className="focus-ring inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
-              style={{ background: "transparent", color: "var(--green)", letterSpacing: "2.5px", fontWeight: 500, border: "1px solid var(--green)" }}
+              className="focus-ring inline-flex items-center gap-2 px-4 py-2.5 text-[10px] uppercase transition-opacity hover:opacity-80"
+              style={{ background: "transparent", color: "var(--green)", letterSpacing: "2px", fontWeight: 500, border: "1px solid var(--green)", borderRadius: 999 }}
             >
               + Cliente
             </Link>
             <Link
               to={"/admin/importar" as never}
-              className="focus-ring inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+              className="focus-ring inline-flex items-center gap-2 px-4 py-2.5 text-[10px] uppercase transition-opacity hover:opacity-80"
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500, borderRadius: 999 }}
             >
               + Importar extrato
             </Link>
@@ -313,49 +313,42 @@ function AdminDashboard() {
         }
       />
 
-      <div className="px-6 lg:px-10 py-6 flex flex-col gap-8">
+      <div className="px-6 lg:px-10 pt-3 pb-6 flex flex-col gap-5">
 
-        {/* Topo compacto: Fechamentos + filtro de período + KPIs */}
-        <div className="flex flex-col gap-4">
-
-        {/* Filtro de período + Fechamentos na mesma linha */}
-        <div className="flex flex-wrap items-center gap-3">
-
-          {/* Notificações de Fechamento — esquerda */}
+        {/* Filtros de período (preset + datas) na mesma linha */}
+        <div className="flex flex-wrap items-center gap-2.5">
           {closingAlerts.length > 0 && (
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => setClosingDropdownOpen((v) => !v)}
-                className="flex items-center gap-2 text-[11px] uppercase"
+                className="flex items-center gap-2 text-[10px] uppercase"
                 style={{
-                  letterSpacing: "2px",
+                  letterSpacing: "1.5px",
                   fontWeight: 600,
                   background: "#fff",
                   border: "1px solid var(--line)",
                   color: "var(--foreground)",
-                  padding: "8px 14px",
+                  padding: "7px 12px",
                   cursor: "pointer",
-                  borderRadius: "var(--radius-md)",
-                  boxShadow: "var(--shadow-soft)",
+                  borderRadius: 12,
                 }}
               >
                 Fechamentos{" "}
                 {closingAlerts.filter((a) => !a.completed).length > 0 && (
-                <span
-                  style={{
-                    background: "var(--navy)",
-                    color: "#fff",
-                    borderRadius: 999,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: "1px 7px",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  {closingAlerts.filter((a) => !a.completed).length}
-                </span>
+                  <span
+                    style={{
+                      background: "var(--navy)",
+                      color: "#fff",
+                      borderRadius: 999,
+                      fontSize: 9,
+                      fontWeight: 700,
+                      padding: "1px 6px",
+                    }}
+                  >
+                    {closingAlerts.filter((a) => !a.completed).length}
+                  </span>
                 )}
-                <span style={{ fontSize: 10, color: "var(--muted-foreground)", marginLeft: 2 }}>
+                <span style={{ fontSize: 9, color: "var(--muted-foreground)" }}>
                   {closingDropdownOpen ? "▲" : "▼"}
                 </span>
               </button>
@@ -369,7 +362,7 @@ function AdminDashboard() {
                     zIndex: 50,
                     background: "#fff",
                     border: "1px solid var(--line)",
-                    borderRadius: "var(--radius-md)",
+                    borderRadius: 14,
                     boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
                     minWidth: 340,
                     overflow: "hidden",
@@ -420,40 +413,79 @@ function AdminDashboard() {
             </div>
           )}
 
-          {/* Presets de período */}
-          <div className="flex flex-wrap gap-2">
-            {PRESETS.map((p) => (
-              <button
-                key={p.label}
-                onClick={() => applyPreset(p)}
-                className="text-[10px] uppercase px-3 py-2 transition-colors"
+          {/* Preset de período — suspensa ao lado das datas */}
+          <div style={{ position: "relative" }}>
+            <button
+              type="button"
+              onClick={() => setPresetOpen((v) => !v)}
+              className="flex items-center gap-2 text-[10px] uppercase"
+              style={{
+                letterSpacing: "1.5px",
+                fontWeight: 600,
+                background: "#fff",
+                border: "1px solid var(--line)",
+                color: "var(--foreground)",
+                padding: "7px 12px",
+                cursor: "pointer",
+                borderRadius: 12,
+                minWidth: 128,
+              }}
+            >
+              <span style={{ color: "var(--muted-foreground)", fontWeight: 500 }}>Período</span>
+              <span style={{ color: "var(--green)" }}>{activePreset || "Personalizado"}</span>
+              <span style={{ fontSize: 9, color: "var(--muted-foreground)", marginLeft: "auto" }}>
+                {presetOpen ? "▲" : "▼"}
+              </span>
+            </button>
+            {presetOpen && (
+              <div
                 style={{
-                  letterSpacing: "1.5px",
-                  fontWeight: 600,
-                  background: activePreset === p.label ? "var(--green)" : "transparent",
-                  color: activePreset === p.label ? "#fff" : "var(--muted-foreground)",
-                  border: "1px solid",
-                  borderColor: activePreset === p.label ? "var(--green)" : "var(--line)",
-                  borderRadius: "999px",
+                  position: "absolute",
+                  top: "calc(100% + 6px)",
+                  left: 0,
+                  zIndex: 50,
+                  background: "#fff",
+                  border: "1px solid var(--line)",
+                  borderRadius: 14,
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
+                  minWidth: 180,
+                  overflow: "hidden",
                 }}
               >
-                {p.label}
-              </button>
-            ))}
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => {
+                      applyPreset(p);
+                      setPresetOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-[12px] transition-colors"
+                    style={{
+                      fontWeight: activePreset === p.label ? 600 : 400,
+                      color: activePreset === p.label ? "var(--green)" : "var(--foreground)",
+                      background: activePreset === p.label ? "rgba(40,76,43,0.06)" : "transparent",
+                      borderBottom: "1px solid var(--line)",
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="ml-auto">
-            <DateRangeFilter
-              startDate={startDate}
-              endDate={endDate}
-              maxDate={todayISO()}
-              onStartChange={(d) => { setActivePreset(""); setStartDate(d); }}
-              onEndChange={(d) => { setActivePreset(""); setEndDate(d); }}
-            />
-          </div>
+
+          <DateRangeFilter
+            startDate={startDate}
+            endDate={endDate}
+            maxDate={todayISO()}
+            onStartChange={(d) => { setActivePreset(""); setStartDate(d); setPresetOpen(false); }}
+            onEndChange={(d) => { setActivePreset(""); setEndDate(d); setPresetOpen(false); }}
+          />
         </div>
 
-        {/* KPIs */}
-        <div className="grid md:grid-cols-3 gap-5">
+        {/* KPIs compactos */}
+        <div className="grid md:grid-cols-3 gap-3">
           <KpiCard
             icon="◷"
             label="Clientes ativos"
@@ -479,8 +511,6 @@ function AdminDashboard() {
             footer="Classificação automática pendente"
           />
         </div>
-
-        </div>{/* fim topo compacto */}
 
         {/* Gráfico de tendência — últimos 6 meses */}
         {trendData.length > 0 && (
@@ -679,19 +709,46 @@ function KpiCard({ icon, label, value, sub, tone, footer }: {
   const bg = tone === "sage" ? "rgba(143,166,136,0.10)" : tone === "tan" ? "rgba(109,146,166,0.12)" : "rgba(27,57,77,0.10)";
   return (
     <article
-      className="p-7 flex flex-col gap-4"
-      style={{ background: "#FFFFFF", border: "1px solid var(--line)", borderTop: `3px solid ${color}`, borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-soft)", transition: "transform 0.35s cubic-bezier(.22,.61,.36,1), box-shadow 0.35s" }}
-      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-card)"; }}
+      className="px-5 py-4 flex flex-col gap-1.5"
+      style={{
+        background: "#FFFFFF",
+        border: "1px solid var(--line)",
+        borderTop: `3px solid ${color}`,
+        borderRadius: 18,
+        boxShadow: "var(--shadow-soft)",
+        transition: "transform 0.3s cubic-bezier(.22,.61,.36,1), box-shadow 0.3s",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "var(--shadow-card)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "var(--shadow-soft)"; }}
     >
-      <header className="flex items-start justify-between gap-4">
-        <div className="text-[12px] uppercase" style={{ letterSpacing: "2.5px", color: "var(--foreground)", fontWeight: 600, lineHeight: 1.4 }}>{label}</div>
-        <div aria-hidden className="inline-flex items-center justify-center shrink-0" style={{ width: 40, height: 40, background: bg, color, fontSize: 18, borderRadius: "var(--radius-md)" }}>{icon}</div>
+      <header className="flex items-center justify-between gap-3">
+        <div
+          className="text-[10px] uppercase"
+          style={{ letterSpacing: "1.8px", color: "var(--foreground)", fontWeight: 600, lineHeight: 1.3 }}
+        >
+          {label}
+        </div>
+        <div
+          aria-hidden
+          className="inline-flex items-center justify-center shrink-0"
+          style={{ width: 28, height: 28, background: bg, color, fontSize: 13, borderRadius: 8 }}
+        >
+          {icon}
+        </div>
       </header>
-      <div className="aurora-value" style={{ fontSize: 64, color }}>{value}</div>
-      <div className="text-[13px]" style={{ color: "var(--foreground)", lineHeight: 1.5 }}>{sub}</div>
+      <div className="aurora-value" style={{ fontSize: 40, color, lineHeight: 1.05, marginTop: 2 }}>
+        {value}
+      </div>
+      <div className="text-[12px]" style={{ color: "var(--muted-foreground)", lineHeight: 1.35 }}>
+        {sub}
+      </div>
       {footer && (
-        <div className="mt-2 pt-4 text-[11px]" style={{ color: "var(--muted-foreground)", borderTop: "1px solid var(--line)", lineHeight: 1.5 }}>{footer}</div>
+        <div
+          className="mt-1.5 pt-2.5 text-[10px]"
+          style={{ color: "var(--muted-foreground)", borderTop: "1px solid var(--line)", lineHeight: 1.4 }}
+        >
+          {footer}
+        </div>
       )}
     </article>
   );

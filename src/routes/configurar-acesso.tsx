@@ -107,8 +107,14 @@ function ConfigurarAcessoPage() {
           <div className="aurora-cap mt-1">Gestão financeira</div>
         </div>
 
-        <div className="bg-white px-9 py-10" style={{ border: "1px solid var(--line)" }}>
-          {done ? (
+        <div
+          className="bg-white px-9 py-10"
+          style={{
+            border: "1px solid var(--line)",
+            borderRadius: 28,
+            boxShadow: "0 24px 48px -28px rgba(28,45,69,0.22)",
+          }}
+        >          {done ? (
             <div className="text-center py-4">
               <div className="text-[32px] mb-4">✓</div>
               <div className="aurora-serif text-[22px] mb-2">
