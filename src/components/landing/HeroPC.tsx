@@ -1,6 +1,5 @@
-// Hero — foco em agendar diagnóstico (form no lado direito).
-// CTA secundária outline. SEM WhatsApp aqui (só a partir da 3ª dobra).
-// Sem stats no primeiro viewport — marca + título + suporte + CTA.
+// Hero — formulário à direita; copy à esquerda.
+// Logo só no menu. Marca d'água discreta do ícone (barras) no fundo.
 import { HeroLeadForm } from "./HeroLeadForm";
 import { MagneticButton } from "./motion/MagneticButton";
 import { RevealText } from "./motion/RevealText";
@@ -13,20 +12,44 @@ export function HeroPC() {
   return (
     <section
       id="hero"
-      className="relative"
-      style={{ minHeight: "100vh", paddingTop: 96 }}
+      className="relative flex flex-col"
+      style={{ minHeight: "100vh" }}
     >
-      {/* Dobra de transição abaixo do nav flutuante */}
+      {/* Fundo: ícone flat (barras) bem discreto */}
+      <div aria-hidden className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+        <div
+          style={{
+            position: "absolute",
+            left: "4%",
+            top: "42%",
+            color: FOREST,
+            opacity: 0.055,
+            transform: "translateY(-50%) scale(7.5) rotate(-8deg)",
+            transformOrigin: "center center",
+          }}
+        >
+          <LogoMark size={64} />
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            right: "6%",
+            bottom: "8%",
+            color: FOREST,
+            opacity: 0.04,
+            transform: "scale(5.5) rotate(12deg)",
+            transformOrigin: "bottom right",
+          }}
+        >
+          <LogoMark size={64} />
+        </div>
+      </div>
+
+      {/* Dobra sutil sob o nav */}
       <div
         aria-hidden
         className="absolute pointer-events-none"
-        style={{
-          top: 88,
-          left: 0,
-          right: 0,
-          height: 64,
-          zIndex: 1,
-        }}
+        style={{ top: 88, left: 0, right: 0, height: 64, zIndex: 1 }}
       >
         <svg
           viewBox="0 0 1440 64"
@@ -61,80 +84,65 @@ export function HeroPC() {
         </svg>
       </div>
 
-      <div className="max-w-[1320px] mx-auto px-6 lg:px-14 pt-14 pb-24 lg:pt-16 lg:pb-32 relative z-10">
-        <div className="grid lg:grid-cols-[1.05fr_1fr] gap-12 lg:gap-16 items-center">
-          {/* Coluna copy — marca → título → suporte → CTA */}
-          <div>
-            <div
-              className="reveal-brand inline-flex items-center gap-3 mb-7"
-              style={{ color: FOREST }}
-            >
-              <LogoMark size={28} />
-              <span
+      {/* Conteúdo centralizado verticalmente sob o menu */}
+      <div
+        className="relative z-10 flex-1 flex items-center"
+        style={{ paddingTop: 88 }}
+      >
+        <div className="w-full max-w-[1320px] mx-auto px-6 lg:px-14 py-12 lg:py-16">
+          <div className="grid lg:grid-cols-[1.05fr_1fr] gap-12 lg:gap-16 items-center">
+            <div>
+              <RevealText
+                as="h1"
+                text="Cada real da sua empresa, visível."
+                highlight={{ word: "visível", color: FOREST }}
                 style={{
                   fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: "clamp(36px, 4.5vw, 48px)",
-                  fontWeight: 400,
-                  letterSpacing: "-1.2px",
+                  fontSize: "clamp(44px, 5.8vw, 78px)",
+                  fontWeight: 300,
+                  lineHeight: 1.05,
+                  letterSpacing: "-2.4px",
                   color: INK,
-                  lineHeight: 1,
+                }}
+              />
+
+              <p
+                className="mt-6 max-w-[460px] reveal-sub"
+                style={{
+                  fontSize: 17,
+                  fontWeight: 400,
+                  lineHeight: 1.65,
+                  color: "rgba(28,45,69,0.78)",
                 }}
               >
-                Aurora
-              </span>
+                Cuidamos do financeiro de ponta a ponta — extratos, DFC, projeção
+                e leitura clara para a próxima decisão.
+              </p>
+
+              <div className="mt-9 flex flex-wrap items-center gap-4 reveal-ctas">
+                <MagneticButton href="#metodo" variant="outline">
+                  Ver como funciona
+                </MagneticButton>
+              </div>
             </div>
 
-            <RevealText
-              as="h1"
-              text="Cada real da sua empresa, visível."
-              highlight={{ word: "visível", color: FOREST }}
-              style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: "clamp(44px, 5.8vw, 78px)",
-                fontWeight: 300,
-                lineHeight: 1.05,
-                letterSpacing: "-2.4px",
-                color: INK,
-              }}
-            />
-
-            <p
-              className="mt-6 max-w-[460px] reveal-sub"
-              style={{
-                fontSize: 17,
-                fontWeight: 400,
-                lineHeight: 1.65,
-                color: "rgba(28,45,69,0.78)",
-              }}
-            >
-              Cuidamos do financeiro de ponta a ponta — extratos, DFC, projeção
-              e leitura clara para a próxima decisão.
-            </p>
-
-            <div className="mt-9 flex flex-wrap items-center gap-4 reveal-ctas">
-              <MagneticButton href="#metodo" variant="outline">
-                Ver como funciona
-              </MagneticButton>
+            <div className="reveal-form" id="diagnostico">
+              <HeroLeadForm />
             </div>
-          </div>
-
-          <div className="reveal-form" id="diagnostico">
-            <HeroLeadForm />
           </div>
         </div>
       </div>
 
       <style>{`
-        .reveal-brand  { animation: hero-fade-up 0.7s 0.05s cubic-bezier(.22,.61,.36,1) both; }
-        .reveal-sub    { animation: hero-fade-up 0.8s 0.45s cubic-bezier(.22,.61,.36,1) both; }
-        .reveal-ctas   { animation: hero-fade-up 0.8s 0.6s cubic-bezier(.22,.61,.36,1) both; }
-        .reveal-form   { animation: hero-fade-up 0.9s 0.25s cubic-bezier(.22,.61,.36,1) both; }
+        .reveal-sub    { animation: hero-fade-up 0.8s 0.35s cubic-bezier(.22,.61,.36,1) both; }
+        .reveal-ctas   { animation: hero-fade-up 0.8s 0.5s cubic-bezier(.22,.61,.36,1) both; }
+        .reveal-form   { animation: hero-fade-up 0.9s 0.2s cubic-bezier(.22,.61,.36,1) both; }
         @keyframes hero-fade-up {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .reveal-brand, .reveal-sub, .reveal-ctas, .reveal-form {
+          .reveal-sub, .reveal-ctas, .reveal-form {
             animation: none; opacity: 1; transform: none;
           }
         }
