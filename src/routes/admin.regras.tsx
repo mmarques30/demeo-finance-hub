@@ -115,7 +115,7 @@ function RegrasPage() {
         description="Padrões que o sistema aprendeu e usa para classificar lançamentos automaticamente."
       />
 
-      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-6">
+      <div className="aurora-page">
         {/* Seletor + filtros */}
         <div className="flex flex-wrap items-center gap-4 pt-2">
           <select
@@ -277,7 +277,7 @@ function RegrasPage() {
                             <button
                               onClick={() => saveRuleCategory(rule.id)}
                               className="text-[10px] uppercase px-3 py-1"
-                              style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px" }}
+                              style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px" , borderRadius: 999 }}
                             >
                               Salvar
                             </button>
@@ -294,7 +294,7 @@ function RegrasPage() {
                             <button
                               onClick={() => { setEditingId(rule.id); setEditCategory(rule.category); }}
                               className="text-[10px] uppercase px-3 py-1"
-                              style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" }}
+                              style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" , borderRadius: 12 }}
                             >
                               Editar
                             </button>
@@ -308,7 +308,7 @@ function RegrasPage() {
                             <button
                               onClick={() => deleteRule(rule.id)}
                               className="text-[10px] uppercase px-3 py-1"
-                              style={{ border: "1px solid rgba(109,146,166,0.4)", color: "var(--tan)", letterSpacing: "1.5px" }}
+                              style={{ border: "1px solid rgba(109,146,166,0.4)", color: "var(--tan)", letterSpacing: "1.5px" , borderRadius: 12 }}
                             >
                               ×
                             </button>

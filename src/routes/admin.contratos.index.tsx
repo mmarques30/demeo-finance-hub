@@ -54,13 +54,13 @@ function ContratosListing() {
           <Link
             to="/admin/contratos/novo"
             className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
           >
             + Novo contrato
           </Link>
         }
       />
-      <div className="px-8 lg:px-12 pb-12">
+      <div className="aurora-page">
         <div className="aurora-card p-0 overflow-hidden">
           <table className="w-full">
             <thead>

@@ -313,7 +313,7 @@ function AdminDashboard() {
         }
       />
 
-      <div className="px-6 lg:px-10 pt-3 pb-6 flex flex-col gap-5">
+      <div className="aurora-page">
 
         {/* Filtros de período (preset + datas) na mesma linha */}
         <div className="flex flex-wrap items-center gap-2.5">
@@ -610,7 +610,7 @@ function AdminDashboard() {
               <Link
                 to={"/admin/clientes" as never}
                 className="focus-ring text-[11px] uppercase inline-flex items-center gap-2"
-                style={{ letterSpacing: "2px", color: "var(--foreground)", border: "1px solid var(--foreground)", padding: "10px 18px", fontWeight: 500 }}
+                style={{ letterSpacing: "2px", color: "var(--foreground)", border: "1px solid var(--foreground)", padding: "10px 18px", fontWeight: 500 , borderRadius: 12 }}
               >
                 Ver todos →
               </Link>

@@ -143,14 +143,14 @@ function PipelinePage() {
           <button
             onClick={() => setNewDealModal(true)}
             className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
           >
             + Nova deal
           </button>
         }
       />
 
-      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-8">
+      <div className="aurora-page">
         <MetricsRow />
 
         <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -344,7 +344,7 @@ function LossReasonModal({
             disabled={!reason.trim()}
             onClick={() => onConfirm(reason.trim())}
             className="text-[10px] uppercase px-4 py-2 disabled:opacity-50"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
           >
             Marcar como perdido →
           </button>
@@ -446,7 +446,7 @@ function NewDealModal({
             disabled={!form.contact_name.trim() || saving}
             onClick={save}
             className="text-[10px] uppercase px-5 py-2.5 disabled:opacity-50"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
           >
             {saving ? "Salvando…" : "Criar deal →"}
           </button>

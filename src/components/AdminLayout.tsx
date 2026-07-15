@@ -735,7 +735,7 @@ function ProfileModal({
             </button>
             <button type="submit" disabled={saving}
               className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}>
               {saving ? "Salvando..." : "Salvar"}
             </button>
           </div>
@@ -1282,7 +1282,7 @@ export function PageHeader({
 }) {
   return (
     <div
-      className="px-6 lg:px-10 py-4 flex items-center justify-between gap-4 flex-wrap"
+      className="px-6 lg:px-10 py-5 flex items-center justify-between gap-4 flex-wrap"
       style={{
         background: "var(--offwhite)",
       }}

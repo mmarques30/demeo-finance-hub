@@ -238,8 +238,8 @@ function DFCPage() {
         }
       />
 
-      {/* Abas — sem linha divisória; compactas sob o título */}
-      <div className="flex flex-wrap gap-1 px-6 lg:px-10 pb-4 -mt-1">
+      {/* Abas — sem linha divisória; respiro médio sob o título */}
+      <div className="aurora-page-tabs">
         {DFC_TABS.map((tab) => (
           <button
             key={tab.key}
@@ -260,8 +260,8 @@ function DFCPage() {
         ))}
       </div>
 
-      {clientId && (activeTab === "dfc" || activeTab === "dre") && (
-        <div className="px-6 lg:px-10 pb-2">
+      <div className="aurora-page">
+        {clientId && (activeTab === "dfc" || activeTab === "dre") && (
           <HealthAlertCard
             health={health}
             margem={margem}
@@ -269,18 +269,17 @@ function DFCPage() {
             period={periodoLabel}
             closingDay={activeClient?.monthly_closing_day ?? null}
           />
-        </div>
-      )}
+        )}
 
-      {activeTab === "recorrencias" && <RecorrenciasPanel clientId={clientId} />}
-      {activeTab === "contas" && <ContasPanel clientId={clientId} openTrigger={contasTrigger} />}
-      {activeTab === "extratos" && <ExtratosPanel clientId={clientId} startDate={startDate} endDate={endDate} />}
-      {activeTab === "detalhamento" && (
-        <DetalhamentoPanel clientId={clientId} startDate={startDate} endDate={endDate} />
-      )}
+        {activeTab === "recorrencias" && <RecorrenciasPanel clientId={clientId} />}
+        {activeTab === "contas" && <ContasPanel clientId={clientId} openTrigger={contasTrigger} />}
+        {activeTab === "extratos" && <ExtratosPanel clientId={clientId} startDate={startDate} endDate={endDate} />}
+        {activeTab === "detalhamento" && (
+          <DetalhamentoPanel clientId={clientId} startDate={startDate} endDate={endDate} />
+        )}
 
-      {activeTab === "dre" && (
-        <div className="px-8 lg:px-12 pb-12 grid gap-8 pt-6">
+        {activeTab === "dre" && (
+        <div className="flex flex-col gap-4">
           {/* Cards de resumo DRE */}
           <div className="grid md:grid-cols-4 gap-5">
             <Resumo label="Receita Bruta" value={brl(dre.receitaBruta)} tone="green" />
@@ -358,7 +357,7 @@ function DFCPage() {
       )}
 
       {activeTab === "dfc" && (
-      <div className="px-8 lg:px-12 pb-12 pt-6 grid gap-8">
+      <div className="flex flex-col gap-4">
 
         {loading && (
           <div className="aurora-card flex items-center gap-3">
@@ -471,6 +470,7 @@ function DFCPage() {
         )}
       </div>
       )}
+      </div>
     </AdminLayout>
   );
 }

@@ -120,7 +120,7 @@ function PublicProposta() {
           <a
             href={AURORA_WHATSAPP}
             className="mt-6 inline-flex items-center gap-2 px-6 py-3 text-[10px] uppercase"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
           >
             Falar com a Claudia →
           </a>

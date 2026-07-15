@@ -84,7 +84,7 @@ export function DetalhamentoPanel({ clientId, startDate, endDate }: Props) {
   const resultado = totalEntradas - totalSaidas;
 
   return (
-    <div className="px-8 lg:px-12 pb-12 pt-6 grid gap-8">
+    <div className="flex flex-col gap-4">
       {/* Filtro de banco */}
       <div className="flex items-center gap-3">
         <span className="aurora-cap">Banco</span>

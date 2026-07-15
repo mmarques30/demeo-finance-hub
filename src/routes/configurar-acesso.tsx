@@ -182,7 +182,7 @@ function ConfigurarAcessoPage() {
                   type="submit"
                   disabled={loading || !ready}
                   className="mt-2 w-full text-[10px] uppercase py-3.5 transition-colors disabled:opacity-60"
-                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
                 >
                   {loading ? "Salvando…" : "Definir senha →"}
                 </button>

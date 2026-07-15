@@ -159,7 +159,7 @@ function PrecificacaoPage() {
   return (
     <AdminLayout>
       <PageHeader cap="Insights" title="Precificação" emphasis="dos serviços" description="Histórico real, sem suposições." />
-      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-8">
+      <div className="aurora-page">
         {/* Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
           {cards.map((c) => (
@@ -292,7 +292,7 @@ function PrecificacaoPage() {
               type="button"
               onClick={() => setEditing(null)}
               className="text-[10px] uppercase px-3 py-1.5"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}
             >
               Cancelar
             </button>
@@ -301,7 +301,7 @@ function PrecificacaoPage() {
               disabled={saving}
               onClick={savePrice}
               className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
             >
               {saving ? "Salvando…" : "Salvar"}
             </button>

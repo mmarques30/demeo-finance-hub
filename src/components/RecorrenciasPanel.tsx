@@ -107,7 +107,7 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
   const busy = confirmMutation.isPending || rejectMutation.isPending;
 
   return (
-    <div className="px-8 lg:px-12 py-8 flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {isLoading && (
         <div className="aurora-card flex items-center gap-4">
           <div
@@ -212,7 +212,7 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
                               onClick={() => handleConfirm(row)}
                               disabled={busy || !editCat}
                               className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40"
-                              style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px", fontWeight: 500 }}
+                              style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px", fontWeight: 500 , borderRadius: 999 }}
                             >
                               Salvar
                             </button>
@@ -234,7 +234,7 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
                               onClick={() => handleConfirm(row)}
                               disabled={busy}
                               className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40"
-                              style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px", fontWeight: 500 }}
+                              style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px", fontWeight: 500 , borderRadius: 999 }}
                             >
                               Confirmar
                             </button>

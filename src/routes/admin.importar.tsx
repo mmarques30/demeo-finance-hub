@@ -415,7 +415,7 @@ function ImportarPage() {
         description="Envie extratos bancários em qualquer formato. A IA identifica e classifica os lançamentos automaticamente."
       />
 
-      <div className="px-8 lg:px-12 pb-12 grid gap-8">
+      <div className="aurora-page">
         {/* Upload zone */}
         <div
           onDragOver={(e) => {
@@ -606,7 +606,7 @@ function ImportarPage() {
                   onClick={() => setCancelUploadOpen(true)}
                   disabled={approving}
                   className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
-                  style={{ border: "1px solid var(--tan)", color: "var(--tan)", letterSpacing: "2px" }}
+                  style={{ border: "1px solid var(--tan)", color: "var(--tan)", letterSpacing: "2px" , borderRadius: 12 }}
                 >
                   Cancelar envio
                 </button>
@@ -614,7 +614,7 @@ function ImportarPage() {
                   onClick={approveSelected}
                   disabled={approving || selected.size === 0}
                   className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
-                  style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" }}
+                  style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" , borderRadius: 12 }}
                 >
                   Aprovar selecionados {selected.size > 0 ? `(${selected.size})` : ""}
                 </button>
@@ -622,7 +622,7 @@ function ImportarPage() {
                   onClick={approveClassificados}
                   disabled={approving || classifiedCount === 0}
                   className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
-                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
                   title="Aprova os lançamentos classificados pela IA; os sem categoria seguem para Pendentes"
                 >
                   {approving ? "Aprovando..." : `✓ Aprovar classificados${classifiedCount > 0 ? ` (${classifiedCount})` : ""}`}
@@ -983,7 +983,7 @@ function ImportarPage() {
                   type="submit"
                   disabled={manualSaving || clientsLoading}
                   className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
-                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
                 >
                   {manualSaving ? "Salvando..." : "Registrar lançamento"}
                 </button>
@@ -1104,7 +1104,7 @@ function CancelUploadModal({
               onClick={onCancel}
               disabled={deleting}
               className="text-[10px] uppercase px-5 py-3 transition-opacity disabled:opacity-50"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}
             >
               Manter
             </button>
@@ -1195,7 +1195,7 @@ function ConfirmUploadModal({
               type="button"
               onClick={onCancel}
               className="text-[10px] uppercase px-5 py-3 transition-opacity"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}
             >
               Cancelar
             </button>
@@ -1203,7 +1203,7 @@ function ConfirmUploadModal({
               type="button"
               onClick={onConfirm}
               className="text-[10px] uppercase px-6 py-3 transition-opacity"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
             >
               Confirmar importação
             </button>
