@@ -472,7 +472,7 @@ function EditarClienteModal({ client, onClose }: { client: { id: string; name: s
                 background: status === s ? "var(--green)" : "transparent",
                 color: status === s ? "#fff" : "var(--muted-foreground)",
                 border: "1px solid " + (status === s ? "var(--green)" : "var(--line)"),
-              , borderRadius: 12 }}
+              borderRadius: 12 }}
             >
               {s}
             </button>
@@ -567,7 +567,7 @@ function ClienteModal({
                 letterSpacing: "2.5px",
                 fontWeight: 500,
                 opacity: isPending ? 0.6 : 1,
-              , borderRadius: 999 }}
+              borderRadius: 999 }}
             >
               {submitLabel}
             </button>

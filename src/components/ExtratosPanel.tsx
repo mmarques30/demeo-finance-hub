@@ -422,7 +422,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
                         background: "rgba(109,146,166,0.18)",
                         color: "#8C6A40",
                         border: "1px solid rgba(109,146,166,0.35)",
-                      , borderRadius: 12 }}
+                      borderRadius: 12 }}
                     >
                       Manual
                     </span>

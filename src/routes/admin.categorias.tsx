@@ -247,7 +247,7 @@ function CategoriasPage() {
               letterSpacing: "2px",
               fontWeight: 500,
               opacity: saving ? 0.6 : 1,
-            , borderRadius: 999 }}
+            borderRadius: 999 }}
           >
             {saving ? "Salvando..." : "+ Adicionar"}
           </button>
