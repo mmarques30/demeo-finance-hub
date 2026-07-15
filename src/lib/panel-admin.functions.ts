@@ -93,7 +93,7 @@ export const updatePanelAdminAuth = createServerFn({ method: "POST" }).handler(
       if (authErr) throw new Error(`Erro ao atualizar Auth: ${authErr.message}`);
     }
 
-    const meta: Record<string, string> = {};
+    const meta: { display_name?: string; email?: string } = {};
     if (input.display_name) meta.display_name = input.display_name;
     if (input.email) meta.email = input.email;
     if (Object.keys(meta).length > 0) {
