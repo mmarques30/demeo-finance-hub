@@ -732,7 +732,7 @@ const receita = useMemo(
                           borderColor: newRole === r ? "var(--green)" : "var(--line)",
                           color: newRole === r ? "var(--green)" : "var(--muted-foreground)",
                           background: newRole === r ? "rgba(74,103,65,0.06)" : "transparent",
-                        , borderRadius: 12 }}
+                        borderRadius: 12 }}
                       >
                         {r === "owner" ? "Proprietário (acesso total)" : "Financeiro (sem saldo/downloads)"}
                       </button>

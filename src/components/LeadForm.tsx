@@ -104,7 +104,7 @@ export function LeadForm() {
             color: "#fff",
             letterSpacing: "2.5px",
             fontWeight: 500,
-          , borderRadius: 999 }}
+          borderRadius: 999 }}
         >
           Falar agora pelo WhatsApp →
         </a>
@@ -209,7 +209,7 @@ export function LeadForm() {
           color: "#fff",
           letterSpacing: "2.5px",
           fontWeight: 500,
-        , borderRadius: 999 }}
+        borderRadius: 999 }}
       >
         {status === "loading" ? "Enviando…" : "Quero ver com clareza →"}
       </button>

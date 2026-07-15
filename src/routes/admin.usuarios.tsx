@@ -413,7 +413,7 @@ function UsuariosPage() {
                         color: filterRole === r ? "var(--green)" : "var(--muted-foreground)",
                         background: filterRole === r ? "rgba(74,103,65,0.05)" : "transparent",
                         fontWeight: filterRole === r ? 600 : 400,
-                      , borderRadius: 12 }}
+                      borderRadius: 12 }}
                     >
                       {r === "todos" ? "Todos" : r === "owner" ? "Proprietários" : "Financeiro"}
                     </button>
@@ -464,7 +464,7 @@ function UsuariosPage() {
                                       background: u.portal_role === r ? "rgba(74,103,65,0.06)" : "transparent",
                                       fontWeight: u.portal_role === r ? 600 : 400,
                                       cursor: u.portal_role === r ? "default" : "pointer",
-                                    , borderRadius: 12 }}
+                                    borderRadius: 12 }}
                                   >
                                     {r === "owner" ? "Proprietário" : "Financeiro"}
                                   </button>
@@ -481,7 +481,7 @@ function UsuariosPage() {
                                     borderColor: isExpanded ? "var(--green)" : "var(--line)",
                                     color: isExpanded ? "var(--green)" : "var(--muted-foreground)",
                                     background: isExpanded ? "rgba(74,103,65,0.06)" : "transparent",
-                                  , borderRadius: 12 }}
+                                  borderRadius: 12 }}
                                 >
                                   Recursos
                                 </button>
@@ -1070,7 +1070,7 @@ function InvitePortalModal({
                     color: role === r ? "var(--green)" : "var(--muted-foreground)",
                     background: role === r ? "rgba(74,103,65,0.06)" : "transparent",
                     fontWeight: role === r ? 600 : 400,
-                  , borderRadius: 12 }}
+                  borderRadius: 12 }}
                 >
                   {r === "owner" ? "Proprietário" : "Financeiro"}
                 </button>
