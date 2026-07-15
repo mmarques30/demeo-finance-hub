@@ -43,7 +43,7 @@ async function assertPanelAdmin(accessToken: string): Promise<string> {
   return callerId;
 }
 
-export const updatePanelAdminAuth = createServerFn({ method: "POST" }).handler(
+export const updatePanelAdminAuth = createServerFn({ method: "POST" }).inputValidator((d: unknown) => d).handler(
   async ({ data }: { data: unknown }) => {
     const input = UpdateInput.parse(data);
     const callerId = await assertPanelAdmin(input.access_token);
@@ -114,7 +114,7 @@ export const updatePanelAdminAuth = createServerFn({ method: "POST" }).handler(
   }
 );
 
-export const createPanelAdmin = createServerFn({ method: "POST" }).handler(
+export const createPanelAdmin = createServerFn({ method: "POST" }).inputValidator((d: unknown) => d).handler(
   async ({ data }: { data: unknown }) => {
     const input = CreateInput.parse(data);
     await assertPanelAdmin(input.access_token);
@@ -187,7 +187,7 @@ export const createPanelAdmin = createServerFn({ method: "POST" }).handler(
   }
 );
 
-export const deletePanelAdmin = createServerFn({ method: "POST" }).handler(
+export const deletePanelAdmin = createServerFn({ method: "POST" }).inputValidator((d: unknown) => d).handler(
   async ({ data }: { data: unknown }) => {
     const input = DeleteInput.parse(data);
     const callerId = await assertPanelAdmin(input.access_token);
