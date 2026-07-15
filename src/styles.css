@@ -397,11 +397,45 @@
   .app-shell button:not(.rounded-full):not([class*="rounded-"]) {
     border-radius: var(--radius-sm);
   }
-  /* Segmented controls and filter chips inherit soft corners via container */
+  /* Links usados como CTA / botão no shell */
+  .app-shell a.inline-flex,
+  .app-shell a[class*="uppercase"][class*="px-"] {
+    border-radius: 999px;
+  }
   .app-shell .aurora-card,
   .app-shell .aurora-panel,
   .app-shell .aurora-panel--tint {
     border-radius: var(--radius-lg);
+  }
+
+  /* Respiro médio: título → filtros/abas → conteúdo (nem folgado nem colado) */
+  .aurora-page {
+    padding: 12px 24px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  @media (min-width: 1024px) {
+    .aurora-page {
+      padding-left: 40px;
+      padding-right: 40px;
+    }
+  }
+  .aurora-page-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 24px 0;
+  }
+  @media (min-width: 1024px) {
+    .aurora-page-tabs {
+      padding-left: 40px;
+      padding-right: 40px;
+    }
+  }
+  /* Quando tabs estão logo acima do conteúdo, o topo do page fica sem padding extra */
+  .aurora-page-tabs + .aurora-page {
+    padding-top: 12px;
   }
 
   .app-shell table {

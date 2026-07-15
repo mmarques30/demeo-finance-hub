@@ -130,7 +130,7 @@ function NovoContrato() {
         emphasis="contrato"
         description="A partir de uma proposta aceita."
       />
-      <div className="px-8 lg:px-12 pb-12 grid lg:grid-cols-2 gap-8">
+      <div className="aurora-page grid lg:grid-cols-2">
         <div className="aurora-card">
           <div className="aurora-cap mb-2">1. Proposta aceita</div>
           <div className="aurora-serif text-[22px] mb-4">Selecione a base</div>
@@ -222,7 +222,7 @@ function NovoContrato() {
                   disabled={saving}
                   onClick={createContract}
                   className="text-[10px] uppercase px-6 py-3 disabled:opacity-50 mt-2"
-                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
                 >
                   {saving ? "Gerando…" : "Criar contrato →"}
                 </button>

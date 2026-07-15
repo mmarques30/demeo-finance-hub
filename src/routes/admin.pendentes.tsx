@@ -284,7 +284,7 @@ function PendentesPage() {
         }
       />
 
-      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-7">
+      <div className="aurora-page">
         {error && (
           <div
             className="aurora-card flex items-center gap-3"
@@ -400,7 +400,7 @@ function PendentesPage() {
                         onClick={() => saveClient(cid, selIds)}
                         disabled={isSaving}
                         className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-50"
-                        style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                        style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
                       >
                         {isSaving ? "Salvando..." : `Aprovar selecionados (${selCount})`}
                       </button>
@@ -409,7 +409,7 @@ function PendentesPage() {
                         onClick={() => saveClient(cid)}
                         disabled={isSaving}
                         className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-50"
-                        style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                        style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
                       >
                         {isSaving ? "Salvando..." : "Aprovar todos classificados"}
                       </button>
@@ -574,7 +574,7 @@ function PendentesPage() {
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0 || loading}
               className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" }}
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" , borderRadius: 12 }}
             >
               ← Anterior
             </button>
@@ -585,7 +585,7 @@ function PendentesPage() {
               onClick={() => setPage((p) => Math.min(Math.ceil(totalCount / PAGE_SIZE) - 1, p + 1))}
               disabled={page >= Math.ceil(totalCount / PAGE_SIZE) - 1 || loading}
               className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-40"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" }}
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", color: "var(--muted-foreground)" , borderRadius: 12 }}
             >
               Próxima →
             </button>
@@ -655,7 +655,7 @@ function DeletePendingTxModal({
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onCancel} disabled={deleting}
               className="text-[10px] uppercase px-5 py-3 transition-opacity disabled:opacity-40"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}>
               Cancelar
             </button>
             <button type="button" onClick={onConfirm} disabled={deleting}

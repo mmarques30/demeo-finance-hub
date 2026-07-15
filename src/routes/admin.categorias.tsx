@@ -172,7 +172,7 @@ function CategoriasPage() {
         description="Gerencie as categorias disponíveis para classificação automática e manual."
       />
 
-      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-8">
+      <div className="aurora-page">
         {/* Seletor de cliente */}
         <div className="flex items-center gap-4 pt-2">
           <label className="aurora-cap">Cliente</label>
@@ -247,7 +247,7 @@ function CategoriasPage() {
               letterSpacing: "2px",
               fontWeight: 500,
               opacity: saving ? 0.6 : 1,
-            }}
+            , borderRadius: 999 }}
           >
             {saving ? "Salvando..." : "+ Adicionar"}
           </button>
@@ -322,7 +322,7 @@ function CategoriasPage() {
                                   <button
                                     onClick={() => saveEdit(cat.id)}
                                     className="text-[10px] uppercase px-3 py-1"
-                                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px" }}
+                                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px" , borderRadius: 999 }}
                                   >
                                     Salvar
                                   </button>
@@ -339,7 +339,7 @@ function CategoriasPage() {
                                   <button
                                     onClick={() => startEdit(cat)}
                                     className="text-[10px] uppercase px-3 py-1"
-                                    style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" }}
+                                    style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" , borderRadius: 12 }}
                                   >
                                     Editar
                                   </button>
@@ -358,7 +358,7 @@ function CategoriasPage() {
                                   <button
                                     onClick={() => deleteCategory(cat.id)}
                                     className="text-[10px] uppercase px-3 py-1"
-                                    style={{ border: "1px solid rgba(109,146,166,0.4)", color: "var(--tan)", letterSpacing: "1.5px" }}
+                                    style={{ border: "1px solid rgba(109,146,166,0.4)", color: "var(--tan)", letterSpacing: "1.5px" , borderRadius: 12 }}
                                   >
                                     Excluir
                                   </button>

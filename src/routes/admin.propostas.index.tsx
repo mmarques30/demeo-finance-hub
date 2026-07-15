@@ -78,15 +78,15 @@ function PropostasListing() {
             to="/admin/propostas/nova"
             search={{ step: 1 }}
             className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
           >
             + Nova proposta
           </Link>
         }
       />
 
-      <div className="px-8 lg:px-12 pb-12">
-        <div className="flex gap-2 mb-6 flex-wrap items-center">
+      <div className="aurora-page">
+        <div className="flex gap-2 flex-wrap items-center">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -105,6 +105,7 @@ function PropostasListing() {
                   background: statusFilter === s ? "var(--green)" : "transparent",
                   color: statusFilter === s ? "#fff" : "var(--muted-foreground)",
                   border: `1px solid ${statusFilter === s ? "var(--green)" : "var(--line)"}`,
+                  borderRadius: 999,
                 }}
               >
                 {s === "all" ? "Todos" : STATUS_LABEL[s] ?? s}

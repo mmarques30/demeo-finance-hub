@@ -551,7 +551,7 @@ export function FechamentoMensalPanel({
           <button
             onClick={openAddModal}
             className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
           >
             + Adicionar
           </button>
@@ -837,7 +837,7 @@ export function FechamentoMensalPanel({
                 onClick={saveEntry}
                 disabled={saving}
                 className="px-5 py-2.5 text-[11px] uppercase transition-opacity hover:opacity-80 disabled:opacity-50"
-                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
               >
                 {saving ? "Salvando..." : editingEntry ? "Salvar" : "Adicionar"}
               </button>

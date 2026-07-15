@@ -192,7 +192,7 @@ function PlanoContasPage() {
         description="Suba o plano de contas do cliente (XLSX/CSV). Ele vira as categorias que a IA usa para classificar e replica automaticamente todos os meses."
       />
 
-      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-8">
+      <div className="aurora-page">
         {/* Seletor de cliente */}
         <div className="flex items-center gap-4 pt-2">
           <label className="aurora-cap">Cliente</label>
@@ -242,7 +242,7 @@ function PlanoContasPage() {
                 <button
                   onClick={() => download(activeUpload)}
                   className="text-[10px] uppercase px-4 py-2 ml-auto"
-                  style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" }}
+                  style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" , borderRadius: 12 }}
                 >
                   Baixar arquivo
                 </button>
@@ -308,7 +308,7 @@ function PlanoContasPage() {
                 onClick={commit}
                 disabled={committing}
                 className="text-[10px] uppercase px-5 py-2 ml-auto disabled:opacity-40"
-                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
               >
                 {committing ? "Aplicando…" : "Adicionar contas ao plano"}
               </button>
@@ -365,7 +365,7 @@ function PlanoContasPage() {
                         <button
                           onClick={() => download(u)}
                           className="text-[10px] uppercase px-3 py-1"
-                          style={{ border: "1px solid var(--line)", color: "var(--navy)", letterSpacing: "1.5px" }}
+                          style={{ border: "1px solid var(--line)", color: "var(--navy)", letterSpacing: "1.5px" , borderRadius: 12 }}
                         >
                           Baixar
                         </button>

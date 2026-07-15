@@ -170,7 +170,7 @@ function LoginPage() {
                     type="submit"
                     disabled={resetLoading}
                     className="w-full text-[10px] uppercase py-3.5 disabled:opacity-60"
-                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
                   >
                     {resetLoading ? "Enviando…" : "Enviar link de recuperação →"}
                   </button>

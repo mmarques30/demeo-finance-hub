@@ -217,7 +217,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
     : uploads;
 
   return (
-    <div className="px-8 lg:px-12 pb-12 pt-6 grid gap-6">
+    <div className="flex flex-col gap-4">
 
       {err && (
         <div className="aurora-card flex items-center gap-3" style={{ background: "rgba(109,146,166,0.1)", borderLeft: "3px solid var(--tan)" }}>
@@ -293,7 +293,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
                     onClick={() => approveUploadClassified(upload.id)}
                     disabled={approvingUpload === upload.id}
                     className="text-[10px] uppercase px-3 py-1.5 transition-opacity disabled:opacity-50"
-                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px", fontWeight: 500 }}
+                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px", fontWeight: 500 , borderRadius: 999 }}
                     title="Aprova os classificados pela IA e envia ao histórico/relatórios"
                   >
                     {approvingUpload === upload.id ? "Aprovando..." : `✓ Aprovar classificados (${aw.classified})`}
@@ -422,7 +422,7 @@ export function ExtratosPanel({ clientId, startDate, endDate }: { clientId: stri
                         background: "rgba(109,146,166,0.18)",
                         color: "#8C6A40",
                         border: "1px solid rgba(109,146,166,0.35)",
-                      }}
+                      , borderRadius: 12 }}
                     >
                       Manual
                     </span>
@@ -599,12 +599,12 @@ function EditUploadModal({
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onClose}
               className="text-[10px] uppercase px-5 py-3 transition-opacity"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}>
               Cancelar
             </button>
             <button type="submit" disabled={saving}
               className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}>
               {saving ? "Salvando..." : "Salvar"}
             </button>
           </div>
@@ -658,7 +658,7 @@ function DeleteUploadModal({
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onCancel} disabled={deleting}
               className="text-[10px] uppercase px-5 py-3 transition-opacity disabled:opacity-40"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}>
               Cancelar
             </button>
             <button type="button" onClick={onConfirm} disabled={deleting}
@@ -771,12 +771,12 @@ function EditTxModal({
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onClose}
               className="text-[10px] uppercase px-5 py-3 transition-opacity"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}>
               Cancelar
             </button>
             <button type="submit" disabled={saving}
               className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}>
               {saving ? "Salvando..." : "Salvar"}
             </button>
           </div>
@@ -821,7 +821,7 @@ function DeleteTxModal({
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onCancel} disabled={deleting}
               className="text-[10px] uppercase px-5 py-3 transition-opacity disabled:opacity-40"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}>
               Cancelar
             </button>
             <button type="button" onClick={onConfirm} disabled={deleting}

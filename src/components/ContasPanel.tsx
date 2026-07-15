@@ -146,7 +146,7 @@ function PayableSection({
                           onClick={() => onMarkPaid(p.id)}
                           disabled={isMarking}
                           className="text-[10px] uppercase px-2.5 py-1 transition-opacity disabled:opacity-40"
-                          style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px", fontWeight: 500, whiteSpace: "nowrap" }}
+                          style={{ background: "var(--green)", color: "#fff", letterSpacing: "1.5px", fontWeight: 500, whiteSpace: "nowrap" , borderRadius: 999 }}
                         >
                           {isMarking ? "…" : "✓ Pago"}
                         </button>
@@ -156,7 +156,7 @@ function PayableSection({
                           onClick={() => onUndoPaid(p.id)}
                           disabled={isMarking}
                           className="text-[10px] uppercase px-2.5 py-1 transition-opacity disabled:opacity-40"
-                          style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px", whiteSpace: "nowrap" }}
+                          style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px", whiteSpace: "nowrap" , borderRadius: 12 }}
                         >
                           {isMarking ? "…" : "Desfazer"}
                         </button>
@@ -336,7 +336,7 @@ function NovoLancamentoModal({
             <button type="button" onClick={onClose} className="text-[11px] uppercase px-4 py-2" style={{ color: "var(--muted-foreground)", letterSpacing: "1.5px" }}>
               Cancelar
             </button>
-            <button type="submit" disabled={saving} className="text-[11px] uppercase px-5 py-2 transition-opacity disabled:opacity-50" style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+            <button type="submit" disabled={saving} className="text-[11px] uppercase px-5 py-2 transition-opacity disabled:opacity-50" style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}>
               {saving ? "Salvando..." : "Salvar"}
             </button>
           </div>
@@ -427,9 +427,9 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
   const saldoPrevisto = totalReceber - totalPagar;
 
   return (
-    <div className="px-8 lg:px-12 pb-12 flex flex-col gap-7">
+    <div className="flex flex-col gap-4">
       {/* Header row with KPIs and "+ Novo" button */}
-      <div className="flex items-start justify-between gap-4 pt-6">
+      <div className="flex items-start justify-between gap-4">
         <div className="grid grid-cols-3 gap-4 flex-1">
           <div className="aurora-card">
             <div className="aurora-cap mb-2">A Receber</div>
@@ -527,7 +527,7 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
                   className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-30"
-                  style={{ border: "1px solid var(--line)", letterSpacing: "1.5px", fontWeight: 500 }}
+                  style={{ border: "1px solid var(--line)", letterSpacing: "1.5px", fontWeight: 500 , borderRadius: 12 }}
                 >
                   ← Anterior
                 </button>
@@ -535,7 +535,7 @@ export function ContasPanel({ clientId, openTrigger }: { clientId: string; openT
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
                   className="text-[10px] uppercase px-4 py-2 transition-opacity disabled:opacity-30"
-                  style={{ border: "1px solid var(--line)", letterSpacing: "1.5px", fontWeight: 500 }}
+                  style={{ border: "1px solid var(--line)", letterSpacing: "1.5px", fontWeight: 500 , borderRadius: 12 }}
                 >
                   Próximo →
                 </button>

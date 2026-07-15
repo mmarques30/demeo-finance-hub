@@ -410,7 +410,7 @@ function PortalPage() {
               onClick={handleDownloadPDF}
               disabled={downloading}
               className="text-[10px] uppercase px-6 py-3.5 disabled:opacity-50 transition-opacity"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
             >
               {downloading ? "Gerando PDF…" : "Baixar relatório completo (PDF) ↓"}
             </button>

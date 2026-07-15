@@ -205,14 +205,14 @@ function UsuariosPage() {
             <button
               onClick={() => setInviteKind("admin")}
               className="text-[10px] uppercase px-5 py-2.5"
-              style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
             >
               + Admin Aurora
             </button>
             <button
               onClick={() => setInviteKind("portal")}
               className="text-[10px] uppercase px-5 py-2.5"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
             >
               + Usuário do portal
             </button>
@@ -220,7 +220,7 @@ function UsuariosPage() {
         }
       />
 
-      <div className="px-6 lg:px-10 pb-10 flex flex-col gap-6">
+      <div className="aurora-page">
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
@@ -255,7 +255,7 @@ function UsuariosPage() {
                   <button
                     onClick={() => setInviteKind("admin")}
                     className="text-[9px] uppercase px-4 py-2"
-                    style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                    style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
                   >
                     + Convidar admin
                   </button>
@@ -310,7 +310,7 @@ function UsuariosPage() {
                               type="button"
                               onClick={() => setEditAdmin(u)}
                               className="text-[9px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70"
-                              style={{ border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px" }}
+                              style={{ border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px" , borderRadius: 12 }}
                             >
                               Editar
                             </button>
@@ -327,7 +327,7 @@ function UsuariosPage() {
                                   }
                                 }}
                                 className="text-[9px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70 disabled:opacity-40"
-                                style={{ border: "1px solid var(--line)", color: "var(--tan)", letterSpacing: "1.5px" }}
+                                style={{ border: "1px solid var(--line)", color: "var(--tan)", letterSpacing: "1.5px" , borderRadius: 12 }}
                               >
                                 Remover
                               </button>
@@ -368,7 +368,7 @@ function UsuariosPage() {
                 <button
                   onClick={() => setInviteKind("portal")}
                   className="text-[9px] uppercase px-4 py-2"
-                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
                 >
                   + Convidar portal
                 </button>
@@ -413,7 +413,7 @@ function UsuariosPage() {
                         color: filterRole === r ? "var(--green)" : "var(--muted-foreground)",
                         background: filterRole === r ? "rgba(74,103,65,0.05)" : "transparent",
                         fontWeight: filterRole === r ? 600 : 400,
-                      }}
+                      , borderRadius: 12 }}
                     >
                       {r === "todos" ? "Todos" : r === "owner" ? "Proprietários" : "Financeiro"}
                     </button>
@@ -464,7 +464,7 @@ function UsuariosPage() {
                                       background: u.portal_role === r ? "rgba(74,103,65,0.06)" : "transparent",
                                       fontWeight: u.portal_role === r ? 600 : 400,
                                       cursor: u.portal_role === r ? "default" : "pointer",
-                                    }}
+                                    , borderRadius: 12 }}
                                   >
                                     {r === "owner" ? "Proprietário" : "Financeiro"}
                                   </button>
@@ -481,7 +481,7 @@ function UsuariosPage() {
                                     borderColor: isExpanded ? "var(--green)" : "var(--line)",
                                     color: isExpanded ? "var(--green)" : "var(--muted-foreground)",
                                     background: isExpanded ? "rgba(74,103,65,0.06)" : "transparent",
-                                  }}
+                                  , borderRadius: 12 }}
                                 >
                                   Recursos
                                 </button>
@@ -491,7 +491,7 @@ function UsuariosPage() {
                                       revokeAccess.mutate({ userId: u.user_id, clientId: u.client_id });
                                   }}
                                   className="text-[9px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70"
-                                  style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px" }}
+                                  style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px" , borderRadius: 12 }}
                                 >
                                   Revogar
                                 </button>
@@ -682,12 +682,12 @@ function InviteAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={loading || !email || !name || password.length < 8}
               className="flex-1 text-[10px] uppercase py-3 disabled:opacity-50"
-              style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}>
               {loading ? "Criando…" : "Criar admin →"}
             </button>
             <button type="button" onClick={onClose}
               className="px-5 py-3 text-[10px] uppercase"
-              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px" }}>
+              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px" , borderRadius: 12 }}>
               Cancelar
             </button>
           </div>
@@ -936,12 +936,12 @@ function EditAdminModal({
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={loading || !name.trim() || !email.trim() || !canDemoteOwner || (password.length > 0 && password.length < 8)}
               className="flex-1 text-[10px] uppercase py-3 disabled:opacity-50"
-              style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ background: "var(--navy)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}>
               {loading ? "Salvando…" : "Salvar →"}
             </button>
             <button type="button" onClick={onClose}
               className="px-5 py-3 text-[10px] uppercase"
-              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px" }}>
+              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px" , borderRadius: 12 }}>
               Cancelar
             </button>
           </div>
@@ -1070,7 +1070,7 @@ function InvitePortalModal({
                     color: role === r ? "var(--green)" : "var(--muted-foreground)",
                     background: role === r ? "rgba(74,103,65,0.06)" : "transparent",
                     fontWeight: role === r ? 600 : 400,
-                  }}
+                  , borderRadius: 12 }}
                 >
                   {r === "owner" ? "Proprietário" : "Financeiro"}
                 </button>
@@ -1094,7 +1094,7 @@ function InvitePortalModal({
               type="submit"
               disabled={loading || !clientId || !email || !name}
               className="flex-1 text-[10px] uppercase py-3 disabled:opacity-50"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
             >
               {loading ? "Enviando convite…" : "Enviar convite →"}
             </button>
@@ -1102,7 +1102,7 @@ function InvitePortalModal({
               type="button"
               onClick={onClose}
               className="px-5 py-3 text-[10px] uppercase"
-              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px" }}
+              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px" , borderRadius: 12 }}
             >
               Cancelar
             </button>

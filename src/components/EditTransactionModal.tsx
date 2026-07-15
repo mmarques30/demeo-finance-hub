@@ -107,12 +107,12 @@ export function EditTransactionModal({ tx, categories, cap = "Lançamento", onCl
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onClose}
               className="text-[10px] uppercase px-5 py-3 transition-opacity"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}>
               Cancelar
             </button>
             <button type="submit" disabled={saving}
               className="text-[10px] uppercase px-6 py-3 transition-opacity disabled:opacity-50"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}>
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}>
               {saving ? "Salvando..." : "Salvar"}
             </button>
           </div>

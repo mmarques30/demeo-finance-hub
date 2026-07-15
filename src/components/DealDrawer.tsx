@@ -232,7 +232,7 @@ export function DealDrawer({ dealId, onClose }: { dealId: string | null; onClose
                     }
                   }}
                   className="self-start text-[10px] uppercase px-4 py-2 disabled:opacity-40"
-                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
                 >
                   {savingAct ? "Movendo…" : "Avançar →"}
                 </button>

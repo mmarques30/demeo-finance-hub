@@ -136,16 +136,16 @@ function ClientesPage() {
           <button
             onClick={() => setNovoOpen(true)}
             className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
           >
             + Novo cliente
           </button>
         }
       />
 
-      <div className="px-8 lg:px-12 pb-12 pt-8">
+      <div className="aurora-page">
         {/* Filtro de carteira — suspensa no padrão Dashboard */}
-        <div className="flex gap-2 mb-6 flex-wrap items-center">
+        <div className="flex gap-2 flex-wrap items-center">
           <FilterMenu label="Carteira" valueLabel={filtro} minWidth={180}>
             {(close) =>
               FILTROS.map((f) => (
@@ -472,7 +472,7 @@ function EditarClienteModal({ client, onClose }: { client: { id: string; name: s
                 background: status === s ? "var(--green)" : "transparent",
                 color: status === s ? "#fff" : "var(--muted-foreground)",
                 border: "1px solid " + (status === s ? "var(--green)" : "var(--line)"),
-              }}
+              , borderRadius: 12 }}
             >
               {s}
             </button>
@@ -567,7 +567,7 @@ function ClienteModal({
                 letterSpacing: "2.5px",
                 fontWeight: 500,
                 opacity: isPending ? 0.6 : 1,
-              }}
+              , borderRadius: 999 }}
             >
               {submitLabel}
             </button>
@@ -575,7 +575,7 @@ function ClienteModal({
               type="button"
               onClick={onClose}
               className="px-5 py-3.5 text-[11px] uppercase"
-              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}
             >
               Cancelar
             </button>
@@ -671,7 +671,7 @@ function BancosField({
           type="button"
           onClick={() => addBanco(bancosInput)}
           className="px-4 text-[11px] uppercase"
-          style={{ background: "var(--offwhite)", border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px", fontWeight: 500, flexShrink: 0 }}
+          style={{ background: "var(--offwhite)", border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "1.5px", fontWeight: 500, flexShrink: 0 , borderRadius: 12 }}
         >
           + Add
         </button>
@@ -788,7 +788,7 @@ function ExcluirClienteModal({ client, onClose }: { client: ClientRow; onClose: 
               type="button"
               onClick={onClose}
               className="text-[10px] uppercase px-5 py-3 transition-opacity"
-              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}
             >
               Cancelar
             </button>

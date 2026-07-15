@@ -181,7 +181,7 @@ function NovaProposta() {
     <AdminLayout>
       <PageHeader cap="Comercial" title="Nova" emphasis="proposta" description="Wizard guiado em 5 etapas." />
 
-      <div className="px-8 lg:px-12 pb-12">
+      <div className="aurora-page">
         {/* Steps */}
         <div className="flex gap-2 mb-8">
           {STEPS.map((s, i) => {
@@ -258,7 +258,7 @@ function NovaProposta() {
                 <button
                   onClick={() => setPickerOpen(true)}
                   className="text-[10px] uppercase px-4 py-2"
-                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+                  style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
                 >
                   + Adicionar
                 </button>
@@ -436,7 +436,7 @@ function NovaProposta() {
                 disabled={emitting}
                 onClick={emit}
                 className="self-start text-[10px] uppercase px-6 py-3 disabled:opacity-50"
-                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
               >
                 {emitting ? "Gerando…" : "Emitir proposta →"}
               </button>
@@ -501,7 +501,7 @@ function NovaProposta() {
                       }
                     }}
                     className="text-[10px] uppercase px-4 py-2 disabled:opacity-50"
-                    style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "2px" }}
+                    style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "2px" , borderRadius: 12 }}
                   >
                     {sending ? "Enviando…" : "Enviar por e-mail →"}
                   </button>

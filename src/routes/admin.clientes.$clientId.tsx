@@ -284,7 +284,7 @@ const receita = useMemo(
             <Link
               to={"/admin/importar" as never}
               className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
-              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+              style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
             >
               + Importar extrato
             </Link>
@@ -292,7 +292,7 @@ const receita = useMemo(
               to={"/admin/dfc" as never}
               search={{ clientId } as never}
               className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase transition-opacity hover:opacity-80"
-              style={{ border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "2px", fontWeight: 500 }}
+              style={{ border: "1px solid var(--line)", color: "var(--foreground)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}
             >
               Ver DFC →
             </Link>
@@ -300,7 +300,7 @@ const receita = useMemo(
         }
       />
 
-      <div className="px-8 lg:px-12 pb-12 flex flex-col gap-8">
+      <div className="aurora-page">
 
         {/* Cabeçalho do cliente */}
         <div className="aurora-card flex flex-wrap gap-6 items-start">
@@ -672,7 +672,7 @@ const receita = useMemo(
                           <button
                             onClick={() => handleRemoveUser(u.user_id)}
                             className="text-[10px] uppercase px-3 py-1.5 transition-opacity hover:opacity-70"
-                            style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px" }}
+                            style={{ border: "1px solid var(--line)", color: "var(--muted-foreground)", letterSpacing: "1.5px" , borderRadius: 12 }}
                           >
                             Remover
                           </button>
@@ -732,7 +732,7 @@ const receita = useMemo(
                           borderColor: newRole === r ? "var(--green)" : "var(--line)",
                           color: newRole === r ? "var(--green)" : "var(--muted-foreground)",
                           background: newRole === r ? "rgba(74,103,65,0.06)" : "transparent",
-                        }}
+                        , borderRadius: 12 }}
                       >
                         {r === "owner" ? "Proprietário (acesso total)" : "Financeiro (sem saldo/downloads)"}
                       </button>
@@ -754,7 +754,7 @@ const receita = useMemo(
                     type="submit"
                     disabled={addingUser || !newEmail || !newName}
                     className="text-[10px] uppercase px-7 py-3.5 disabled:opacity-50 transition-opacity"
-                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 }}
+                    style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
                   >
                     {addingUser ? "Criando…" : "Enviar convite →"}
                   </button>
@@ -814,7 +814,7 @@ const receita = useMemo(
                   onClick={() => { setDeleteUpload(null); setDeleteUploadErr(null); }}
                   disabled={deletingUpload}
                   className="text-[10px] uppercase px-5 py-3 transition-opacity disabled:opacity-40"
-                  style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 }}
+                  style={{ border: "1px solid var(--line)", letterSpacing: "2px", fontWeight: 500 , borderRadius: 12 }}
                 >
                   Cancelar
                 </button>

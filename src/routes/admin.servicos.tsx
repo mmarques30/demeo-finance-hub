@@ -60,7 +60,7 @@ function ServicosPage() {
   return (
     <AdminLayout>
       <PageHeader cap="Catálogo" title="Serviços" emphasis="oferecidos" description="Editar inline. Mudança de preço fica no histórico." />
-      <div className="px-8 lg:px-12 pb-12">
+      <div className="aurora-page">
         <div className="aurora-card p-0 overflow-hidden">
           <table className="w-full">
             <thead>
@@ -133,7 +133,7 @@ function Row({ svc, striped, onSave }: { svc: Service; striped: boolean; onSave:
           disabled={!dirty}
           onClick={() => onSave(local, oldPrice)}
           className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-30"
-          style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 }}
+          style={{ background: "var(--green)", color: "#fff", letterSpacing: "2px", fontWeight: 500 , borderRadius: 999 }}
         >
           Salvar
         </button>

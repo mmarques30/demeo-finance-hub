@@ -827,7 +827,7 @@ function RelatoriosPage() {
       />
 
       {/* Abas — sem linha divisória */}
-      <div className="flex flex-wrap gap-1 px-6 lg:px-10 pb-4 -mt-1">
+      <div className="aurora-page-tabs">
         {([{ key: "exportar", label: "Exportar" }, { key: "historico", label: "Histórico" }] as { key: RelTab; label: string }[]).map((tab) => (
           <button
             key={tab.key}
@@ -848,7 +848,7 @@ function RelatoriosPage() {
         ))}
       </div>
 
-      <div className="px-6 lg:px-10 pb-12 flex flex-col gap-6">
+      <div className="aurora-page">
 
         {/* ── Aba: Exportar ─────────────────────────────────────────────────────── */}
         {activeTab === "exportar" && (
@@ -915,7 +915,7 @@ function RelatoriosPage() {
                         {hasData ? (
                           <span
                             className="text-[10px] uppercase px-3 py-1.5"
-                            style={{ letterSpacing: "1.5px", fontWeight: 500, background: "var(--navy)", color: "#fff", border: "1px solid var(--navy)" }}
+                            style={{ letterSpacing: "1.5px", fontWeight: 500, background: "var(--navy)", color: "#fff", border: "1px solid var(--navy)" , borderRadius: 999 }}
                           >
                             DFC + Gerencial
                           </span>
@@ -929,7 +929,7 @@ function RelatoriosPage() {
                             onClick={() => handlePDF(c.id)}
                             disabled={!hasData || !!isExp}
                             className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40 transition-opacity"
-                            style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" }}
+                            style={{ border: "1px solid var(--navy)", color: "var(--navy)", letterSpacing: "1.5px" , borderRadius: 12 }}
                           >
                             {isExp === "pdf" ? "..." : "PDF ↓"}
                           </button>
@@ -937,7 +937,7 @@ function RelatoriosPage() {
                             onClick={() => handleExcel(c.id)}
                             disabled={!hasData || !!isExp}
                             className="text-[10px] uppercase px-3 py-1.5 disabled:opacity-40 transition-opacity"
-                            style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "1.5px" }}
+                            style={{ border: "1px solid var(--green)", color: "var(--green)", letterSpacing: "1.5px" , borderRadius: 12 }}
                           >
                             {isExp === "excel" ? "..." : "Excel ↓"}
                           </button>
