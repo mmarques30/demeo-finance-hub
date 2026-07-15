@@ -129,10 +129,10 @@ export function RecorrenciasPanel({ clientId }: { clientId: string }) {
       )}
 
       {!isLoading && recorrencias.length > 0 && (
-        <div className="aurora-panel--tint">
+        <div className="aurora-panel">
           <div
             className="px-7 py-4"
-            style={{ borderBottom: "1px solid rgba(153,169,137,0.35)", background: "rgba(255,255,255,0.55)" }}
+            style={{ borderBottom: "1px solid var(--line)", background: "var(--offwhite)" }}
           >
             <div
               className="text-[11px] uppercase mb-1"

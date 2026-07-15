@@ -201,7 +201,7 @@ function CategoriasPage() {
         <form
           onSubmit={addCategory}
           className="flex flex-wrap items-end gap-3 p-5"
-          style={{ background: "var(--surface)", border: "1px solid rgba(153,169,137,0.35)", borderRadius: 22 }}
+          style={{ background: "#fff", border: "1px solid var(--line)", borderRadius: 22 }}
         >
           <div className="flex flex-col gap-1.5">
             <label className="aurora-cap">Nome</label>

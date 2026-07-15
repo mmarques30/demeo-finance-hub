@@ -84,7 +84,7 @@
   --linen:   #FAFBFA;   /* alias legado → off-white */
   --linen2:  #FFFFFF;   /* cards elevados */
   --panel:   #FFFFFF;   /* card padrão (elevado sobre off-white) */
-  --panel-tint: #E0E4D6; /* surface da marca — buckets / cards grandes */
+  --panel-tint: #FFFFFF; /* cards grandes = branco (igual KPIs); superfície da marca só no Pipeline */
   --green:   #284C2B;
   --green2:  #1E3B21;
   --sage:    #99A989;
@@ -225,10 +225,10 @@
     box-shadow: var(--shadow-soft);
   }
 
-  /* Bucket / card grande com surface da marca (diferencia do off-white) */
+  /* Bucket legado → mesmo visual dos cards brancos (KPI) */
   .aurora-card--bucket {
-    background: var(--surface);
-    border: 1px solid rgba(153,169,137,0.35);
+    background: #fff;
+    border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     padding: 28px;
     box-shadow: var(--shadow-soft);
@@ -359,17 +359,18 @@
     border: 1px solid rgba(40,76,43,0.08);
   }
 
-  /* Painel elevado (card branco) vs bucket com tint sage da marca */
+  /* Painel elevado branco (padrão dashboard / gráficos) */
   .aurora-panel {
-    background: var(--panel, #fff);
+    background: #fff;
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-soft);
     overflow: hidden;
   }
+  /* Alias legado — mesmo white; tint verde fica só no Pipeline */
   .aurora-panel--tint {
-    background: var(--panel-tint);
-    border: 1px solid rgba(153,169,137,0.35);
+    background: #fff;
+    border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-soft);
     overflow: hidden;

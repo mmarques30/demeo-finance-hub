@@ -238,10 +238,10 @@ function UsuariosPage() {
 
         {/* ── Administradores do sistema ── */}
         {isAdmin && (
-          <section className="aurora-panel--tint">
+          <section className="aurora-panel">
             <header
               className="flex items-center justify-between px-6 py-4"
-              style={{ borderBottom: adminSectionOpen ? "1px solid rgba(153,169,137,0.35)" : "none", background: "rgba(255,255,255,0.55)" }}
+              style={{ borderBottom: adminSectionOpen ? "1px solid var(--line)" : "none", background: "var(--offwhite)" }}
             >
               <div>
                 <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--navy)", fontWeight: 600 }}>Painel Aurora</div>
@@ -351,10 +351,10 @@ function UsuariosPage() {
         )}
 
         {/* ── Usuários do Portal ── */}
-        <section className="aurora-panel--tint">
+        <section className="aurora-panel">
           <header
             className="flex items-center justify-between px-6 py-4"
-            style={{ borderBottom: usersSectionOpen ? "1px solid rgba(153,169,137,0.35)" : "none", background: "rgba(255,255,255,0.55)" }}
+            style={{ borderBottom: usersSectionOpen ? "1px solid var(--line)" : "none", background: "var(--offwhite)" }}
           >
             <div>
               <div className="text-[10px] uppercase" style={{ letterSpacing: "2px", color: "var(--green)", fontWeight: 600 }}>Portal do cliente</div>

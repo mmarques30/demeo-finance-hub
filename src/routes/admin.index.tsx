@@ -514,8 +514,8 @@ function AdminDashboard() {
 
         {/* Gráfico de tendência — últimos 6 meses */}
         {trendData.length > 0 && (
-          <section className="aurora-panel--tint">
-            <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)", background: "rgba(153,169,137,0.12)" }}>
+          <section className="aurora-panel">
+            <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)", background: "#fff" }}>
               <div>
                 <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "#1C2D45", fontWeight: 600 }}>
                   Histórico · Últimos 6 meses
@@ -543,8 +543,8 @@ function AdminDashboard() {
         )}
 
         {/* Receita por cliente */}
-        <section className="aurora-panel--tint">
-          <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)", background: "rgba(153,169,137,0.12)" }}>
+        <section className="aurora-panel">
+          <header className="flex items-end justify-between flex-wrap gap-4 px-7 lg:px-9 py-6" style={{ borderBottom: "1px solid var(--line)", background: "#fff" }}>
             <div>
               <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "#1C2D45", fontWeight: 600 }}>
                 Receita · Por cliente
@@ -592,10 +592,10 @@ function AdminDashboard() {
         </section>
 
         {/* Tabela de clientes */}
-        <section className="aurora-panel--tint">
+        <section className="aurora-panel">
           <header
             className="flex items-center justify-between flex-wrap gap-4 px-7 lg:px-9 py-6"
-            style={{ borderBottom: carteiraExpanded ? "1px solid var(--line)" : "none", background: "rgba(153,169,137,0.12)" }}
+            style={{ borderBottom: carteiraExpanded ? "1px solid var(--line)" : "none", background: "#fff" }}
           >
             <div>
               <div className="text-[11px] uppercase mb-2" style={{ letterSpacing: "2.5px", color: "#1C2D45", fontWeight: 600 }}>

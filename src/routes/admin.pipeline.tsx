@@ -134,47 +134,59 @@ function PipelinePage() {
 
   return (
     <AdminLayout>
-      <PageHeader
-        cap="CRM comercial"
-        title="Pipeline"
-        emphasis="de captação"
-        description="Arraste cards entre colunas. Drop em Perdido pede o motivo."
-        right={
-          <button
-            onClick={() => setNewDealModal(true)}
-            className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase"
-            style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
-          >
-            + Nova deal
-          </button>
-        }
-      />
+      <div
+        className="flex min-h-0 flex-1 flex-col"
+        style={{ minHeight: "calc(100dvh - 57px)" }}
+      >
+        <div className="shrink-0">
+          <PageHeader
+            cap="CRM comercial"
+            title="Pipeline"
+            emphasis="de captação"
+            description="Arraste cards entre colunas. Drop em Perdido pede o motivo."
+            right={
+              <button
+                onClick={() => setNewDealModal(true)}
+                className="inline-flex items-center gap-2 px-5 py-3 text-[10px] uppercase"
+                style={{ background: "var(--green)", color: "#fff", letterSpacing: "2.5px", fontWeight: 500 , borderRadius: 999 }}
+              >
+                + Nova deal
+              </button>
+            }
+          />
+        </div>
 
-      <div className="aurora-page">
-        <MetricsRow />
-
-        <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            {stages.map((s) => (
-              <KanbanColumn
-                key={s.id}
-                stage={s}
-                deals={byStage.get(s.id) ?? []}
-                onCardClick={setDrawerDealId}
-                isActiveDrag={!!dragDealId}
-              />
-            ))}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 lg:px-4">
+          <div className="shrink-0">
+            <MetricsRow />
           </div>
-          <DragOverlay>
-            {dragDealId && (
-              <div className="aurora-panel bg-white p-4 shadow-lg" style={{ border: "1px solid var(--green)" }}>
-                <div className="text-[12px]" style={{ fontWeight: 500 }}>
-                  {deals.find((d) => d.id === dragDealId)?.contact_name}
+
+          <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+            <div
+              className="grid min-h-0 flex-1 grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6"
+              style={{ alignItems: "stretch" }}
+            >
+              {stages.map((s) => (
+                <KanbanColumn
+                  key={s.id}
+                  stage={s}
+                  deals={byStage.get(s.id) ?? []}
+                  onCardClick={setDrawerDealId}
+                  isActiveDrag={!!dragDealId}
+                />
+              ))}
+            </div>
+            <DragOverlay>
+              {dragDealId && (
+                <div className="aurora-panel bg-white p-4 shadow-lg" style={{ border: "1px solid var(--green)" }}>
+                  <div className="text-[12px]" style={{ fontWeight: 500 }}>
+                    {deals.find((d) => d.id === dragDealId)?.contact_name}
+                  </div>
                 </div>
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
+              )}
+            </DragOverlay>
+          </DndContext>
+        </div>
       </div>
 
       <DealDrawer dealId={drawerDealId} onClose={() => setDrawerDealId(null)} />
@@ -231,17 +243,17 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className="flex flex-col gap-2"
+      className="flex h-full min-h-[360px] flex-col gap-2 lg:min-h-0"
       style={{
         padding: 10,
-        background: isOver ? "rgba(153,169,137,0.22)" : "var(--surface)",
-        border: isOver ? "1px solid var(--green)" : "1px solid rgba(153,169,137,0.35)",
+        background: isOver ? "rgba(153,169,137,0.28)" : "var(--surface)",
+        border: isOver ? "1px solid var(--green)" : "1px solid rgba(153,169,137,0.4)",
         borderRadius: 22,
         transition: "background 0.15s",
         opacity: isActiveDrag && !isOver ? 0.85 : 1,
       }}
     >
-      <div className="flex items-center justify-between px-2" style={{ borderBottom: "1px solid var(--line)", paddingBottom: 6 }}>
+      <div className="flex shrink-0 items-center justify-between px-2" style={{ borderBottom: "1px solid rgba(153,169,137,0.35)", paddingBottom: 6 }}>
         <div className="aurora-cap" style={{ color: stage.color }}>
           ● {stage.label}
         </div>
@@ -249,10 +261,10 @@ function KanbanColumn({
           {deals.length}
         </div>
       </div>
-      <div className="text-[10px] px-2" style={{ color: "var(--muted-foreground)" }}>
+      <div className="shrink-0 px-2 text-[10px]" style={{ color: "var(--muted-foreground)" }}>
         {brl(sum)}
       </div>
-      <div className="flex flex-col gap-2 min-h-[160px] pt-1">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pt-1">
         {deals.map((d) => (
           <DealCard key={d.id} deal={d} onClick={() => onCardClick(d.id)} />
         ))}

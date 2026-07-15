@@ -260,7 +260,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* ============= MAIN ============= */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         {/* Topbar */}
         <header
           className="sticky top-0 z-40 flex items-center justify-between px-4 lg:px-8 py-3"
@@ -410,7 +410,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 min-w-0" style={{ background: "var(--offwhite)" }}>
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto" style={{ background: "var(--offwhite)" }}>
           {sessionLoading || adminLoading || !session || isAdmin !== true ? (
             <div className="px-8 py-16 flex items-center gap-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
               <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
@@ -420,18 +420,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             children
           )}
         </main>
-
-        <footer
-          className="px-4 lg:px-10 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
-          style={{ borderTop: "1px solid var(--line)", background: "var(--offwhite)" }}
-        >
-          <div className="aurora-serif italic text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-            Clareza que envolve. Resultado que permanece.
-          </div>
-          <div className="text-[9px] uppercase" style={{ letterSpacing: "2px", color: "var(--muted-foreground)" }}>
-            © Aurora Gestão Financeira 2026
-          </div>
-        </footer>
       </div>
 
       {profileOpen && (
