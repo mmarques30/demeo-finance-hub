@@ -410,7 +410,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col" style={{ background: "var(--offwhite)" }}>
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto" style={{ background: "var(--offwhite)" }}>
           {sessionLoading || adminLoading || !session || isAdmin !== true ? (
             <div className="px-8 py-16 flex items-center gap-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
               <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "var(--green)", borderTopColor: "transparent" }} />
