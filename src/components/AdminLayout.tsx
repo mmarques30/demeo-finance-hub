@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LogoMark } from "./Logo";
+import { ILogout } from "./Icon";
 import { supabase } from "@/lib/supabase";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import { useClickOutside, useLocalStorage } from "@/hooks/useClickOutside";
@@ -814,7 +815,13 @@ function SidebarContent({
   pendentesCount?: number;
   mobile?: boolean;
 }) {
+  const navigate = useNavigate();
   const [subExpanded, setSubExpanded] = useState<Record<string, boolean>>({});
+
+  async function handleSignOut() {
+    await supabase().auth.signOut();
+    navigate({ to: "/login" });
+  }
 
   // Abre pastas cujo filho está ativo
   useEffect(() => {
@@ -1132,21 +1139,29 @@ function SidebarContent({
       </nav>
 
       <div
-        className="px-4 py-3 flex items-center justify-between text-[8px] uppercase"
-        style={{
-          letterSpacing: "2px",
-          color: "rgba(255,255,255,.32)",
-          borderTop: "1px solid rgba(255,255,255,0.05)",
-        }}
+        className="px-3 py-3"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
       >
-        {!collapsed ? (
-          <>
-            <span>v0.1</span>
-            <span>Abril · 2026</span>
-          </>
-        ) : (
-          <span className="w-full text-center">v0.1</span>
-        )}
+        <button
+          type="button"
+          onClick={handleSignOut}
+          title="Sair"
+          className="flex w-full items-center gap-2.5 px-3 py-2.5 text-[11px] uppercase transition-opacity hover:opacity-100"
+          style={{
+            letterSpacing: "1.5px",
+            color: "rgba(255,255,255,0.62)",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 12,
+            cursor: "pointer",
+            justifyContent: collapsed && !mobile ? "center" : "flex-start",
+            opacity: 0.85,
+            fontWeight: 500,
+          }}
+        >
+          <ILogout size={14} />
+          {(!collapsed || mobile) && <span>Sair</span>}
+        </button>
       </div>
     </>
   );
