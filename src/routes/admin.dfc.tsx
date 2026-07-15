@@ -82,7 +82,7 @@ function DFCPage() {
         if (preselectedId && exists) {
           setClientId(preselectedId);
         } else if (!preselectedId || !exists) {
-          setClientId((prev) => prev || data[0].id);
+          setClientId((prev: string) => prev || data[0].id);
         }
       }
     });
